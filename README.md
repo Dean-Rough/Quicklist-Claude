@@ -73,11 +73,16 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 
 3. **Configure environment variables**
 
-   The `.env` file should already exist with the following:
+   Copy the example environment file and add your credentials:
+   ```bash
+   cp .env.example .env
+   ```
+
+   Then edit `.env` with your actual values:
    ```env
-   DATABASE_URL=postgresql://neondb_owner:npg_aFnv2Wh1usGA@ep-empty-thunder-abvhtqqv-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require
-   GEMINI_API_KEY=AIzaSyBJYSlAfUWryXlDcZSs7skLEUiKKKJCFFw
-   JWT_SECRET=quicklist-ai-super-secret-key-change-in-production
+   DATABASE_URL=your_postgresql_connection_string
+   GEMINI_API_KEY=your_gemini_api_key
+   JWT_SECRET=your_secure_random_secret
    PORT=3000
    ```
 
