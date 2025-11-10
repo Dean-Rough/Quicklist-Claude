@@ -1441,7 +1441,7 @@
             </div>
             <button class="btn btn-primary" style="width: 100%;" onclick="app.signIn()">Continue</button>
             <p style="color: var(--text-muted); text-align: center; margin-top: 1rem; font-size: 0.875rem;">
-                This is a demo. Enter any email/password to continue.
+                New users will be automatically registered.
             </p>
         </div>
     </div>
@@ -1480,6 +1480,8 @@
     <script>
         // QuickList AI Application
         const app = {
+            apiUrl: 'http://localhost:3000/api',
+
             state: {
                 isAuthenticated: false,
                 currentView: 'home',
@@ -1490,16 +1492,83 @@
                 selectedItemForDelete: null,
                 selectedConfirmationItem: null,
                 multipleItemsDetected: [],
+                user: null,
+                token: null,
                 settings: {
                     autoDownloadZip: false
                 }
             },
 
             // Initialize app
-            init() {
-                this.loadFromStorage();
+            async init() {
+                this.loadSettings();
+                this.loadToken();
+                await this.checkAuth();
                 this.attachEventListeners();
                 this.updateUI();
+            },
+
+            // Load token from localStorage
+            loadToken() {
+                const token = localStorage.getItem('quicklist-token');
+                if (token) {
+                    this.state.token = token;
+                }
+            },
+
+            // Check if user is authenticated
+            async checkAuth() {
+                if (!this.state.token) return;
+
+                try {
+                    const response = await fetch(`${this.apiUrl}/auth/verify`, {
+                        headers: {
+                            'Authorization': `Bearer ${this.state.token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.state.user = data.user;
+                        this.state.isAuthenticated = true;
+                        await this.loadListingsFromDB();
+                    } else {
+                        // Token invalid, clear it
+                        localStorage.removeItem('quicklist-token');
+                        this.state.token = null;
+                    }
+                } catch (error) {
+                    console.error('Auth check error:', error);
+                }
+            },
+
+            // Load listings from database
+            async loadListingsFromDB() {
+                try {
+                    const response = await fetch(`${this.apiUrl}/listings`, {
+                        headers: {
+                            'Authorization': `Bearer ${this.state.token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.state.savedListings = data.listings.map(listing => ({
+                            ...listing,
+                            keywords: listing.keywords || [],
+                            sources: typeof listing.sources === 'string' ? JSON.parse(listing.sources) : listing.sources,
+                            images: (listing.images || []).map(img => ({
+                                id: img.id,
+                                data: img.data,
+                                url: img.data,
+                                isBlurry: img.isBlurry,
+                                status: 'ready'
+                            }))
+                        }));
+                    }
+                } catch (error) {
+                    console.error('Error loading listings:', error);
+                }
             },
 
             // Event listeners
@@ -1537,7 +1606,7 @@
                 // Settings
                 document.getElementById('settingAutoDownload').addEventListener('change', (e) => {
                     this.state.settings.autoDownloadZip = e.target.checked;
-                    this.saveToStorage();
+                    this.saveSettings();
                 });
             },
 
@@ -1672,73 +1741,28 @@
                 btn.innerHTML = 'Generate Single Listing';
             },
 
-            // Call Gemini API
+            // Call backend API for generation
             async callGeminiAPI(base64Image, platform, hint) {
-                const apiKey = 'AIzaSyBJYSlAfUWryXlDcZSs7skLEUiKKKJCFFw';
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
-
-                const prompt = `You are an expert at creating product listings for online marketplaces. Analyze this image and create a complete, professional listing for ${platform}.
-
-${hint ? `Additional context: ${hint}` : ''}
-
-Please provide:
-1. A compelling, keyword-rich title (max 80 characters)
-2. The brand name (if identifiable)
-3. The most appropriate category
-4. A detailed, honest description highlighting features, condition, and any flaws (3-5 sentences)
-5. The condition (New, Like New, Good, Fair, Poor)
-6. Estimated original retail price (RRP) in GBP
-7. A competitive suggested listing price in GBP based on condition
-8. 10 relevant keywords/hashtags
-9. 2-3 URLs of similar items for price verification (use real marketplace URLs)
-
-Format your response as JSON with this structure:
-{
-  "title": "",
-  "brand": "",
-  "category": "",
-  "description": "",
-  "condition": "",
-  "rrp": "",
-  "price": "",
-  "keywords": [],
-  "sources": [{"url": "", "title": ""}]
-}`;
-
-                const response = await fetch(url, {
+                const response = await fetch(`${this.apiUrl}/generate`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.state.token}`
                     },
                     body: JSON.stringify({
-                        contents: [{
-                            parts: [
-                                { text: prompt },
-                                {
-                                    inline_data: {
-                                        mime_type: 'image/jpeg',
-                                        data: base64Image.split(',')[1]
-                                    }
-                                }
-                            ]
-                        }]
+                        image: base64Image,
+                        platform,
+                        hint
                     })
                 });
 
                 if (!response.ok) {
-                    throw new Error('API request failed');
+                    const error = await response.json();
+                    throw new Error(error.error || 'API request failed');
                 }
 
                 const data = await response.json();
-                const text = data.candidates[0].content.parts[0].text;
-
-                // Extract JSON from response
-                const jsonMatch = text.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    return JSON.parse(jsonMatch[0]);
-                }
-
-                throw new Error('Failed to parse API response');
+                return data.listing;
             },
 
             // Convert file to base64
@@ -1994,26 +2018,45 @@ ${this.state.currentListing?.keywords?.join(', ')}
             async saveListing() {
                 if (!this.state.currentListing) return;
 
-                // Get current field values
-                const listing = {
-                    id: this.state.currentListing.id,
-                    title: document.getElementById('outputTitle').value,
-                    brand: document.getElementById('outputBrand').value,
-                    category: document.getElementById('outputCategory').value,
-                    description: document.getElementById('outputDescription').value,
-                    condition: document.getElementById('outputCondition').value,
-                    rrp: document.getElementById('outputRRP').value,
-                    price: document.getElementById('outputPrice').value,
-                    keywords: this.state.currentListing.keywords,
-                    sources: this.state.currentListing.sources,
-                    platform: this.state.currentListing.platform,
-                    images: this.state.uploadedImages,
-                    savedAt: Date.now()
-                };
+                try {
+                    // Get current field values
+                    const listingData = {
+                        title: document.getElementById('outputTitle').value,
+                        brand: document.getElementById('outputBrand').value,
+                        category: document.getElementById('outputCategory').value,
+                        description: document.getElementById('outputDescription').value,
+                        condition: document.getElementById('outputCondition').value,
+                        rrp: document.getElementById('outputRRP').value,
+                        price: document.getElementById('outputPrice').value,
+                        keywords: this.state.currentListing.keywords,
+                        sources: this.state.currentListing.sources,
+                        platform: this.state.currentListing.platform,
+                        images: await Promise.all(this.state.uploadedImages.map(async (img) => ({
+                            data: await this.fileToBase64(img.file || img.url),
+                            isBlurry: img.isBlurry
+                        })))
+                    };
 
-                this.state.savedListings.push(listing);
-                this.saveToStorage();
-                this.showToast('Listing saved!');
+                    const response = await fetch(`${this.apiUrl}/listings`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.state.token}`
+                        },
+                        body: JSON.stringify(listingData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to save listing');
+                    }
+
+                    // Reload listings from database
+                    await this.loadListingsFromDB();
+                    this.showToast('Listing saved!');
+                } catch (error) {
+                    console.error('Save error:', error);
+                    alert('Failed to save listing. Please try again.');
+                }
             },
 
             // Load listing
@@ -2059,17 +2102,30 @@ ${this.state.currentListing?.keywords?.join(', ')}
             },
 
             // Confirm delete
-            confirmDelete() {
+            async confirmDelete() {
                 if (!this.state.selectedItemForDelete) return;
 
-                this.state.savedListings = this.state.savedListings.filter(
-                    l => l.id !== this.state.selectedItemForDelete
-                );
+                try {
+                    const response = await fetch(`${this.apiUrl}/listings/${this.state.selectedItemForDelete}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${this.state.token}`
+                        }
+                    });
 
-                this.saveToStorage();
-                this.renderSavedItems();
-                this.closeDeleteModal();
-                this.showToast('Listing deleted');
+                    if (!response.ok) {
+                        throw new Error('Failed to delete listing');
+                    }
+
+                    // Reload listings from database
+                    await this.loadListingsFromDB();
+                    this.renderSavedItems();
+                    this.closeDeleteModal();
+                    this.showToast('Listing deleted');
+                } catch (error) {
+                    console.error('Delete error:', error);
+                    alert('Failed to delete listing. Please try again.');
+                }
             },
 
             // Render saved items
@@ -2148,18 +2204,70 @@ ${this.state.currentListing?.keywords?.join(', ')}
                 document.getElementById('authModal').classList.remove('active');
             },
 
-            signIn() {
-                // Simulate sign in
-                this.state.isAuthenticated = true;
-                this.closeAuthModal();
-                this.updateUI();
-                this.showToast('Welcome to QuickList AI!');
+            async signIn() {
+                const email = document.getElementById('authEmail').value;
+                const password = document.getElementById('authPassword').value;
+
+                if (!email || !password) {
+                    alert('Please enter email and password');
+                    return;
+                }
+
+                try {
+                    // Try sign in first
+                    let response = await fetch(`${this.apiUrl}/auth/signin`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    // If sign in fails, try sign up
+                    if (!response.ok) {
+                        response = await fetch(`${this.apiUrl}/auth/signup`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ email, password })
+                        });
+                    }
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        alert(error.error || 'Authentication failed');
+                        return;
+                    }
+
+                    const data = await response.json();
+                    this.state.token = data.token;
+                    this.state.user = data.user;
+                    this.state.isAuthenticated = true;
+
+                    // Save token
+                    localStorage.setItem('quicklist-token', data.token);
+
+                    // Load listings
+                    await this.loadListingsFromDB();
+
+                    this.closeAuthModal();
+                    this.updateUI();
+                    this.showToast('Welcome to QuickList AI!');
+                } catch (error) {
+                    console.error('Auth error:', error);
+                    alert('Authentication failed. Please try again.');
+                }
             },
 
             signOut() {
                 this.state.isAuthenticated = false;
+                this.state.user = null;
+                this.state.token = null;
                 this.state.uploadedImages = [];
                 this.state.currentListing = null;
+                this.state.savedListings = [];
+                localStorage.removeItem('quicklist-token');
                 this.updateUI();
                 this.showToast('Signed out successfully');
             },
@@ -2192,37 +2300,23 @@ ${this.state.currentListing?.keywords?.join(', ')}
                 document.getElementById('settingAutoDownload').checked = this.state.settings.autoDownloadZip;
             },
 
-            // Storage
-            saveToStorage() {
+            // Settings storage (local only)
+            saveSettings() {
                 try {
-                    const dataToSave = {
-                        savedListings: this.state.savedListings.map(listing => ({
-                            ...listing,
-                            images: listing.images.map(img => ({
-                                id: img.id,
-                                url: img.url,
-                                status: img.status,
-                                isBlurry: img.isBlurry
-                            }))
-                        })),
-                        settings: this.state.settings
-                    };
-                    localStorage.setItem('quicklist-data', JSON.stringify(dataToSave));
+                    localStorage.setItem('quicklist-settings', JSON.stringify(this.state.settings));
                 } catch (error) {
-                    console.error('Error saving to storage:', error);
+                    console.error('Error saving settings:', error);
                 }
             },
 
-            loadFromStorage() {
+            loadSettings() {
                 try {
-                    const data = localStorage.getItem('quicklist-data');
+                    const data = localStorage.getItem('quicklist-settings');
                     if (data) {
-                        const parsed = JSON.parse(data);
-                        this.state.savedListings = parsed.savedListings || [];
-                        this.state.settings = parsed.settings || { autoDownloadZip: false };
+                        this.state.settings = JSON.parse(data);
                     }
                 } catch (error) {
-                    console.error('Error loading from storage:', error);
+                    console.error('Error loading settings:', error);
                 }
             },
 
