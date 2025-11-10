@@ -1,0 +1,2289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickList AI - Turn Clutter into Cash</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-hover: #475569;
+            --accent-indigo: #6366f1;
+            --accent-indigo-hover: #4f46e5;
+            --accent-indigo-light: rgba(99, 102, 241, 0.1);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Header Styles */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-indigo);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-indigo), #818cf8);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-link:hover {
+            color: var(--accent-indigo);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-indigo);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-indigo-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 6rem 0;
+            text-align: center;
+            position: relative;
+            background:
+                linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.9)),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(99, 102, 241, 0.05) 2px, rgba(99, 102, 241, 0.05) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(99, 102, 241, 0.05) 2px, rgba(99, 102, 241, 0.05) 4px);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-indigo));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto 2rem;
+        }
+
+        /* Section */
+        .section {
+            padding: 4rem 0;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        }
+
+        /* Card */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--accent-indigo-light);
+            color: var(--accent-indigo);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            color: var(--text-secondary);
+        }
+
+        /* Steps */
+        .steps {
+            display: flex;
+            justify-content: space-around;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .step {
+            text-align: center;
+            max-width: 300px;
+        }
+
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: var(--accent-indigo);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 auto 1rem;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-hover);
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-indigo);
+        }
+
+        textarea.form-input {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        select.form-input {
+            cursor: pointer;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 3rem 0;
+            margin-top: 4rem;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* App Layout */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 2rem;
+            padding: 2rem 0;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        @media (max-width: 968px) {
+            .app-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Image Uploader */
+        .image-uploader {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg-secondary);
+        }
+
+        .image-uploader:hover {
+            border-color: var(--accent-indigo);
+            background: var(--accent-indigo-light);
+        }
+
+        .image-uploader-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .image-thumbnail {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+        }
+
+        .image-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-thumbnail-delete {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 28px;
+            height: 28px;
+            background: var(--error);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.9;
+        }
+
+        .image-thumbnail-delete:hover {
+            opacity: 1;
+        }
+
+        .image-thumbnail-status {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            right: 4px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.25rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            text-align: center;
+        }
+
+        .image-thumbnail-status.warning {
+            background: var(--warning);
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-indigo);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Output Area */
+        .output-area {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            min-height: 600px;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .output-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .field-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .field-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        /* Tags */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .tag {
+            background: var(--accent-indigo-light);
+            color: var(--accent-indigo);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* Sources */
+        .sources-list {
+            list-style: none;
+        }
+
+        .sources-list li {
+            margin-bottom: 0.5rem;
+        }
+
+        .sources-list a {
+            color: var(--accent-indigo);
+            text-decoration: none;
+        }
+
+        .sources-list a:hover {
+            text-decoration: underline;
+        }
+
+        /* Toggle Switch */
+        .toggle-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .toggle-group:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-tertiary);
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--accent-indigo);
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Saved Items Grid */
+        .saved-items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .saved-item-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .saved-item-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .saved-item-image {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+        }
+
+        .saved-item-content {
+            padding: 1rem;
+        }
+
+        .saved-item-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .saved-item-brand {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .saved-item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Skeleton Loading */
+        .skeleton {
+            background: linear-gradient(
+                90deg,
+                var(--bg-tertiary) 25%,
+                var(--bg-hover) 50%,
+                var(--bg-tertiary) 75%
+            );
+            background-size: 200% 100%;
+            animation: loading 1.5s ease-in-out infinite;
+            border-radius: 8px;
+        }
+
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .skeleton-text {
+            height: 20px;
+            margin-bottom: 1rem;
+        }
+
+        .skeleton-text-large {
+            height: 100px;
+        }
+
+        /* Pricing Cards */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .pricing-card.featured {
+            border-color: var(--accent-indigo);
+            transform: scale(1.05);
+        }
+
+        .pricing-tier {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .pricing-price {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-indigo);
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-period {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .pricing-features {
+            list-style: none;
+            text-align: left;
+            margin-bottom: 1.5rem;
+        }
+
+        .pricing-features li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        /* Confirmation Modal Grid */
+        .confirmation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .confirmation-item {
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .confirmation-item:hover {
+            border-color: var(--accent-indigo);
+        }
+
+        .confirmation-item.selected {
+            border-color: var(--accent-indigo);
+            background: var(--accent-indigo-light);
+        }
+
+        .confirmation-item img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .confirmation-item-title {
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+
+        .confirmation-item-price {
+            font-size: 0.875rem;
+            color: var(--accent-indigo);
+        }
+
+        /* User Profile Button */
+        .user-profile-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-indigo);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-profile-btn:hover {
+            background: var(--accent-indigo-hover);
+        }
+
+        /* Utilities */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+        .mt-4 { margin-top: 2rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        .mb-4 { margin-bottom: 2rem; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .section-title {
+                font-size: 1.75rem;
+            }
+
+            .nav-links {
+                gap: 1rem;
+                font-size: 0.875rem;
+            }
+
+            .header-content {
+                padding: 1rem;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .steps {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Marketing Header -->
+    <header id="marketingHeader" class="header">
+        <div class="header-content">
+            <div class="logo" onclick="app.navigateTo('home')">
+                <div class="logo-icon">Q</div>
+                <span>QuickList AI</span>
+            </div>
+            <nav class="nav-links">
+                <a class="nav-link" onclick="app.navigateTo('photoTips')">Photo Tips</a>
+                <a class="nav-link" onclick="app.navigateTo('checklist')">Seller Checklist</a>
+                <a class="nav-link" onclick="app.navigateTo('pricing')">Pricing</a>
+                <button class="btn btn-primary" onclick="app.showAuthModal()">Sign In / Sign Up</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- App Header -->
+    <header id="appHeader" class="header hidden">
+        <div class="header-content">
+            <div class="logo" onclick="app.navigateToApp('newItem')">
+                <div class="logo-icon">Q</div>
+                <span>QuickList AI</span>
+            </div>
+            <nav class="nav-links">
+                <a class="nav-link" onclick="app.navigateToApp('newItem')">New Item</a>
+                <a class="nav-link" onclick="app.navigateToApp('savedItems')">Saved Items</a>
+                <a class="nav-link" onclick="app.navigateToApp('settings')">Settings</a>
+                <button class="user-profile-btn" onclick="app.signOut()">U</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Marketing Views -->
+    <main id="marketingView">
+        <!-- Home / Landing Page -->
+        <div id="homeView">
+            <!-- Hero Section -->
+            <section class="hero">
+                <div class="container">
+                    <h1>That 'to-sell' pile mocking you again?</h1>
+                    <p>Turn your clutter into cash without the soul-crushing effort of writing a listing. Snap a pic. We do the rest.</p>
+                    <button class="btn btn-primary" style="font-size: 1.25rem; padding: 1rem 2rem;" onclick="app.showAuthModal()">
+                        Get Started - It's Free
+                    </button>
+                </div>
+            </section>
+
+            <!-- How It Works -->
+            <section class="section">
+                <div class="container">
+                    <h2 class="section-title">How It Works</h2>
+                    <div class="steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <h3>Point & Shoot</h3>
+                            <p>Take a photo of your item. Don't worry about perfection—we'll work with what you've got.</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <h3>Let the Robot Work</h3>
+                            <p>Our AI analyzes your item, generates descriptions, suggests prices, and finds keywords.</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <h3>Copy, Paste, Profit</h3>
+                            <p>Your listing is ready. Download everything in a ZIP and post to your marketplace in seconds.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features -->
+            <section class="section">
+                <div class="container">
+                    <h2 class="section-title">Powerful Features</h2>
+                    <div class="grid grid-3">
+                        <div class="card">
+                            <div class="card-icon">🤖</div>
+                            <h3>AI-Powered Descriptions</h3>
+                            <p>Get compelling, marketplace-ready descriptions that actually sell.</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">🎯</div>
+                            <h3>Optimized Titles & Categories</h3>
+                            <p>Perfect titles and categories for maximum visibility.</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">💰</div>
+                            <h3>Data-Driven Pricing</h3>
+                            <p>Smart price suggestions based on real market data.</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">📸</div>
+                            <h3>Professional Images</h3>
+                            <p>Generate hero images, enhance photos, and fix blur.</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">🔍</div>
+                            <h3>Keywords & Hashtags</h3>
+                            <p>Boost your listing's reach with optimized keywords.</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">🔎</div>
+                            <h3>Honest Flaw Detection</h3>
+                            <p>Automatically identify and list any imperfections.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Target Audience -->
+            <section class="section" style="background: var(--bg-secondary);">
+                <div class="container">
+                    <h2 class="section-title">Who Is This For?</h2>
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3>Casual Declutterers</h3>
+                            <ul style="list-style: none; padding: 0;">
+                                <li>✓ Got stuff to sell but hate writing descriptions</li>
+                                <li>✓ Want to make money without the hassle</li>
+                                <li>✓ Need quick, professional listings</li>
+                                <li>✓ Selling on Vinted, eBay, or Gumtree</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h3>Power Sellers & eBay Businesses</h3>
+                            <ul style="list-style: none; padding: 0;">
+                                <li>✓ Process hundreds of items efficiently</li>
+                                <li>✓ Maintain consistent quality across listings</li>
+                                <li>✓ Save hours of manual work</li>
+                                <li>✓ Scale your business faster</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FAQ -->
+            <section class="section">
+                <div class="container">
+                    <h2 class="section-title">Frequently Asked Questions</h2>
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3>Is it free?</h3>
+                            <p>Yes! We offer a free tier with generous limits. Upgrade for unlimited listings and premium features.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Which marketplaces are supported?</h3>
+                            <p>Currently Vinted, eBay, and Gumtree. More coming soon!</p>
+                        </div>
+                        <div class="card">
+                            <h3>How accurate is the AI?</h3>
+                            <p>Very! But you can always edit any field before posting your listing.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Do you store my photos?</h3>
+                            <p>All data is stored locally in your browser. Your photos never leave your device unless you choose to download them.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Final CTA -->
+            <section class="section">
+                <div class="container">
+                    <div class="card" style="text-align: center; padding: 4rem 2rem;">
+                        <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">Ready to Turn Clutter into Cash?</h2>
+                        <p style="font-size: 1.25rem; color: var(--text-secondary); margin-bottom: 2rem;">Start your first listing in under 60 seconds.</p>
+                        <button class="btn btn-primary" style="font-size: 1.25rem; padding: 1rem 2rem;" onclick="app.showAuthModal()">
+                            Get Started Now
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Photo Tips Page -->
+        <div id="photoTipsView" class="hidden">
+            <section class="section">
+                <div class="container">
+                    <h1 class="section-title">Photography Tips for Better Listings</h1>
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3>Use Natural Light</h3>
+                            <p>Shoot near a window during daytime. Natural light makes colors accurate and reduces harsh shadows. Avoid using flash—it creates unflattering reflections.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Clean, Simple Background</h3>
+                            <p>Place items against a plain white or neutral background. This helps buyers focus on the product and makes your listing look professional.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Capture Tags & Labels</h3>
+                            <p>Include close-up shots of brand tags, size labels, and care instructions. This builds trust and provides essential information.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Show All Angles</h3>
+                            <p>Take multiple photos from different angles. Front, back, sides, and details. More photos = more buyer confidence.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Highlight Flaws Honestly</h3>
+                            <p>Photograph any damage, stains, or wear. Honesty prevents returns and builds your reputation as a trustworthy seller.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Keep It Steady</h3>
+                            <p>Use both hands or prop your phone against something stable. Blurry photos kill sales faster than anything else.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Seller Checklist Page -->
+        <div id="checklistView" class="hidden">
+            <section class="section">
+                <div class="container">
+                    <h1 class="section-title">Seller Checklist: Get Ready to List</h1>
+                    <div class="card" style="max-width: 800px; margin: 0 auto;">
+                        <h3>Before You Start</h3>
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                                <strong>☐ Clean Everything</strong><br>
+                                <span style="color: var(--text-secondary);">Wash, wipe, or dust your items. Clean items sell faster and for more money.</span>
+                            </li>
+                            <li style="padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                                <strong>☐ Sort Into Batches</strong><br>
+                                <span style="color: var(--text-secondary);">Group similar items together (e.g., all clothing, all electronics) for efficient photographing.</span>
+                            </li>
+                            <li style="padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                                <strong>☐ Set Up Your 'Studio'</strong><br>
+                                <span style="color: var(--text-secondary);">Find a well-lit spot with a clean background. Keep it simple.</span>
+                            </li>
+                            <li style="padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                                <strong>☐ Gather Supplies</strong><br>
+                                <span style="color: var(--text-secondary);">Phone, charging cable, measuring tape (for dimensions), and packaging materials.</span>
+                            </li>
+                            <li style="padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                                <strong>☐ Research Competitors</strong><br>
+                                <span style="color: var(--text-secondary);">Quick browse of similar items on your marketplace. Get a sense of pricing and descriptions.</span>
+                            </li>
+                            <li style="padding: 1rem 0;">
+                                <strong>☐ Plan Your Shipping</strong><br>
+                                <span style="color: var(--text-secondary);">Know your packaging options and shipping costs before listing.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Pricing Page -->
+        <div id="pricingView" class="hidden">
+            <section class="section">
+                <div class="container">
+                    <h1 class="section-title">Simple, Transparent Pricing</h1>
+                    <div class="pricing-grid">
+                        <div class="pricing-card">
+                            <div class="pricing-tier">Starter</div>
+                            <div class="pricing-price">Free</div>
+                            <div class="pricing-period">Forever</div>
+                            <ul class="pricing-features">
+                                <li>5 listings per month</li>
+                                <li>AI descriptions</li>
+                                <li>Basic price suggestions</li>
+                                <li>Standard image tools</li>
+                            </ul>
+                            <button class="btn btn-secondary" onclick="app.showAuthModal()">Get Started</button>
+                        </div>
+                        <div class="pricing-card">
+                            <div class="pricing-tier">Casual</div>
+                            <div class="pricing-price">£4.99</div>
+                            <div class="pricing-period">per month</div>
+                            <ul class="pricing-features">
+                                <li>50 listings per month</li>
+                                <li>Advanced AI descriptions</li>
+                                <li>Market data pricing</li>
+                                <li>Image enhancement</li>
+                                <li>Keywords & hashtags</li>
+                            </ul>
+                            <button class="btn btn-secondary" onclick="app.showAuthModal()">Choose Casual</button>
+                        </div>
+                        <div class="pricing-card featured">
+                            <div class="pricing-tier">Pro</div>
+                            <div class="pricing-price">£9.99</div>
+                            <div class="pricing-period">per month</div>
+                            <ul class="pricing-features">
+                                <li>200 listings per month</li>
+                                <li>Premium AI descriptions</li>
+                                <li>Real-time market data</li>
+                                <li>Hero image generation</li>
+                                <li>Blur detection & fixing</li>
+                                <li>Batch processing</li>
+                            </ul>
+                            <button class="btn btn-primary" onclick="app.showAuthModal()">Choose Pro</button>
+                        </div>
+                        <div class="pricing-card">
+                            <div class="pricing-tier">Max</div>
+                            <div class="pricing-price">£19.99</div>
+                            <div class="pricing-period">per month</div>
+                            <ul class="pricing-features">
+                                <li>Unlimited listings</li>
+                                <li>Everything in Pro</li>
+                                <li>Priority processing</li>
+                                <li>API access</li>
+                                <li>Custom integrations</li>
+                                <li>Priority support</li>
+                            </ul>
+                            <button class="btn btn-secondary" onclick="app.showAuthModal()">Choose Max</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- App Views -->
+    <main id="appView" class="hidden">
+        <!-- New Item View -->
+        <div id="newItemView">
+            <div class="app-layout">
+                <!-- Left Column: Input -->
+                <div>
+                    <div class="card">
+                        <h2 class="mb-3">Upload Photos</h2>
+                        <div class="image-uploader" id="imageUploader">
+                            <div class="image-uploader-icon">📷</div>
+                            <p><strong>Click to upload or use camera</strong></p>
+                            <p style="color: var(--text-muted); font-size: 0.875rem;">Supports multiple images</p>
+                        </div>
+                        <input type="file" id="imageInput" accept="image/*" multiple capture="environment" style="display: none;">
+                        <div class="image-grid" id="imageGrid"></div>
+                        <button class="btn btn-primary mt-3 hidden" id="processBatchBtn" style="width: 100%;">
+                            Process Batch
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <h3 class="mb-3">Listing Details</h3>
+                        <div class="form-group">
+                            <label class="form-label">Platform</label>
+                            <select class="form-input" id="platformSelect">
+                                <option value="vinted">Vinted</option>
+                                <option value="ebay">eBay</option>
+                                <option value="gumtree">Gumtree</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Item Info (Optional Hint)</label>
+                            <input type="text" class="form-input" id="itemHint" placeholder="e.g., Nike shoes size 10">
+                        </div>
+                        <button class="btn btn-primary" id="generateBtn" style="width: 100%;" disabled>
+                            Generate Single Listing
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Column: Output -->
+                <div>
+                    <div class="output-area" id="outputArea">
+                        <div id="initialState" class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <h3>Your generated listing will appear here</h3>
+                            <p>Upload an image and click "Generate" to get started</p>
+                        </div>
+
+                        <div id="loadingState" class="hidden">
+                            <h2 class="mb-3">Generating your listing...</h2>
+                            <div class="skeleton skeleton-text" style="width: 60%;"></div>
+                            <div class="skeleton skeleton-text" style="width: 80%;"></div>
+                            <div class="skeleton skeleton-text" style="width: 70%;"></div>
+                            <div class="skeleton skeleton-text-large mt-4"></div>
+                            <div class="skeleton skeleton-text" style="width: 50%; margin-top: 2rem;"></div>
+                            <div class="skeleton skeleton-text" style="width: 60%;"></div>
+                        </div>
+
+                        <div id="resultState" class="hidden">
+                            <div class="output-header">
+                                <h2>Generated Listing</h2>
+                                <div class="output-actions">
+                                    <button class="btn btn-secondary btn-small" onclick="app.saveListing()">Save Listing</button>
+                                    <button class="btn btn-primary btn-small" onclick="app.copyAll()">Copy All</button>
+                                </div>
+                            </div>
+
+                            <div class="field-group">
+                                <div class="field-header">
+                                    <label class="form-label">Item Title</label>
+                                    <button class="btn btn-secondary btn-small" onclick="app.copyField('title')">Copy</button>
+                                </div>
+                                <input type="text" class="form-input" id="outputTitle">
+                            </div>
+
+                            <div class="field-group">
+                                <div class="field-header">
+                                    <label class="form-label">Brand</label>
+                                    <button class="btn btn-secondary btn-small" onclick="app.copyField('brand')">Copy</button>
+                                </div>
+                                <input type="text" class="form-input" id="outputBrand">
+                            </div>
+
+                            <div class="field-group">
+                                <div class="field-header">
+                                    <label class="form-label">Category</label>
+                                    <button class="btn btn-secondary btn-small" onclick="app.copyField('category')">Copy</button>
+                                </div>
+                                <input type="text" class="form-input" id="outputCategory">
+                            </div>
+
+                            <div class="field-group">
+                                <div class="field-header">
+                                    <label class="form-label">Description</label>
+                                    <button class="btn btn-secondary btn-small" onclick="app.copyField('description')">Copy</button>
+                                </div>
+                                <textarea class="form-input" id="outputDescription" rows="6"></textarea>
+                            </div>
+
+                            <div class="field-group">
+                                <div class="field-header">
+                                    <label class="form-label">Condition</label>
+                                    <button class="btn btn-secondary btn-small" onclick="app.copyField('condition')">Copy</button>
+                                </div>
+                                <input type="text" class="form-input" id="outputCondition">
+                            </div>
+
+                            <div class="field-group">
+                                <div class="field-header">
+                                    <label class="form-label">RRP (Retail Price)</label>
+                                    <button class="btn btn-secondary btn-small" onclick="app.copyField('rrp')">Copy</button>
+                                </div>
+                                <input type="text" class="form-input" id="outputRRP">
+                            </div>
+
+                            <div class="field-group">
+                                <div class="field-header">
+                                    <label class="form-label">Suggested Listing Price</label>
+                                    <button class="btn btn-secondary btn-small" onclick="app.copyField('price')">Copy</button>
+                                </div>
+                                <input type="text" class="form-input" id="outputPrice">
+                            </div>
+
+                            <div class="field-group">
+                                <div class="field-header">
+                                    <label class="form-label">Keywords & Hashtags</label>
+                                    <button class="btn btn-secondary btn-small" onclick="app.regenerateKeywords()">Regenerate</button>
+                                </div>
+                                <div class="tags-container" id="keywordsTags"></div>
+                            </div>
+
+                            <div class="field-group">
+                                <label class="form-label">Sources</label>
+                                <ul class="sources-list" id="sourcesList"></ul>
+                            </div>
+
+                            <div class="field-group">
+                                <label class="form-label">Download Options</label>
+                                <div class="toggle-group">
+                                    <span>Generate Hero Image</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="toggleHero" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="toggle-group">
+                                    <span>Get Stock Image</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="toggleStock">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="toggle-group">
+                                    <span>Auto-Enhance Photos</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="toggleEnhance" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="toggle-group">
+                                    <span>Fix Blurred Images</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="toggleBlur">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary mt-3" id="downloadBtn" style="width: 100%;" onclick="app.downloadZip()">
+                                Download ZIP
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Saved Items View -->
+        <div id="savedItemsView" class="hidden">
+            <div class="container section">
+                <h1 class="section-title">Saved Items</h1>
+                <div class="saved-items-grid" id="savedItemsGrid">
+                    <!-- Saved items will be populated here -->
+                </div>
+                <div id="savedItemsEmpty" class="empty-state hidden">
+                    <div class="empty-state-icon">📦</div>
+                    <h3>No saved items yet</h3>
+                    <p>Generate and save listings to see them here</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings View -->
+        <div id="settingsView" class="hidden">
+            <div class="container section">
+                <h1 class="section-title">Settings</h1>
+                <div class="card" style="max-width: 600px; margin: 0 auto;">
+                    <div class="toggle-group">
+                        <div>
+                            <strong>Auto-Download ZIP</strong>
+                            <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">
+                                Automatically download ZIP after generation
+                            </p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="settingAutoDownload">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer id="marketingFooter" class="footer">
+        <div class="container">
+            <div class="footer-links">
+                <a class="nav-link" onclick="app.navigateTo('home')">Home</a>
+                <a class="nav-link" onclick="app.navigateTo('photoTips')">Photo Tips</a>
+                <a class="nav-link" onclick="app.navigateTo('checklist')">Seller Checklist</a>
+                <a class="nav-link" onclick="app.navigateTo('pricing')">Pricing</a>
+            </div>
+            <p style="color: var(--text-muted);">&copy; 2025 QuickList AI. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Sign In / Sign Up</h2>
+                <button class="modal-close" onclick="app.closeAuthModal()">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input" id="authEmail" placeholder="you@example.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-input" id="authPassword" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" onclick="app.signIn()">Continue</button>
+            <p style="color: var(--text-muted); text-align: center; margin-top: 1rem; font-size: 0.875rem;">
+                This is a demo. Enter any email/password to continue.
+            </p>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Multiple Items Detected</h2>
+                <button class="modal-close" onclick="app.closeConfirmationModal()">×</button>
+            </div>
+            <p class="mb-3" style="color: var(--text-secondary);">We found multiple potential items. Please select the one you want to list:</p>
+            <div class="confirmation-grid" id="confirmationGrid"></div>
+            <button class="btn btn-primary mt-3" style="width: 100%;" onclick="app.confirmSelection()">
+                Continue with Selected Item
+            </button>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Delete Item?</h2>
+                <button class="modal-close" onclick="app.closeDeleteModal()">×</button>
+            </div>
+            <p style="color: var(--text-secondary);">Are you sure you want to delete this saved item? This action cannot be undone.</p>
+            <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+                <button class="btn btn-secondary" style="flex: 1;" onclick="app.closeDeleteModal()">Cancel</button>
+                <button class="btn btn-primary" style="flex: 1; background: var(--error);" onclick="app.confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        // QuickList AI Application
+        const app = {
+            state: {
+                isAuthenticated: false,
+                currentView: 'home',
+                currentAppView: 'newItem',
+                uploadedImages: [],
+                currentListing: null,
+                savedListings: [],
+                selectedItemForDelete: null,
+                selectedConfirmationItem: null,
+                multipleItemsDetected: [],
+                settings: {
+                    autoDownloadZip: false
+                }
+            },
+
+            // Initialize app
+            init() {
+                this.loadFromStorage();
+                this.attachEventListeners();
+                this.updateUI();
+            },
+
+            // Event listeners
+            attachEventListeners() {
+                // Image uploader
+                const uploader = document.getElementById('imageUploader');
+                const input = document.getElementById('imageInput');
+
+                uploader.addEventListener('click', () => input.click());
+                input.addEventListener('change', (e) => this.handleImageUpload(e));
+
+                // Drag and drop
+                uploader.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploader.style.borderColor = 'var(--accent-indigo)';
+                });
+
+                uploader.addEventListener('dragleave', () => {
+                    uploader.style.borderColor = 'var(--border-color)';
+                });
+
+                uploader.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploader.style.borderColor = 'var(--border-color)';
+                    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+                    this.processFiles(files);
+                });
+
+                // Generate button
+                document.getElementById('generateBtn').addEventListener('click', () => this.generateListing());
+
+                // Process batch button
+                document.getElementById('processBatchBtn').addEventListener('click', () => this.processBatch());
+
+                // Settings
+                document.getElementById('settingAutoDownload').addEventListener('change', (e) => {
+                    this.state.settings.autoDownloadZip = e.target.checked;
+                    this.saveToStorage();
+                });
+            },
+
+            // Handle image upload
+            async handleImageUpload(event) {
+                const files = Array.from(event.target.files);
+                await this.processFiles(files);
+            },
+
+            // Process uploaded files
+            async processFiles(files) {
+                for (const file of files) {
+                    const imageData = {
+                        id: Date.now() + Math.random(),
+                        file: file,
+                        url: URL.createObjectURL(file),
+                        status: 'checking',
+                        isBlurry: false
+                    };
+
+                    this.state.uploadedImages.push(imageData);
+                    this.renderImageGrid();
+
+                    // Check for blur
+                    setTimeout(() => {
+                        const isBlurry = Math.random() < 0.2; // 20% chance of blur
+                        imageData.status = isBlurry ? 'blurry' : 'ready';
+                        imageData.isBlurry = isBlurry;
+                        this.renderImageGrid();
+                    }, 1000);
+                }
+
+                this.updateGenerateButton();
+            },
+
+            // Render image grid
+            renderImageGrid() {
+                const grid = document.getElementById('imageGrid');
+                const processBatchBtn = document.getElementById('processBatchBtn');
+
+                grid.innerHTML = this.state.uploadedImages.map(img => `
+                    <div class="image-thumbnail">
+                        <img src="${img.url}" alt="Uploaded">
+                        <button class="image-thumbnail-delete" onclick="app.deleteImage('${img.id}')">×</button>
+                        ${img.status === 'checking' ?
+                            '<div class="image-thumbnail-status">Checking...</div>' :
+                            img.isBlurry ?
+                            '<div class="image-thumbnail-status warning">⚠️ Blur Detected</div>' :
+                            ''
+                        }
+                    </div>
+                `).join('');
+
+                // Show batch button if more than one image
+                if (this.state.uploadedImages.length > 1) {
+                    processBatchBtn.classList.remove('hidden');
+                } else {
+                    processBatchBtn.classList.add('hidden');
+                }
+            },
+
+            // Delete image
+            deleteImage(id) {
+                this.state.uploadedImages = this.state.uploadedImages.filter(img => img.id !== id);
+                this.renderImageGrid();
+                this.updateGenerateButton();
+            },
+
+            // Update generate button state
+            updateGenerateButton() {
+                const btn = document.getElementById('generateBtn');
+                const hasImages = this.state.uploadedImages.length > 0;
+                const allReady = this.state.uploadedImages.every(img => img.status !== 'checking');
+
+                btn.disabled = !hasImages || !allReady;
+            },
+
+            // Generate listing using Gemini API
+            async generateListing() {
+                const btn = document.getElementById('generateBtn');
+                const initialState = document.getElementById('initialState');
+                const loadingState = document.getElementById('loadingState');
+                const resultState = document.getElementById('resultState');
+
+                // Show loading state
+                initialState.classList.add('hidden');
+                resultState.classList.add('hidden');
+                loadingState.classList.remove('hidden');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Generating...';
+
+                try {
+                    // Get first image
+                    const image = this.state.uploadedImages[0];
+                    const platform = document.getElementById('platformSelect').value;
+                    const hint = document.getElementById('itemHint').value;
+
+                    // Convert image to base64
+                    const base64Image = await this.fileToBase64(image.file);
+
+                    // Call Gemini API
+                    const listing = await this.callGeminiAPI(base64Image, platform, hint);
+
+                    // Store the listing
+                    this.state.currentListing = {
+                        ...listing,
+                        images: this.state.uploadedImages,
+                        platform: platform,
+                        id: Date.now()
+                    };
+
+                    // Display results
+                    this.displayListing(listing);
+
+                    // Show result state
+                    loadingState.classList.add('hidden');
+                    resultState.classList.remove('hidden');
+
+                    // Auto-download if enabled
+                    if (this.state.settings.autoDownloadZip) {
+                        setTimeout(() => this.downloadZip(), 500);
+                    }
+
+                } catch (error) {
+                    console.error('Error generating listing:', error);
+                    alert('Error generating listing. Please try again.');
+                    initialState.classList.remove('hidden');
+                    loadingState.classList.add('hidden');
+                }
+
+                btn.disabled = false;
+                btn.innerHTML = 'Generate Single Listing';
+            },
+
+            // Call Gemini API
+            async callGeminiAPI(base64Image, platform, hint) {
+                const apiKey = 'AIzaSyBJYSlAfUWryXlDcZSs7skLEUiKKKJCFFw';
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+
+                const prompt = `You are an expert at creating product listings for online marketplaces. Analyze this image and create a complete, professional listing for ${platform}.
+
+${hint ? `Additional context: ${hint}` : ''}
+
+Please provide:
+1. A compelling, keyword-rich title (max 80 characters)
+2. The brand name (if identifiable)
+3. The most appropriate category
+4. A detailed, honest description highlighting features, condition, and any flaws (3-5 sentences)
+5. The condition (New, Like New, Good, Fair, Poor)
+6. Estimated original retail price (RRP) in GBP
+7. A competitive suggested listing price in GBP based on condition
+8. 10 relevant keywords/hashtags
+9. 2-3 URLs of similar items for price verification (use real marketplace URLs)
+
+Format your response as JSON with this structure:
+{
+  "title": "",
+  "brand": "",
+  "category": "",
+  "description": "",
+  "condition": "",
+  "rrp": "",
+  "price": "",
+  "keywords": [],
+  "sources": [{"url": "", "title": ""}]
+}`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: prompt },
+                                {
+                                    inline_data: {
+                                        mime_type: 'image/jpeg',
+                                        data: base64Image.split(',')[1]
+                                    }
+                                }
+                            ]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API request failed');
+                }
+
+                const data = await response.json();
+                const text = data.candidates[0].content.parts[0].text;
+
+                // Extract JSON from response
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    return JSON.parse(jsonMatch[0]);
+                }
+
+                throw new Error('Failed to parse API response');
+            },
+
+            // Convert file to base64
+            fileToBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            },
+
+            // Display listing
+            displayListing(listing) {
+                document.getElementById('outputTitle').value = listing.title || '';
+                document.getElementById('outputBrand').value = listing.brand || '';
+                document.getElementById('outputCategory').value = listing.category || '';
+                document.getElementById('outputDescription').value = listing.description || '';
+                document.getElementById('outputCondition').value = listing.condition || '';
+                document.getElementById('outputRRP').value = listing.rrp || '';
+                document.getElementById('outputPrice').value = listing.price || '';
+
+                // Keywords
+                const keywordsContainer = document.getElementById('keywordsTags');
+                keywordsContainer.innerHTML = (listing.keywords || [])
+                    .map(kw => `<span class="tag">${kw}</span>`)
+                    .join('');
+
+                // Sources
+                const sourcesList = document.getElementById('sourcesList');
+                sourcesList.innerHTML = (listing.sources || [])
+                    .map(src => `<li><a href="${src.url}" target="_blank">${src.title || src.url}</a></li>`)
+                    .join('');
+            },
+
+            // Process batch
+            async processBatch() {
+                // For demo, show confirmation modal with multiple items
+                this.state.multipleItemsDetected = [
+                    {
+                        id: 1,
+                        image: this.state.uploadedImages[0]?.url || '',
+                        title: 'Nike Air Max Sneakers',
+                        price: '£45.00'
+                    },
+                    {
+                        id: 2,
+                        image: this.state.uploadedImages[1]?.url || '',
+                        title: 'Adidas Running Shoes',
+                        price: '£38.00'
+                    },
+                    {
+                        id: 3,
+                        image: this.state.uploadedImages[0]?.url || '',
+                        title: 'Puma Training Shoes',
+                        price: '£32.00'
+                    }
+                ];
+
+                this.showConfirmationModal();
+            },
+
+            // Show confirmation modal
+            showConfirmationModal() {
+                const modal = document.getElementById('confirmationModal');
+                const grid = document.getElementById('confirmationGrid');
+
+                grid.innerHTML = this.state.multipleItemsDetected.map(item => `
+                    <div class="confirmation-item ${item.id === this.state.selectedConfirmationItem ? 'selected' : ''}"
+                         onclick="app.selectConfirmationItem(${item.id})">
+                        <img src="${item.image}" alt="${item.title}">
+                        <div class="confirmation-item-title">${item.title}</div>
+                        <div class="confirmation-item-price">${item.price}</div>
+                    </div>
+                `).join('');
+
+                modal.classList.add('active');
+            },
+
+            // Close confirmation modal
+            closeConfirmationModal() {
+                document.getElementById('confirmationModal').classList.remove('active');
+            },
+
+            // Select confirmation item
+            selectConfirmationItem(id) {
+                this.state.selectedConfirmationItem = id;
+                this.showConfirmationModal(); // Re-render
+            },
+
+            // Confirm selection
+            confirmSelection() {
+                if (!this.state.selectedConfirmationItem) {
+                    alert('Please select an item');
+                    return;
+                }
+                this.closeConfirmationModal();
+                this.generateListing();
+            },
+
+            // Copy field
+            copyField(fieldName) {
+                const fieldMap = {
+                    title: 'outputTitle',
+                    brand: 'outputBrand',
+                    category: 'outputCategory',
+                    description: 'outputDescription',
+                    condition: 'outputCondition',
+                    rrp: 'outputRRP',
+                    price: 'outputPrice'
+                };
+
+                const element = document.getElementById(fieldMap[fieldName]);
+                if (element) {
+                    element.select();
+                    document.execCommand('copy');
+                    this.showToast('Copied!');
+                }
+            },
+
+            // Copy all
+            copyAll() {
+                const title = document.getElementById('outputTitle').value;
+                const brand = document.getElementById('outputBrand').value;
+                const category = document.getElementById('outputCategory').value;
+                const description = document.getElementById('outputDescription').value;
+                const condition = document.getElementById('outputCondition').value;
+                const rrp = document.getElementById('outputRRP').value;
+                const price = document.getElementById('outputPrice').value;
+
+                const allText = `
+Title: ${title}
+Brand: ${brand}
+Category: ${category}
+Condition: ${condition}
+RRP: ${rrp}
+Price: ${price}
+
+Description:
+${description}
+                `.trim();
+
+                const textarea = document.createElement('textarea');
+                textarea.value = allText;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                this.showToast('All fields copied!');
+            },
+
+            // Regenerate keywords
+            async regenerateKeywords() {
+                const container = document.getElementById('keywordsTags');
+                container.innerHTML = '<span class="spinner"></span> Regenerating...';
+
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                const newKeywords = [
+                    '#fashion', '#vintage', '#preloved', '#sustainable',
+                    '#designer', '#bargain', '#quality', '#style',
+                    '#trendy', '#musthave'
+                ];
+
+                container.innerHTML = newKeywords
+                    .map(kw => `<span class="tag">${kw}</span>`)
+                    .join('');
+            },
+
+            // Download ZIP
+            async downloadZip() {
+                const btn = document.getElementById('downloadBtn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Zipping...';
+
+                try {
+                    const zip = new JSZip();
+
+                    // Add listing details as text file
+                    const listingText = `
+Title: ${document.getElementById('outputTitle').value}
+Brand: ${document.getElementById('outputBrand').value}
+Category: ${document.getElementById('outputCategory').value}
+Condition: ${document.getElementById('outputCondition').value}
+RRP: ${document.getElementById('outputRRP').value}
+Price: ${document.getElementById('outputPrice').value}
+
+Description:
+${document.getElementById('outputDescription').value}
+
+Keywords:
+${this.state.currentListing?.keywords?.join(', ')}
+                    `.trim();
+
+                    zip.file('listing-details.txt', listingText);
+
+                    // Add images
+                    for (let i = 0; i < this.state.uploadedImages.length; i++) {
+                        const img = this.state.uploadedImages[i];
+                        const blob = await fetch(img.url).then(r => r.blob());
+                        zip.file(`image-${i + 1}.jpg`, blob);
+                    }
+
+                    // Generate hero image (placeholder)
+                    if (document.getElementById('toggleHero').checked) {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 800;
+                        canvas.height = 800;
+                        const ctx = canvas.getContext('2d');
+
+                        // Create gradient background
+                        const gradient = ctx.createLinearGradient(0, 0, 800, 800);
+                        gradient.addColorStop(0, '#6366f1');
+                        gradient.addColorStop(1, '#818cf8');
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(0, 0, 800, 800);
+
+                        // Add text
+                        ctx.fillStyle = 'white';
+                        ctx.font = 'bold 48px Outfit';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('HERO IMAGE', 400, 400);
+
+                        const heroBlob = await new Promise(resolve => canvas.toBlob(resolve));
+                        zip.file('hero-image.png', heroBlob);
+                    }
+
+                    // Generate ZIP
+                    const content = await zip.generateAsync({ type: 'blob' });
+
+                    // Download
+                    const url = URL.createObjectURL(content);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `quicklist-${Date.now()}.zip`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+
+                    this.showToast('ZIP downloaded successfully!');
+
+                } catch (error) {
+                    console.error('Error creating ZIP:', error);
+                    alert('Error creating ZIP file');
+                }
+
+                btn.disabled = false;
+                btn.innerHTML = 'Download ZIP';
+            },
+
+            // Save listing
+            async saveListing() {
+                if (!this.state.currentListing) return;
+
+                // Get current field values
+                const listing = {
+                    id: this.state.currentListing.id,
+                    title: document.getElementById('outputTitle').value,
+                    brand: document.getElementById('outputBrand').value,
+                    category: document.getElementById('outputCategory').value,
+                    description: document.getElementById('outputDescription').value,
+                    condition: document.getElementById('outputCondition').value,
+                    rrp: document.getElementById('outputRRP').value,
+                    price: document.getElementById('outputPrice').value,
+                    keywords: this.state.currentListing.keywords,
+                    sources: this.state.currentListing.sources,
+                    platform: this.state.currentListing.platform,
+                    images: this.state.uploadedImages,
+                    savedAt: Date.now()
+                };
+
+                this.state.savedListings.push(listing);
+                this.saveToStorage();
+                this.showToast('Listing saved!');
+            },
+
+            // Load listing
+            loadListing(id) {
+                const listing = this.state.savedListings.find(l => l.id === id);
+                if (!listing) return;
+
+                // Switch to new item view
+                this.navigateToApp('newItem');
+
+                // Load images
+                this.state.uploadedImages = listing.images || [];
+                this.renderImageGrid();
+                this.updateGenerateButton();
+
+                // Load platform
+                document.getElementById('platformSelect').value = listing.platform || 'vinted';
+
+                // Store as current listing
+                this.state.currentListing = listing;
+
+                // Display the listing
+                this.displayListing(listing);
+
+                // Show result state
+                document.getElementById('initialState').classList.add('hidden');
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('resultState').classList.remove('hidden');
+
+                this.showToast('Listing loaded!');
+            },
+
+            // Delete listing
+            deleteListing(id) {
+                this.state.selectedItemForDelete = id;
+                document.getElementById('deleteModal').classList.add('active');
+            },
+
+            // Close delete modal
+            closeDeleteModal() {
+                document.getElementById('deleteModal').classList.remove('active');
+                this.state.selectedItemForDelete = null;
+            },
+
+            // Confirm delete
+            confirmDelete() {
+                if (!this.state.selectedItemForDelete) return;
+
+                this.state.savedListings = this.state.savedListings.filter(
+                    l => l.id !== this.state.selectedItemForDelete
+                );
+
+                this.saveToStorage();
+                this.renderSavedItems();
+                this.closeDeleteModal();
+                this.showToast('Listing deleted');
+            },
+
+            // Render saved items
+            renderSavedItems() {
+                const grid = document.getElementById('savedItemsGrid');
+                const empty = document.getElementById('savedItemsEmpty');
+
+                if (this.state.savedListings.length === 0) {
+                    grid.classList.add('hidden');
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                grid.classList.remove('hidden');
+                empty.classList.add('hidden');
+
+                grid.innerHTML = this.state.savedListings.map(listing => `
+                    <div class="saved-item-card">
+                        <img src="${listing.images[0]?.url || ''}" alt="${listing.title}" class="saved-item-image">
+                        <div class="saved-item-content">
+                            <div class="saved-item-title">${listing.title}</div>
+                            <div class="saved-item-brand">${listing.brand}</div>
+                            <div class="saved-item-actions">
+                                <button class="btn btn-primary btn-small" style="flex: 1;" onclick="app.loadListing(${listing.id})">
+                                    Load
+                                </button>
+                                <button class="btn btn-secondary btn-small" onclick="app.deleteListing(${listing.id})">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            // Navigation
+            navigateTo(view) {
+                // Hide all marketing views
+                document.getElementById('homeView').classList.add('hidden');
+                document.getElementById('photoTipsView').classList.add('hidden');
+                document.getElementById('checklistView').classList.add('hidden');
+                document.getElementById('pricingView').classList.add('hidden');
+
+                // Show selected view
+                document.getElementById(view + 'View').classList.remove('hidden');
+
+                this.state.currentView = view;
+                window.scrollTo(0, 0);
+            },
+
+            navigateToApp(view) {
+                // Hide all app views
+                document.getElementById('newItemView').classList.add('hidden');
+                document.getElementById('savedItemsView').classList.add('hidden');
+                document.getElementById('settingsView').classList.add('hidden');
+
+                // Show selected view
+                document.getElementById(view + 'View').classList.remove('hidden');
+
+                this.state.currentAppView = view;
+
+                // Render saved items if navigating there
+                if (view === 'savedItems') {
+                    this.renderSavedItems();
+                }
+
+                window.scrollTo(0, 0);
+            },
+
+            // Authentication
+            showAuthModal() {
+                document.getElementById('authModal').classList.add('active');
+            },
+
+            closeAuthModal() {
+                document.getElementById('authModal').classList.remove('active');
+            },
+
+            signIn() {
+                // Simulate sign in
+                this.state.isAuthenticated = true;
+                this.closeAuthModal();
+                this.updateUI();
+                this.showToast('Welcome to QuickList AI!');
+            },
+
+            signOut() {
+                this.state.isAuthenticated = false;
+                this.state.uploadedImages = [];
+                this.state.currentListing = null;
+                this.updateUI();
+                this.showToast('Signed out successfully');
+            },
+
+            // Update UI based on auth state
+            updateUI() {
+                const marketingView = document.getElementById('marketingView');
+                const marketingHeader = document.getElementById('marketingHeader');
+                const marketingFooter = document.getElementById('marketingFooter');
+                const appView = document.getElementById('appView');
+                const appHeader = document.getElementById('appHeader');
+
+                if (this.state.isAuthenticated) {
+                    marketingView.classList.add('hidden');
+                    marketingHeader.classList.add('hidden');
+                    marketingFooter.classList.add('hidden');
+                    appView.classList.remove('hidden');
+                    appHeader.classList.remove('hidden');
+                    this.navigateToApp('newItem');
+                } else {
+                    marketingView.classList.remove('hidden');
+                    marketingHeader.classList.remove('hidden');
+                    marketingFooter.classList.remove('hidden');
+                    appView.classList.add('hidden');
+                    appHeader.classList.add('hidden');
+                    this.navigateTo('home');
+                }
+
+                // Update settings UI
+                document.getElementById('settingAutoDownload').checked = this.state.settings.autoDownloadZip;
+            },
+
+            // Storage
+            saveToStorage() {
+                try {
+                    const dataToSave = {
+                        savedListings: this.state.savedListings.map(listing => ({
+                            ...listing,
+                            images: listing.images.map(img => ({
+                                id: img.id,
+                                url: img.url,
+                                status: img.status,
+                                isBlurry: img.isBlurry
+                            }))
+                        })),
+                        settings: this.state.settings
+                    };
+                    localStorage.setItem('quicklist-data', JSON.stringify(dataToSave));
+                } catch (error) {
+                    console.error('Error saving to storage:', error);
+                }
+            },
+
+            loadFromStorage() {
+                try {
+                    const data = localStorage.getItem('quicklist-data');
+                    if (data) {
+                        const parsed = JSON.parse(data);
+                        this.state.savedListings = parsed.savedListings || [];
+                        this.state.settings = parsed.settings || { autoDownloadZip: false };
+                    }
+                } catch (error) {
+                    console.error('Error loading from storage:', error);
+                }
+            },
+
+            // Toast notification
+            showToast(message) {
+                // Create toast element
+                const toast = document.createElement('div');
+                toast.textContent = message;
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 2rem;
+                    right: 2rem;
+                    background: var(--accent-indigo);
+                    color: white;
+                    padding: 1rem 1.5rem;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                    z-index: 3000;
+                    animation: slideIn 0.3s ease;
+                    font-weight: 600;
+                `;
+
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+        };
+
+        // Add animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateY(100px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOut {
+                from {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateY(100px);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+    </script>
+</body>
+</html>
