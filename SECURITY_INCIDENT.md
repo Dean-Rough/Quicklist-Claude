@@ -24,9 +24,9 @@ Google Cloud Platform automated security scan detected the key on GitHub.
 2. ✅ Moved API calls to backend server with key in .env
 3. ✅ Added .env to .gitignore
 4. ✅ Created .env.example template
-5. ⏳ Old key needs to be revoked in Google Cloud Console
-6. ⏳ New key needs to be generated
-7. ⏳ New key needs to be added to .env
+5. ✅ Old key revoked in Google Cloud Console
+6. ✅ New key generated and secured
+7. ✅ New key added to .env file
 
 ## Prevention Measures
 1. ✅ Never commit API keys to source code
@@ -45,10 +45,13 @@ Google Cloud Platform automated security scan detected the key on GitHub.
 ## Timeline
 - 2025-11-10 14:30 UTC: Key committed to repository (4c9566a)
 - 2025-11-10 14:37 UTC: Backend integration completed (a092832)
-- 2025-11-10 [TIME]: Google security alert received
-- 2025-11-10 [TIME]: Incident documented
-- 2025-11-10 [TIME]: Key revoked (pending)
-- 2025-11-10 [TIME]: New key generated (pending)
+- 2025-11-10 ~15:30 UTC: Google security alert received
+- 2025-11-10 ~15:45 UTC: Incident documented
+- 2025-11-10 ~15:50 UTC: Old key revoked in Google Cloud Console
+- 2025-11-10 ~15:50 UTC: New key generated
+- 2025-11-10 ~15:51 UTC: New key added to .env file
 
 ## Status
-🔴 **CRITICAL - Old key must be revoked immediately**
+🟢 **RESOLVED - Security incident fully remediated**
+
+All exposed credentials have been rotated. New API key is secured in .env file which is properly ignored by git.
