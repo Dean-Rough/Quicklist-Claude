@@ -828,6 +828,60 @@
             background: var(--accent-indigo-hover);
         }
 
+        /* Pricing Intelligence */
+        .pricing-intelligence-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .pricing-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .pricing-stat:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .pricing-stat-value {
+            color: var(--accent-indigo);
+            font-weight: 600;
+        }
+
+        .pricing-recommendation {
+            background: var(--accent-indigo-light);
+            border-left: 3px solid var(--accent-indigo);
+            padding: 0.75rem;
+            margin-top: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .pricing-recommendation:hover {
+            background: var(--bg-hover);
+        }
+
+        .pricing-recommendation-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .pricing-recommendation-desc {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
         /* Utilities */
         .hidden {
             display: none !important;
@@ -877,6 +931,25 @@
                 flex-direction: column;
                 align-items: center;
             }
+        }
+
+        /* Flat Icon Styles */
+        .icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+        }
+
+        .icon-camera, .icon-document, .icon-clock, .icon-check, .icon-alert, .icon-refresh {
+            position: relative;
+        }
+
+        .icon-camera svg, .icon-document svg, .icon-clock svg, .icon-check svg, .icon-alert svg, .icon-refresh svg {
+            width: 100%;
+            height: 100%;
+            fill: currentColor;
         }
     </style>
 </head>
@@ -1205,7 +1278,12 @@
                     <div class="card">
                         <h2 class="mb-3">Upload Photos</h2>
                         <div class="image-uploader" id="imageUploader">
-                            <div class="image-uploader-icon">📷</div>
+                            <div class="image-uploader-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V8C1 7.46957 1.21071 6.96086 1.58579 6.58579C1.96086 6.21071 2.46957 6 3 6H7L9 3H15L17 6H21C21.5304 6 22.0391 6.21071 22.4142 6.58579C22.7893 6.96086 23 7.46957 23 8V19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
                             <p><strong>Click to upload or use camera</strong></p>
                             <p style="color: var(--text-muted); font-size: 0.875rem;">Supports multiple images</p>
                         </div>
@@ -1245,7 +1323,15 @@
                 <div>
                     <div class="output-area" id="outputArea">
                         <div id="initialState" class="empty-state">
-                            <div class="empty-state-icon">📝</div>
+                            <div class="empty-state-icon">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
                             <h3>Your generated listing will appear here</h3>
                             <p>Upload an image and click "Generate" to get started</p>
                         </div>
@@ -1254,19 +1340,19 @@
                             <h2 class="mb-3">Generating your listing...</h2>
                             <div id="progressSteps" style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1rem;">
                                 <div class="progress-step" data-step="1" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
-                                    <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                                    <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
                                     <span class="progress-text" style="color: var(--text-primary);">Analyzing images...</span>
                                 </div>
                                 <div class="progress-step" data-step="2" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
-                                    <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                                    <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
                                     <span class="progress-text" style="color: var(--text-primary);">Identifying product...</span>
                                 </div>
                                 <div class="progress-step" data-step="3" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
-                                    <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                                    <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
                                     <span class="progress-text" style="color: var(--text-primary);">Researching prices...</span>
                                 </div>
                                 <div class="progress-step" data-step="4" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
-                                    <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                                    <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
                                     <span class="progress-text" style="color: var(--text-primary);">Generating description...</span>
                                 </div>
                             </div>
@@ -1346,6 +1432,14 @@
                                 <input type="text" class="form-input" id="outputPrice">
                             </div>
 
+                            <!-- Pricing Intelligence Section (only show for eBay) -->
+                            <div class="field-group" id="pricingIntelligenceSection" style="display: none;">
+                                <label class="form-label">Pricing Intelligence</label>
+                                <div class="pricing-intelligence-card" id="pricingIntelligenceCard">
+                                    <!-- Will be populated by JavaScript -->
+                                </div>
+                            </div>
+
                             <div class="field-group">
                                 <div class="field-header">
                                     <label class="form-label">Keywords & Hashtags</label>
@@ -1393,6 +1487,11 @@
 
                             <button class="btn btn-primary mt-3" id="downloadBtn" style="width: 100%;" onclick="app.downloadZip()">
                                 Download ZIP
+                            </button>
+
+                            <!-- Post to eBay Button (only show for eBay platform) -->
+                            <button class="btn btn-primary mt-3" id="postToEbayBtn" style="width: 100%; display: none;" onclick="app.postToEbay()">
+                                Post to eBay
                             </button>
                         </div>
                     </div>
@@ -1706,7 +1805,7 @@
                         ${img.status === 'checking' ?
                             '<div class="image-thumbnail-status">Checking...</div>' :
                             img.isBlurry ?
-                            '<div class="image-thumbnail-status warning">⚠️ Blur Detected</div>' :
+                            '<div class="image-thumbnail-status warning"><span style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Blur Detected</div>' :
                             ''
                         }
                     </div>
@@ -1768,18 +1867,21 @@
                     );
 
                     // Call Gemini API with all images
-                    const listing = await this.callGeminiAPI(base64Images, platform, hint);
+                    const response = await this.callGeminiAPI(base64Images, platform, hint);
+                    const listing = response.listing;
+                    const pricingIntelligence = response.pricingIntelligence;
 
                     // Store the listing
                     this.state.currentListing = {
                         ...listing,
                         images: this.state.uploadedImages,
                         platform: platform,
-                        id: Date.now()
+                        id: Date.now(),
+                        pricingIntelligence: pricingIntelligence
                     };
 
-                    // Display results
-                    this.displayListing(listing);
+                    // Display results with pricing intelligence
+                    this.displayListing(listing, pricingIntelligence);
 
                     // Show result state
                     loadingState.classList.add('hidden');
@@ -1797,14 +1899,14 @@
                     loadingState.classList.add('hidden');
                     loadingState.innerHTML = `
                         <div style="text-align: center; padding: 2rem;">
-                            <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                            <div style="width: 48px; height: 48px; display: inline-flex; margin-bottom: 1rem;"><svg viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v4M12 17h.01" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
                             <h2 style="color: var(--danger); margin-bottom: 1rem;">Generation Failed</h2>
                             <p style="color: var(--text-muted); margin-bottom: 2rem;">
                                 ${error.message || 'An error occurred while generating your listing. Please try again.'}
                             </p>
                             <div style="display: flex; gap: 1rem; justify-content: center;">
                                 <button class="btn btn-primary" onclick="app.generateListing()">
-                                    <span>🔄</span> Retry
+                                    <span style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Retry
                                 </button>
                                 <button class="btn btn-secondary" onclick="app.showInitialState()">
                                     Cancel
@@ -1834,19 +1936,19 @@
                     <h2 class="mb-3">Generating your listing...</h2>
                     <div id="progressSteps" style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1rem;">
                         <div class="progress-step" data-step="1" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
-                            <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                            <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
                             <span class="progress-text" style="color: var(--text-primary);">Analyzing images...</span>
                         </div>
                         <div class="progress-step" data-step="2" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
-                            <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                            <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
                             <span class="progress-text" style="color: var(--text-primary);">Identifying product...</span>
                         </div>
                         <div class="progress-step" data-step="3" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
-                            <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                            <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
                             <span class="progress-text" style="color: var(--text-primary);">Researching prices...</span>
                         </div>
                         <div class="progress-step" data-step="4" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
-                            <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                            <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
                             <span class="progress-text" style="color: var(--text-primary);">Generating description...</span>
                         </div>
                     </div>
@@ -1877,7 +1979,10 @@
                 }
 
                 const data = await response.json();
-                return data.listing;
+                return {
+                    listing: data.listing,
+                    pricingIntelligence: data.pricingIntelligence
+                };
             },
 
             // Convert file to base64
@@ -1896,7 +2001,7 @@
                 steps.forEach((step, index) => {
                     setTimeout(() => {
                         step.style.opacity = '1';
-                        step.querySelector('.progress-icon').textContent = '✅';
+                        step.querySelector('.progress-icon').innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="var(--success)" stroke-width="2" fill="var(--success)"/><path d="M9 12L11 14L15 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
                     }, index * 800); // Each step activates after 800ms
                 });
             },
@@ -1917,7 +2022,7 @@
             },
 
             // Display listing
-            displayListing(listing) {
+            displayListing(listing, pricingIntelligence = null) {
                 document.getElementById('outputTitle').value = listing.title || '';
                 document.getElementById('outputBrand').value = listing.brand || '';
                 document.getElementById('outputCategory').value = listing.category || '';
@@ -1944,6 +2049,81 @@
                 sourcesList.innerHTML = (listing.sources || [])
                     .map(src => `<li><a href="${src.url}" target="_blank">${src.title || src.url}</a></li>`)
                     .join('');
+
+                // Show pricing intelligence if available and platform is eBay
+                const pricingSection = document.getElementById('pricingIntelligenceSection');
+                const pricingCard = document.getElementById('pricingIntelligenceCard');
+                const platform = document.getElementById('platformSelect').value;
+                
+                if (pricingIntelligence && platform === 'ebay') {
+                    pricingSection.style.display = 'block';
+                    
+                    let html = '';
+                    
+                    if (pricingIntelligence.avgSoldPrice) {
+                        html += `
+                            <div class="pricing-stat">
+                                <span class="pricing-stat-label">Average Sold Price</span>
+                                <span class="pricing-stat-value">${pricingIntelligence.avgSoldPrice}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    if (pricingIntelligence.priceRange) {
+                        html += `
+                            <div class="pricing-stat">
+                                <span class="pricing-stat-label">Price Range</span>
+                                <span class="pricing-stat-value">${pricingIntelligence.priceRange.min} - ${pricingIntelligence.priceRange.max}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    html += `
+                        <div class="pricing-stat">
+                            <span class="pricing-stat-label">Sold Listings Found</span>
+                            <span class="pricing-stat-value">${pricingIntelligence.soldCount || 0}</span>
+                        </div>
+                        <div class="pricing-stat">
+                            <span class="pricing-stat-label">Active Competitors</span>
+                            <span class="pricing-stat-value">${pricingIntelligence.competitorCount || 0}</span>
+                        </div>
+                    `;
+                    
+                    if (pricingIntelligence.recommendations && pricingIntelligence.recommendations.length > 0) {
+                        html += '<div style="margin-top: 1rem;"><strong>Recommendations:</strong></div>';
+                        pricingIntelligence.recommendations.forEach((rec) => {
+                            const priceMatch = rec.match(/£(\d+)/);
+                            const price = priceMatch ? priceMatch[1] : null;
+                            
+                            html += `
+                                <div class="pricing-recommendation" onclick="app.useRecommendedPrice('${price}')">
+                                    <div class="pricing-recommendation-title">${rec}</div>
+                                    ${price ? '<div class="pricing-recommendation-desc">Click to use this price</div>' : ''}
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    pricingCard.innerHTML = html;
+                } else {
+                    pricingSection.style.display = 'none';
+                }
+
+                // Show Post to eBay button if platform is eBay
+                const postBtn = document.getElementById('postToEbayBtn');
+                if (platform === 'ebay') {
+                    postBtn.style.display = 'block';
+                } else {
+                    postBtn.style.display = 'none';
+                }
+            },
+
+            // Use recommended price
+            useRecommendedPrice(price) {
+                if (price) {
+                    document.getElementById('outputPrice').value = `£${price}`;
+                    this.showToast('Price updated!');
+                }
             },
 
             // Process batch
@@ -2171,6 +2351,51 @@ ${this.state.currentListing?.keywords?.join(', ')}
 
                 btn.disabled = false;
                 btn.innerHTML = 'Download ZIP';
+            },
+
+            // Post listing to eBay
+            async postToEbay() {
+                if (!this.state.currentListing || !this.state.currentListing.id) {
+                    this.showToast('Please save the listing first');
+                    return;
+                }
+
+                const btn = document.getElementById('postToEbayBtn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Posting to eBay...';
+
+                try {
+                    const response = await fetch(`${this.apiUrl}/listings/${this.state.currentListing.id}/post-to-ebay`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${this.state.token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Posting failed');
+                    }
+
+                    const data = await response.json();
+                    this.showToast('Successfully posted to eBay!');
+                    
+                    // Open eBay listing in new tab
+                    if (data.url) {
+                        window.open(data.url, '_blank');
+                    }
+                    
+                    // Update button
+                    btn.innerHTML = '✓ Posted to eBay';
+                    btn.style.background = 'var(--success)';
+                    btn.disabled = true;
+                    
+                } catch (error) {
+                    console.error('Post to eBay error:', error);
+                    alert(`Failed to post to eBay: ${error.message}`);
+                    btn.disabled = false;
+                    btn.innerHTML = 'Post to eBay';
+                }
             },
 
             // Save listing
