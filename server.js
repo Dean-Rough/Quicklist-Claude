@@ -9,21 +9,26 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Database connection
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
-});
+let pool;
+if (process.env.DATABASE_URL && process.env.DATABASE_URL !== 'postgresql://placeholder:placeholder@placeholder.neon.tech/quicklist?sslmode=require') {
+    pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: false
+        }
+    });
 
-// Test database connection
-pool.query('SELECT NOW()', (err, res) => {
-    if (err) {
-        console.error('Database connection error:', err);
-    } else {
-        console.log('✅ Database connected successfully');
-    }
-});
+    // Test database connection
+    pool.query('SELECT NOW()', (err, res) => {
+        if (err) {
+            console.error('⚠️  Database connection error:', err);
+        } else {
+            console.log('✅ Database connected successfully');
+        }
+    });
+} else {
+    console.log('⚠️  No valid DATABASE_URL found. Running without database. Please update .env with your Neon database URL.');
+}
 
 // Middleware
 app.use(cors());
@@ -64,6 +69,12 @@ app.get('/api/init-db', async (req, res) => {
 // Auth endpoints
 app.post('/api/auth/signup', async (req, res) => {
     try {
+        if (!pool) {
+            return res.status(503).json({
+                error: 'Database not configured. Please update DATABASE_URL in .env with your Neon database connection string.'
+            });
+        }
+
         const { email, password } = req.body;
 
         if (!email || !password) {
@@ -114,6 +125,12 @@ app.post('/api/auth/signup', async (req, res) => {
 
 app.post('/api/auth/signin', async (req, res) => {
     try {
+        if (!pool) {
+            return res.status(503).json({
+                error: 'Database not configured. Please update DATABASE_URL in .env with your Neon database connection string.'
+            });
+        }
+
         const { email, password } = req.body;
 
         if (!email || !password) {
@@ -295,31 +312,153 @@ app.delete('/api/listings/:id', authenticateToken, async (req, res) => {
 // AI generation endpoint
 app.post('/api/generate', authenticateToken, async (req, res) => {
     try {
-        const { image, platform, hint } = req.body;
+        const { images, platform, hint } = req.body;
 
-        if (!image) {
-            return res.status(400).json({ error: 'Image required' });
+        if (!images || !Array.isArray(images) || images.length === 0) {
+            return res.status(400).json({ error: 'At least one image required' });
         }
 
         const apiKey = process.env.GEMINI_API_KEY;
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+        // Using Gemini 2.0 Flash (stable) - Best for OCR/label reading as of Nov 2025
+        // Research shows 2.0 Flash excels at text extraction from product labels
+        // Gemini 2.5 models have worse OCR quality vs 2.0 Flash for straightforward text extraction
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-        const prompt = `You are an expert at creating product listings for online marketplaces. Analyze this image and create a complete, professional listing for ${platform}.
+        // Improved system prompt v3.0 - See SYSTEM-PROMPTS.md for details
+        const userInfoHint = hint ? `\n**User-Provided Information:**\nThe user has specified: "${hint}"\n\nIncorporate this information into your analysis:\n- If mentioning packaging, note it in description\n- If mentioning specific flaws, detail them in condition\n- If mentioning size/fit, include in description\n` : '';
 
-${hint ? `Additional context: ${hint}` : ''}
+        const prompt = `${userInfoHint}You are an expert e-commerce listing specialist for the UK resale market. Your PRIMARY goal is to accurately identify the item by reading ALL visible text and labels in ALL the images provided.
 
-Please provide:
-1. A compelling, keyword-rich title (max 80 characters)
-2. The brand name (if identifiable)
-3. The most appropriate category
-4. A detailed, honest description highlighting features, condition, and any flaws (3-5 sentences)
-5. The condition (New, Like New, Good, Fair, Poor)
-6. Estimated original retail price (RRP) in GBP
-7. A competitive suggested listing price in GBP based on condition
-8. 10 relevant keywords/hashtags
-9. 2-3 URLs of similar items for price verification (use real marketplace URLs)
+**IMPORTANT: You will receive MULTIPLE images of the same item from different angles. Analyze ALL images to get the complete picture.**
 
-Format your response as JSON with this structure:
+**CRITICAL: TEXT AND LABEL READING PRIORITY**
+
+Before making ANY assumptions about the item, you MUST:
+
+1. **READ EVERY LABEL AND TAG FIRST** (This is your PRIMARY source of truth - check ALL images):
+   - Brand logos and wordmarks on the item itself
+   - Size tags (usually inside collar, waistband, or tongue)
+   - Care labels (washing instructions often have brand name)
+   - Product name tags or labels
+   - Model numbers, style codes, SKU numbers
+   - Material composition tags
+   - Country of manufacture labels
+   - Hang tags or original packaging text
+   - Any printed or embroidered text on the item
+   - **ESPECIALLY IMPORTANT: Size/Volume/Capacity markings**
+     * Fragrance bottles: "50ml", "100ml", "1.7 FL OZ", "3.4 FL OZ"
+     * Clothing: "UK 10", "M", "32W 32L", "EU 42"
+     * Shoes: "UK 9", "US 10", "EU 44"
+     * Electronics: "256GB", "128GB", storage capacity
+     * Any other product-specific size indicators
+
+   **ZOOM IN and READ CAREFULLY across ALL images** - Labels contain the exact product identity.
+
+2. **Extract ALL visible text from ALL images:**
+   - Look at close-up shots of labels in different images
+   - Check inside views (collars, waistbands, tongues, insoles)
+   - Read any text on boxes, packaging, or tags
+   - Note style codes like "DM0029-100" or "AJ1234"
+   - Identify size markings "UK 10", "M", "32W 32L", "50ml", "100ml"
+   - Check front, back, side, and detail shots for text
+
+3. **Physical identification (SECONDARY to labels):**
+   - Only use visual design if NO labels are visible
+   - Note distinctive patterns, logos, or design elements
+   - Identify materials by texture and appearance
+   - Observe color combinations and styling
+
+**Item Identification Process - EXACT IDENTIFICATION IS CRUCIAL:**
+
+Step 1: List ALL text you can read from labels and tags
+Step 2: Use this text to identify the EXACT product (not similar, not close - EXACT)
+Step 3: Use Google Search to verify: Search "[brand from label] [style code from label]" to confirm exact product
+Step 4: If labels are unclear or missing, state "Unable to read labels clearly" and provide best visual match with LOW confidence
+Step 5: NEVER guess model numbers or style codes that aren't visible
+
+**Identity Confidence Levels:**
+- HIGH CONFIDENCE: You can read the brand name, model, AND style code from labels + verified via Google Search
+- MEDIUM CONFIDENCE: You can read brand and partial model info from labels
+- LOW CONFIDENCE: No readable labels, identification based on visual similarity only
+
+**CRUCIAL:** Exact item identification is the #1 priority. If you cannot identify the EXACT item from labels:
+1. State this clearly in the description
+2. Provide the closest match you can determine
+3. Mark confidence as LOW
+4. Use generic pricing ranges
+
+Base your entire listing on what you can READ and VERIFY, not what you THINK you see
+
+3. **Provide (based on label reading):**
+   - **title**: Factual, SEO-friendly title (max 80 characters). Format: [Brand] [Product Line] [Key Feature] [Size/Variant]
+     **CRITICAL: ALWAYS include size/volume if visible on labels**
+     Examples:
+     * "Acqua di Parma Colonia Intensa Eau de Cologne 100ml"
+     * "Nike Air Jordan 1 Mid DM0029-100 UK 10"
+     * "Samsung Galaxy S23 256GB Phantom Black"
+
+   - **brand**: EXACT brand name as it appears on the label (not assumed)
+
+   - **category**: Precise category path for ${platform}
+
+   - **description**: Compelling marketing description (3-5 sentences, 100-200 words)
+     **Structure:**
+     1st sentence: Opening hook with brand, product name, and size (from labels)
+     2nd-3rd sentences: Key features, benefits, or scent notes/specifications
+     4th sentence: Condition and any notable details visible in images
+     5th sentence: Call to action or unique selling point
+
+     **IMPORTANT RULES:**
+     - MUST mention size/volume in the first sentence if visible on labels
+     - Start factual (what you can read), then add marketing appeal
+     - Use descriptive, engaging language while staying truthful
+     - Include materials from care labels and model numbers if visible
+     - For fragrances: mention concentration (EDT, EDP, Cologne) and key notes if on packaging
+     - For clothing: mention materials, fit, style details from labels
+     - Describe condition naturally within the flow
+
+     **Examples:**
+     * Fragrance: "Acqua di Parma Colonia Intensa Eau de Cologne in the 100ml size. This sophisticated scent features vibrant Calabrian bergamot and Sicilian lemon top notes, enriched with warm cardamom and ginger. The heart reveals aromatic myrtle and neroli, while the base develops into rich leather and patchouli. The bottle shows minimal usage with clear liquid visible. Perfect for the discerning gentleman who appreciates Italian luxury."
+     * Trainers: "Nike Air Jordan 1 Mid in UK Size 10 (Style: DM0029-100). These iconic basketball-inspired trainers feature the classic Mid silhouette with premium leather uppers. The colorway combines crisp white panels with bold accents. Condition is excellent with minimal creasing to toe box and clean outsoles. A versatile addition to any sneaker collection."
+
+   - **rrp**: Original Recommended Retail Price in GBP. Format: "£XX.XX" or "Unknown"
+     **CRITICAL:** Use Google Search to find the EXACT retail price when the item was new
+     Search queries to try:
+     * "{brand} {product name} {size} RRP UK"
+     * "{brand} {product name} {size} retail price UK"
+     * "{brand} {product name} original price"
+     Include the size in your search to get accurate RRP for the specific variant
+
+   - **price**: Competitive resale price in GBP based on SOLD listings. Format: "£XX"
+     **REQUIRED:** Use Google Search to find recently SOLD listings on ${platform} for this exact item
+     Search query example: "Acqua di Parma Colonia Intensa 100ml sold ${platform} uk"
+     Look for completed/sold listings, not active listings
+     Adjust for condition shown in the images
+
+   - **condition**: Detailed condition assessment. Categories: New with Tags, Like New, Excellent, Very Good, Good, Fair, Poor.
+     **IMPORTANT:** Base this on what you can SEE in ALL the images:
+     - Check for scratches, scuffs, stains, wear patterns
+     - Note packaging condition if visible
+     - Assess liquid level for fragrances (e.g., "90% full", "Appears full")
+     - Mention any visible damage or imperfections
+     - Be honest and specific - buyers need accurate condition info
+
+   - **keywords**: 5-10 relevant search terms (array of strings) - include any style codes or model numbers you read
+
+   - **sources**: 1-2 reference URLs for price verification (array of objects with url and title)
+     These will be automatically populated from your Google Search results
+
+**Pricing Guidelines - USE GOOGLE SEARCH:**
+1. Search for "{brand} {product name} sold ${platform}" to find actual sold prices
+2. Search for "{brand} {product name} RRP" or "retail price" to find original price
+3. Prioritize SOLD listings data over active listings
+4. Adjust for condition (Excellent: 50-70% RRP, Good: 30-50% RRP, Fair: 15-30% RRP)
+5. Be realistic, not optimistic
+6. Use UK-based search results (prices in GBP)
+
+**Output Requirements:**
+Return ONLY valid JSON. No markdown code blocks, no explanatory text.
+
 {
   "title": "",
   "brand": "",
@@ -330,8 +469,44 @@ Format your response as JSON with this structure:
   "price": "",
   "keywords": [],
   "sources": [{"url": "", "title": ""}]
-}`;
+}
 
+**CRITICAL RULES - LABEL ACCURACY:**
+
+⚠️ ABSOLUTE REQUIREMENTS:
+1. READ LABELS FIRST - Check every angle for tags, labels, text before identifying
+2. QUOTE WHAT YOU READ - If you see "Nike" on a label, use "Nike" (not "appears to be Nike")
+3. NO GUESSING MODELS - If you can't read a style code, don't invent one
+4. STATE UNCERTAINTY - If labels are blurry or hidden, say "Unable to confirm exact model from visible labels"
+5. EVIDENCE-BASED ONLY - Every detail in your listing must come from visible evidence
+
+❌ NEVER DO:
+- Make up style codes, model numbers, or SKUs not visible in photos
+- Assume brand based on design alone without confirming with labels
+- Identify specific product lines without reading tags
+- Use generic descriptions when you can't read labels
+
+✅ ALWAYS DO:
+- Explicitly state what text you read from labels in the description
+- Zoom in mentally on label close-ups
+- Prioritize inside tags over external appearance
+- Say "Label not visible" rather than guess
+- Be specific about what you CAN and CANNOT see`;
+
+        console.log(`🤖 Calling Gemini Vision API for ${platform} with ${images.length} image(s)`);
+
+        // Build parts array: prompt text + all images
+        const parts = [
+            { text: prompt },
+            ...images.map(img => ({
+                inline_data: {
+                    mime_type: 'image/jpeg',
+                    data: img.split(',')[1]
+                }
+            }))
+        ];
+
+        // Enable Google Search grounding for real-time price research
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -339,37 +514,79 @@ Format your response as JSON with this structure:
             },
             body: JSON.stringify({
                 contents: [{
-                    parts: [
-                        { text: prompt },
-                        {
-                            inline_data: {
-                                mime_type: 'image/jpeg',
-                                data: image.split(',')[1]
-                            }
-                        }
-                    ]
-                }]
+                    parts: parts
+                }],
+                tools: [{
+                    googleSearch: {}
+                }],
+                generationConfig: {
+                    temperature: 0.4,  // Lower temperature for more factual responses
+                    topP: 0.95,
+                    topK: 40,
+                    maxOutputTokens: 2048
+                }
             })
         });
 
         if (!response.ok) {
-            throw new Error('Gemini API request failed');
+            const errorData = await response.json().catch(() => ({}));
+            console.error('❌ Gemini API error:', response.status, errorData);
+            throw new Error(`Gemini API request failed: ${response.status}`);
         }
 
         const data = await response.json();
+
+        // Check for safety blocks or other issues
+        if (!data.candidates || data.candidates.length === 0) {
+            console.error('❌ No candidates in response:', data);
+            throw new Error('No response from AI model');
+        }
+
         const text = data.candidates[0].content.parts[0].text;
+        console.log('✅ Received response from Gemini, length:', text.length);
+
+        // Extract grounding metadata (Google Search sources)
+        const groundingMetadata = data.candidates[0]?.groundingMetadata;
+        const searchSources = [];
+
+        if (groundingMetadata?.webSearchQueries) {
+            console.log('🔍 Google Search queries used:', groundingMetadata.webSearchQueries);
+        }
+
+        if (groundingMetadata?.groundingChunks) {
+            groundingMetadata.groundingChunks.forEach(chunk => {
+                if (chunk.web?.uri && chunk.web?.title) {
+                    searchSources.push({
+                        url: chunk.web.uri,
+                        title: chunk.web.title
+                    });
+                }
+            });
+            console.log('📚 Found', searchSources.length, 'research sources from Google Search');
+        }
 
         // Extract JSON from response
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             const listing = JSON.parse(jsonMatch[0]);
+
+            // Merge AI-generated sources with grounding sources
+            if (searchSources.length > 0) {
+                listing.sources = [...searchSources, ...(listing.sources || [])];
+            }
+
+            console.log('✅ Successfully generated listing:', listing.title);
             res.json({ listing });
         } else {
-            throw new Error('Failed to parse API response');
+            console.error('❌ No JSON found in response. Raw text:', text.substring(0, 500));
+            throw new Error('Failed to parse API response - no JSON found');
         }
     } catch (error) {
-        console.error('Generate listing error:', error);
-        res.status(500).json({ error: 'Failed to generate listing' });
+        console.error('❌ Generate listing error:', error.message);
+        res.status(500).json({
+            error: 'Failed to generate listing',
+            details: error.message
+        });
     }
 });
 

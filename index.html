@@ -1211,9 +1211,6 @@
                         </div>
                         <input type="file" id="imageInput" accept="image/*" multiple capture="environment" style="display: none;">
                         <div class="image-grid" id="imageGrid"></div>
-                        <button class="btn btn-primary mt-3 hidden" id="processBatchBtn" style="width: 100%;">
-                            Process Batch
-                        </button>
                     </div>
 
                     <div class="card mt-3">
@@ -1228,11 +1225,19 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Item Info (Optional Hint)</label>
-                            <input type="text" class="form-input" id="itemHint" placeholder="e.g., Nike shoes size 10">
+                            <input type="text" class="form-input" id="itemHint" placeholder="e.g., 'Has original box', 'Minor scuff on heel', 'Bought in 2023'">
+                            <small style="color: #666; font-size: 0.875rem; display: block; margin-top: 0.25rem;">
+                                Add context about packaging, flaws, or specific details not visible in images
+                            </small>
                         </div>
-                        <button class="btn btn-primary" id="generateBtn" style="width: 100%;" disabled>
-                            Generate Single Listing
-                        </button>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button class="btn btn-primary" id="generateBtn" style="flex: 1;" disabled>
+                                Generate Single Listing
+                            </button>
+                            <button class="btn btn-secondary hidden" id="processBatchBtn" style="flex: 1;">
+                                Process Batch
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1247,12 +1252,27 @@
 
                         <div id="loadingState" class="hidden">
                             <h2 class="mb-3">Generating your listing...</h2>
+                            <div id="progressSteps" style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1rem;">
+                                <div class="progress-step" data-step="1" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
+                                    <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                                    <span class="progress-text" style="color: var(--text-primary);">Analyzing images...</span>
+                                </div>
+                                <div class="progress-step" data-step="2" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
+                                    <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                                    <span class="progress-text" style="color: var(--text-primary);">Identifying product...</span>
+                                </div>
+                                <div class="progress-step" data-step="3" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
+                                    <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                                    <span class="progress-text" style="color: var(--text-primary);">Researching prices...</span>
+                                </div>
+                                <div class="progress-step" data-step="4" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
+                                    <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                                    <span class="progress-text" style="color: var(--text-primary);">Generating description...</span>
+                                </div>
+                            </div>
                             <div class="skeleton skeleton-text" style="width: 60%;"></div>
                             <div class="skeleton skeleton-text" style="width: 80%;"></div>
                             <div class="skeleton skeleton-text" style="width: 70%;"></div>
-                            <div class="skeleton skeleton-text-large mt-4"></div>
-                            <div class="skeleton skeleton-text" style="width: 50%; margin-top: 2rem;"></div>
-                            <div class="skeleton skeleton-text" style="width: 60%;"></div>
                         </div>
 
                         <div id="resultState" class="hidden">
@@ -1269,7 +1289,10 @@
                                     <label class="form-label">Item Title</label>
                                     <button class="btn btn-secondary btn-small" onclick="app.copyField('title')">Copy</button>
                                 </div>
-                                <input type="text" class="form-input" id="outputTitle">
+                                <input type="text" class="form-input" id="outputTitle" maxlength="80">
+                                <small style="color: #666; font-size: 0.875rem; display: block; margin-top: 0.25rem;">
+                                    <span id="titleCharCount">0</span>/80 characters
+                                </small>
                             </div>
 
                             <div class="field-group">
@@ -1293,7 +1316,10 @@
                                     <label class="form-label">Description</label>
                                     <button class="btn btn-secondary btn-small" onclick="app.copyField('description')">Copy</button>
                                 </div>
-                                <textarea class="form-input" id="outputDescription" rows="6"></textarea>
+                                <textarea class="form-input" id="outputDescription" rows="6" maxlength="1000"></textarea>
+                                <small style="color: #666; font-size: 0.875rem; display: block; margin-top: 0.25rem;">
+                                    <span id="descCharCount">0</span>/1000 characters
+                                </small>
                             </div>
 
                             <div class="field-group">
@@ -1342,24 +1368,24 @@
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
-                                <div class="toggle-group">
-                                    <span>Get Stock Image</span>
+                                <div class="toggle-group" style="opacity: 0.5;" title="Coming soon">
+                                    <span>Get Stock Image <small style="color: var(--text-muted);">(Coming Soon)</small></span>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" id="toggleStock">
+                                        <input type="checkbox" id="toggleStock" disabled>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
-                                <div class="toggle-group">
-                                    <span>Auto-Enhance Photos</span>
+                                <div class="toggle-group" style="opacity: 0.5;" title="Coming soon">
+                                    <span>Auto-Enhance Photos <small style="color: var(--text-muted);">(Coming Soon)</small></span>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" id="toggleEnhance" checked>
+                                        <input type="checkbox" id="toggleEnhance" disabled>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
-                                <div class="toggle-group">
-                                    <span>Fix Blurred Images</span>
+                                <div class="toggle-group" style="opacity: 0.5;" title="Coming soon">
+                                    <span>Fix Blurred Images <small style="color: var(--text-muted);">(Coming Soon)</small></span>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" id="toggleBlur">
+                                        <input type="checkbox" id="toggleBlur" disabled>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
@@ -1480,7 +1506,7 @@
     <script>
         // QuickList AI Application
         const app = {
-            apiUrl: 'http://localhost:3000/api',
+            apiUrl: 'http://localhost:4577/api',
 
             state: {
                 isAuthenticated: false,
@@ -1489,6 +1515,7 @@
                 uploadedImages: [],
                 currentListing: null,
                 savedListings: [],
+                loadingSavedItems: false,
                 selectedItemForDelete: null,
                 selectedConfirmationItem: null,
                 multipleItemsDetected: [],
@@ -1544,6 +1571,9 @@
 
             // Load listings from database
             async loadListingsFromDB() {
+                this.state.loadingSavedItems = true;
+                this.renderSavedItems(); // Show loading state
+
                 try {
                     const response = await fetch(`${this.apiUrl}/listings`, {
                         headers: {
@@ -1568,6 +1598,9 @@
                     }
                 } catch (error) {
                     console.error('Error loading listings:', error);
+                } finally {
+                    this.state.loadingSavedItems = false;
+                    this.renderSavedItems(); // Update with actual data or empty state
                 }
             },
 
@@ -1619,24 +1652,43 @@
             // Process uploaded files
             async processFiles(files) {
                 for (const file of files) {
-                    const imageData = {
-                        id: Date.now() + Math.random(),
-                        file: file,
-                        url: URL.createObjectURL(file),
-                        status: 'checking',
-                        isBlurry: false
-                    };
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                        this.showToast(`${file.name} is not an image file`);
+                        continue;
+                    }
 
-                    this.state.uploadedImages.push(imageData);
-                    this.renderImageGrid();
+                    // Validate file size (max 10MB)
+                    const maxSize = 10 * 1024 * 1024; // 10MB
+                    if (file.size > maxSize) {
+                        this.showToast(`${file.name} is too large. Max 10MB.`);
+                        continue;
+                    }
 
-                    // Check for blur
-                    setTimeout(() => {
-                        const isBlurry = Math.random() < 0.2; // 20% chance of blur
-                        imageData.status = isBlurry ? 'blurry' : 'ready';
-                        imageData.isBlurry = isBlurry;
+                    try {
+                        const imageData = {
+                            id: Date.now() + Math.random(),
+                            file: file,
+                            url: URL.createObjectURL(file),
+                            status: 'checking',
+                            isBlurry: false
+                        };
+
+                        this.state.uploadedImages.push(imageData);
                         this.renderImageGrid();
-                    }, 1000);
+
+                        // Check for blur (instant check for better UX)
+                        setTimeout(() => {
+                            const isBlurry = Math.random() < 0.2; // 20% chance of blur
+                            imageData.status = isBlurry ? 'blurry' : 'ready';
+                            imageData.isBlurry = isBlurry;
+                            this.renderImageGrid();
+                            this.updateGenerateButton();
+                        }, 100); // Reduced from 1000ms to 100ms
+                    } catch (error) {
+                        console.error('Error processing image:', error);
+                        this.showToast(`Failed to process ${file.name}`);
+                    }
                 }
 
                 this.updateGenerateButton();
@@ -1677,11 +1729,15 @@
 
             // Update generate button state
             updateGenerateButton() {
-                const btn = document.getElementById('generateBtn');
+                const generateBtn = document.getElementById('generateBtn');
+                const batchBtn = document.getElementById('processBatchBtn');
                 const hasImages = this.state.uploadedImages.length > 0;
                 const allReady = this.state.uploadedImages.every(img => img.status !== 'checking');
 
-                btn.disabled = !hasImages || !allReady;
+                generateBtn.disabled = !hasImages || !allReady;
+                if (batchBtn) {
+                    batchBtn.disabled = !hasImages || !allReady;
+                }
             },
 
             // Generate listing using Gemini API
@@ -1698,17 +1754,21 @@
                 btn.disabled = true;
                 btn.innerHTML = '<span class="spinner"></span> Generating...';
 
+                // Animate progress steps
+                this.animateProgressSteps();
+
                 try {
-                    // Get first image
-                    const image = this.state.uploadedImages[0];
+                    // Get ALL uploaded images
                     const platform = document.getElementById('platformSelect').value;
                     const hint = document.getElementById('itemHint').value;
 
-                    // Convert image to base64
-                    const base64Image = await this.fileToBase64(image.file);
+                    // Convert all images to base64
+                    const base64Images = await Promise.all(
+                        this.state.uploadedImages.map(img => this.fileToBase64(img.file))
+                    );
 
-                    // Call Gemini API
-                    const listing = await this.callGeminiAPI(base64Image, platform, hint);
+                    // Call Gemini API with all images
+                    const listing = await this.callGeminiAPI(base64Images, platform, hint);
 
                     // Store the listing
                     this.state.currentListing = {
@@ -1732,17 +1792,72 @@
 
                 } catch (error) {
                     console.error('Error generating listing:', error);
-                    alert('Error generating listing. Please try again.');
-                    initialState.classList.remove('hidden');
+
+                    // Show error state with retry option
                     loadingState.classList.add('hidden');
+                    loadingState.innerHTML = `
+                        <div style="text-align: center; padding: 2rem;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                            <h2 style="color: var(--danger); margin-bottom: 1rem;">Generation Failed</h2>
+                            <p style="color: var(--text-muted); margin-bottom: 2rem;">
+                                ${error.message || 'An error occurred while generating your listing. Please try again.'}
+                            </p>
+                            <div style="display: flex; gap: 1rem; justify-content: center;">
+                                <button class="btn btn-primary" onclick="app.generateListing()">
+                                    <span>🔄</span> Retry
+                                </button>
+                                <button class="btn btn-secondary" onclick="app.showInitialState()">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    loadingState.classList.remove('hidden');
                 }
 
                 btn.disabled = false;
                 btn.innerHTML = 'Generate Single Listing';
             },
 
+            // Show initial state (helper for error recovery)
+            showInitialState() {
+                const initialState = document.getElementById('initialState');
+                const loadingState = document.getElementById('loadingState');
+                const resultState = document.getElementById('resultState');
+
+                loadingState.classList.add('hidden');
+                resultState.classList.add('hidden');
+                initialState.classList.remove('hidden');
+
+                // Reset loading state HTML
+                loadingState.innerHTML = `
+                    <h2 class="mb-3">Generating your listing...</h2>
+                    <div id="progressSteps" style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1rem;">
+                        <div class="progress-step" data-step="1" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
+                            <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                            <span class="progress-text" style="color: var(--text-primary);">Analyzing images...</span>
+                        </div>
+                        <div class="progress-step" data-step="2" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
+                            <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                            <span class="progress-text" style="color: var(--text-primary);">Identifying product...</span>
+                        </div>
+                        <div class="progress-step" data-step="3" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
+                            <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                            <span class="progress-text" style="color: var(--text-primary);">Researching prices...</span>
+                        </div>
+                        <div class="progress-step" data-step="4" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
+                            <span class="progress-icon" style="font-size: 1.25rem;">⏳</span>
+                            <span class="progress-text" style="color: var(--text-primary);">Generating description...</span>
+                        </div>
+                    </div>
+                    <div class="skeleton skeleton-text" style="width: 60%;"></div>
+                    <div class="skeleton skeleton-text" style="width: 80%;"></div>
+                    <div class="skeleton skeleton-text" style="width: 70%;"></div>
+                `;
+            },
+
             // Call backend API for generation
-            async callGeminiAPI(base64Image, platform, hint) {
+            async callGeminiAPI(base64Images, platform, hint) {
                 const response = await fetch(`${this.apiUrl}/generate`, {
                     method: 'POST',
                     headers: {
@@ -1750,7 +1865,7 @@
                         'Authorization': `Bearer ${this.state.token}`
                     },
                     body: JSON.stringify({
-                        image: base64Image,
+                        images: base64Images, // Send all images
                         platform,
                         hint
                     })
@@ -1775,6 +1890,32 @@
                 });
             },
 
+            // Animate progress steps
+            animateProgressSteps() {
+                const steps = document.querySelectorAll('.progress-step');
+                steps.forEach((step, index) => {
+                    setTimeout(() => {
+                        step.style.opacity = '1';
+                        step.querySelector('.progress-icon').textContent = '✅';
+                    }, index * 800); // Each step activates after 800ms
+                });
+            },
+
+            // Update character counts
+            updateCharCounts() {
+                const titleInput = document.getElementById('outputTitle');
+                const descInput = document.getElementById('outputDescription');
+                const titleCount = document.getElementById('titleCharCount');
+                const descCount = document.getElementById('descCharCount');
+
+                if (titleInput && titleCount) {
+                    titleCount.textContent = titleInput.value.length;
+                }
+                if (descInput && descCount) {
+                    descCount.textContent = descInput.value.length;
+                }
+            },
+
             // Display listing
             displayListing(listing) {
                 document.getElementById('outputTitle').value = listing.title || '';
@@ -1784,6 +1925,13 @@
                 document.getElementById('outputCondition').value = listing.condition || '';
                 document.getElementById('outputRRP').value = listing.rrp || '';
                 document.getElementById('outputPrice').value = listing.price || '';
+
+                // Update character counts
+                this.updateCharCounts();
+
+                // Add input listeners for live character count updates
+                document.getElementById('outputTitle').addEventListener('input', () => this.updateCharCounts());
+                document.getElementById('outputDescription').addEventListener('input', () => this.updateCharCounts());
 
                 // Keywords
                 const keywordsContainer = document.getElementById('keywordsTags');
@@ -1864,7 +2012,7 @@
             },
 
             // Copy field
-            copyField(fieldName) {
+            async copyField(fieldName) {
                 const fieldMap = {
                     title: 'outputTitle',
                     brand: 'outputBrand',
@@ -1877,14 +2025,20 @@
 
                 const element = document.getElementById(fieldMap[fieldName]);
                 if (element) {
-                    element.select();
-                    document.execCommand('copy');
-                    this.showToast('Copied!');
+                    try {
+                        await navigator.clipboard.writeText(element.value);
+                        this.showToast('Copied!');
+                    } catch (error) {
+                        // Fallback to old method for older browsers
+                        element.select();
+                        document.execCommand('copy');
+                        this.showToast('Copied!');
+                    }
                 }
             },
 
             // Copy all
-            copyAll() {
+            async copyAll() {
                 const title = document.getElementById('outputTitle').value;
                 const brand = document.getElementById('outputBrand').value;
                 const category = document.getElementById('outputCategory').value;
@@ -1905,14 +2059,19 @@ Description:
 ${description}
                 `.trim();
 
-                const textarea = document.createElement('textarea');
-                textarea.value = allText;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-
-                this.showToast('All fields copied!');
+                try {
+                    await navigator.clipboard.writeText(allText);
+                    this.showToast('All fields copied!');
+                } catch (error) {
+                    // Fallback to old method for older browsers
+                    const textarea = document.createElement('textarea');
+                    textarea.value = allText;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    this.showToast('All fields copied!');
+                }
             },
 
             // Regenerate keywords
@@ -2133,6 +2292,14 @@ ${this.state.currentListing?.keywords?.join(', ')}
                 const grid = document.getElementById('savedItemsGrid');
                 const empty = document.getElementById('savedItemsEmpty');
 
+                // Show loading state
+                if (this.state.loadingSavedItems) {
+                    grid.classList.remove('hidden');
+                    empty.classList.add('hidden');
+                    grid.innerHTML = '<div class="skeleton skeleton-text-large"></div>'.repeat(3);
+                    return;
+                }
+
                 if (this.state.savedListings.length === 0) {
                     grid.classList.add('hidden');
                     empty.classList.remove('hidden');
@@ -2205,11 +2372,25 @@ ${this.state.currentListing?.keywords?.join(', ')}
             },
 
             async signIn() {
-                const email = document.getElementById('authEmail').value;
+                const email = document.getElementById('authEmail').value.trim();
                 const password = document.getElementById('authPassword').value;
 
+                // Validate email
                 if (!email || !password) {
                     alert('Please enter email and password');
+                    return;
+                }
+
+                // Validate email format
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    alert('Please enter a valid email address');
+                    return;
+                }
+
+                // Validate password length
+                if (password.length < 6) {
+                    alert('Password must be at least 6 characters');
                     return;
                 }
 
