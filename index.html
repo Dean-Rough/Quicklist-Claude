@@ -7247,7 +7247,7 @@ ${this.state.currentListing?.keywords?.join(', ')}
                     const statusLabel = listing.status === 'sold' ? ' • Sold' : '';
                     return `
                         <div class="swipeable-card" data-listing-id="${listing.id}">
-                            <div class="swipeable-card-actions swipeable-card-action-left">✏️ Edit</div>
+                            <div class="swipeable-card-actions swipeable-card-action-left">🗑️ Delete</div>
                             <div class="swipeable-card-actions swipeable-card-action-right">✓ Sold</div>
                             <div class="swipeable-card-content">
                                 <img src="${primaryImage}" alt="${listing.title || 'Listing'}" class="swipeable-card-image">
@@ -9162,10 +9162,11 @@ ${this.state.currentListing?.keywords?.join(', ')}
                         const diff = currentX - startX;
                         content.style.transition = 'transform 0.3s ease-out';
 
+                        // Swipe right = sold, Swipe left = delete
                         if (diff > 80) {
                             this.handleSwipeAction(card, 'sold');
                         } else if (diff < -80) {
-                            this.handleSwipeAction(card, 'edit');
+                            this.handleSwipeAction(card, 'delete');
                         }
 
                         content.style.transform = 'translateX(0)';
@@ -9176,12 +9177,87 @@ ${this.state.currentListing?.keywords?.join(', ')}
             handleSwipeAction(card, action) {
                 const listingId = card.getAttribute('data-listing-id');
 
-                if (action === 'edit') {
+                if (action === 'delete') {
                     this.vibrateDevice('click');
-                    this.loadListing(listingId);
+                    // Confirm delete
+                    if (confirm('Delete this listing?')) {
+                        this.deleteListing(listingId);
+                    }
                 } else if (action === 'sold') {
                     this.vibrateDevice('success');
-                    this.markListingSold(listingId);
+                    // Show sold price modal
+                    this.showSoldPriceModal(listingId);
+                }
+            },
+
+            // Show modal to enter sold price
+            showSoldPriceModal(listingId) {
+                const listing = this.state.savedListings.find(l => String(l.id) === String(listingId));
+                if (!listing) return;
+
+                const modal = document.getElementById('soldPriceModal');
+                const input = document.getElementById('soldPriceInput');
+                const titleEl = document.getElementById('soldPriceTitle');
+
+                if (titleEl) titleEl.textContent = listing.title || 'Untitled';
+                if (input) input.value = listing.price ? listing.price.replace(/[^0-9.]/g, '') : '';
+
+                modal.dataset.listingId = listingId;
+                modal.classList.remove('hidden');
+
+                // Focus input after modal opens
+                setTimeout(() => input?.focus(), 100);
+            },
+
+            // Close sold price modal
+            closeSoldPriceModal() {
+                const modal = document.getElementById('soldPriceModal');
+                modal.classList.add('hidden');
+                modal.dataset.listingId = '';
+            },
+
+            // Confirm sold and save price
+            async confirmSold() {
+                const modal = document.getElementById('soldPriceModal');
+                const input = document.getElementById('soldPriceInput');
+                const listingId = modal.dataset.listingId;
+                const soldPrice = input.value.trim();
+
+                if (!listingId) return;
+
+                // Format price
+                const formattedPrice = soldPrice ? `£${soldPrice}` : '';
+
+                try {
+                    const response = await fetch(`${this.apiUrl}/listings/${listingId}/mark-sold`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.state.token}`
+                        },
+                        body: JSON.stringify({
+                            soldPrice: formattedPrice
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json().catch(() => ({}));
+                        throw new Error(error.error || 'Failed to mark as sold');
+                    }
+
+                    // Update local state
+                    this.state.savedListings = this.state.savedListings.map(item =>
+                        String(item.id) === String(listingId)
+                            ? { ...item, status: 'sold', soldPrice: formattedPrice }
+                            : item
+                    );
+
+                    this.closeSoldPriceModal();
+                    this.renderSavedItems();
+                    this.showToast('Marked as sold!', 'success');
+                } catch (error) {
+                    console.error('Mark sold error:', error);
+                    this.showToast(error.message || 'Failed to mark as sold', 'error');
                 }
             },
 
@@ -9583,6 +9659,38 @@ ${this.state.currentListing?.keywords?.join(', ')}
                     </svg>
                     Capture
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sold Price Modal -->
+    <div id="soldPriceModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Mark as Sold</h3>
+                <button class="btn-close" onclick="app.closeSoldPriceModal()">×</button>
+            </div>
+
+            <div style="padding: 1rem;">
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                    <strong id="soldPriceTitle"></strong>
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label">Sold Price (optional)</label>
+                    <div class="input-with-icon">
+                        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">£</span>
+                        <input type="number" id="soldPriceInput" class="form-input" placeholder="0.00" step="0.01" style="padding-left: 28px;">
+                    </div>
+                    <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">
+                        Track how much this item sold for
+                    </small>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button class="btn btn-secondary" onclick="app.closeSoldPriceModal()" style="flex: 1;">Cancel</button>
+                    <button class="btn btn-primary" onclick="app.confirmSold()" style="flex: 1;">Mark as Sold</button>
+                </div>
             </div>
         </div>
     </div>
