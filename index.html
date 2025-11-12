@@ -935,6 +935,20 @@
             background: var(--warning);
         }
 
+        /* Warning pulse animation */
+        @keyframes warningPulse {
+            0%, 100% {
+                background: rgba(245, 158, 11, 0.9);
+            }
+            50% {
+                background: rgba(239, 68, 68, 0.9);
+            }
+        }
+
+        .warning-pulse {
+            animation: warningPulse 2s ease-in-out infinite;
+        }
+
         /* Spinner */
         .spinner {
             width: 20px;
@@ -4441,19 +4455,26 @@
                     <div class="image-thumbnail" style="position: relative; cursor: pointer;" data-rotation="${img.rotation || 0}" onclick="app.openImageEditor(${index})">
                         <img src="${img.url}" alt="Uploaded" style="transform: rotate(${img.rotation || 0}deg); pointer-events: none;">
 
-                        <!-- Delete button -->
-                        <button class="image-thumbnail-delete" onclick="event.stopPropagation(); app.deleteImage('${img.id}')" aria-label="Delete image" title="Delete">×</button>
+                        <!-- Delete button with white trash can icon -->
+                        <button class="image-thumbnail-delete" onclick="event.stopPropagation(); app.deleteImage('${img.id}')" aria-label="Delete image" title="Delete" style="background: rgba(0,0,0,0.5); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                            </svg>
+                        </button>
 
-                        <!-- Quality score circle (top left) -->
+                        <!-- Quality score circle (top left, 32px to match warning size) -->
                         ${img.qualityScore !== undefined ? `
-                            <div style="position: absolute; top: 8px; left: 8px; width: 40px; height: 40px; background: ${scoreColor}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.3); pointer-events: none;">
+                            <div style="position: absolute; top: 8px; left: 8px; width: 32px; height: 32px; background: ${scoreColor}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.3); pointer-events: none;">
                                 ${img.qualityScore}
                             </div>
                         ` : ''}
 
-                        <!-- Warning icon (top right) if blurry -->
+                        <!-- Warning icon (bottom right) if blurry with gradient pulse animation -->
                         ${img.isBlurry ? `
-                            <div style="position: absolute; top: 8px; right: 40px; width: 32px; height: 32px; background: rgba(245, 158, 11, 0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); pointer-events: none;">
+                            <div class="warning-pulse" style="position: absolute; bottom: 8px; right: 8px; width: 32px; height: 32px; background: rgba(245, 158, 11, 0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); pointer-events: none;">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
                                     <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke-linecap="round" stroke-linejoin="round"/>
                                     <path d="M12 9v4M12 17h.01" stroke-linecap="round" stroke-linejoin="round"/>
