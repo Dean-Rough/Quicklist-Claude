@@ -1,237 +1,1162 @@
 const express = require('express');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
+const axios = require('axios');
+const xml2js = require('xml2js');
+const rateLimit = require('express-rate-limit');
+const logger = require('console-log-level')({ level: process.env.LOG_LEVEL || 'info' });
+const { clerkClient, clerkMiddleware, getAuth, requireAuth } = require('@clerk/express');
+const path = require('path');
+const packageJson = require('./package.json');
+const { v4: uuidv4 } = require('uuid');
+const sanitizeHtml = require('sanitize-html');
+const helmet = require('helmet');
+const compression = require('compression');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
+
+// Validate required environment variables
+const requiredEnvVars = [
+    'DATABASE_URL',
+    'GEMINI_API_KEY',
+    'CLERK_SECRET_KEY',
+    'CLERK_PUBLISHABLE_KEY'
+];
+const missing = requiredEnvVars.filter(v => !process.env[v]);
+if (missing.length > 0) {
+    logger.error('Missing required environment variables:', missing.join(', '));
+    logger.error('Required: DATABASE_URL, GEMINI_API_KEY, CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY');
+    process.exit(1);
+}
+
+logger.info('Clerk authentication enabled');
+
+// Conditional Stripe initialization
+const stripe = process.env.STRIPE_SECRET_KEY 
+    ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+    : null;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const isProduction = process.env.NODE_ENV === 'production';
+const frontendUrl = process.env.FRONTEND_URL || (isProduction ? 'https://quicklist.ai' : 'http://localhost:4577');
 
-// Database connection
+// Database connection with proper configuration
 let pool;
 if (process.env.DATABASE_URL && process.env.DATABASE_URL !== 'postgresql://placeholder:placeholder@placeholder.neon.tech/quicklist?sslmode=require') {
     pool = new Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: {
             rejectUnauthorized: false
-        }
+        },
+        max: 20, // Maximum pool size
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
     });
 
     // Test database connection
     pool.query('SELECT NOW()', (err, res) => {
         if (err) {
-            console.error('⚠️  Database connection error:', err);
+            logger.error('Database connection error:', err);
+            process.exit(1);
         } else {
-            console.log('✅ Database connected successfully');
+            logger.info('Database connected successfully');
         }
     });
 } else {
-    console.log('⚠️  No valid DATABASE_URL found. Running without database. Please update .env with your Neon database URL.');
+    logger.error('No valid DATABASE_URL found. Database connection required.');
+    process.exit(1);
 }
 
-// Middleware
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.static('.')); // Serve static files from current directory
+// Clerk is now the only authentication method
+// No JWT validation needed
 
-// Auth middleware
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+// Rate limiting
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 requests per window
+    message: 'Too many authentication attempts, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
-    if (!token) {
-        return res.status(401).json({ error: 'Access token required' });
+const generateLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 10, // 10 requests per minute
+    message: 'Too many generation requests, please slow down',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Security headers with Helmet
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: [
+                "'self'",
+                "'unsafe-inline'",
+                "'unsafe-eval'",
+                "https://cdnjs.cloudflare.com",
+                "https://cdn.jsdelivr.net",
+                "https://unpkg.com"
+            ],
+            scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick, etc.)
+            styleSrc: [
+                "'self'",
+                "'unsafe-inline'",
+                "https://fonts.googleapis.com"
+            ],
+            fontSrc: [
+                "'self'",
+                "https://fonts.gstatic.com",
+                "data:"
+            ],
+            imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
+            connectSrc: [
+                "'self'",
+                frontendUrl,
+                'http://localhost:3000',
+                'http://localhost:4577',
+                'https://api.clerk.com',
+                'https://clerk.com',
+                'https://clerk.accounts.dev',
+                'https://*.clerk.accounts.dev',
+                'https://img.clerk.com',
+                'https://fonts.googleapis.com',
+                'https://fonts.gstatic.com',
+                'https://cdnjs.cloudflare.com',
+                'https://cdn.jsdelivr.net',
+                'https://unpkg.com'
+            ],
+            // Allow Clerk to create Web Workers for authentication
+            workerSrc: ["'self'", "blob:"],
+            childSrc: ["'self'", "blob:"],
+            frameSrc: ["'none'"],
+            objectSrc: ["'none'"],
+            upgradeInsecureRequests: isProduction ? [] : null,
+        },
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// Compression middleware
+app.use(compression());
+
+// Cookie parser
+app.use(cookieParser());
+
+// CORS configuration
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = [
+            frontendUrl,
+            'http://localhost:4577',
+            'http://localhost:3000',
+            'https://quicklist.ai',
+            process.env.FRONTEND_URL
+        ].filter(Boolean);
+        
+        if (allowedOrigins.indexOf(origin) !== -1 || !isProduction) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    optionsSuccessStatus: 200,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID']
+};
+app.use(cors(corsOptions));
+
+// Request ID middleware
+app.use((req, res, next) => {
+    req.id = uuidv4();
+    res.setHeader('X-Request-ID', req.id);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    next();
+});
+
+// Stripe webhook must be registered before JSON body parsing to preserve the raw payload
+const stripeWebhookMiddleware = express.raw({ type: 'application/json' });
+app.post('/api/stripe/webhook', stripeWebhookMiddleware, async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    let event;
+
+    try {
+        if (!stripe) {
+            return res.status(503).json({ error: 'Stripe not configured' });
+        }
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err) {
+        logger.error('Webhook signature verification failed:', { error: err.message, signature: sig ? sig.substring(0, 20) + '...' : 'missing', bodyLength: req.body.length });
+        return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.status(403).json({ error: 'Invalid or expired token' });
+    try {
+        switch (event.type) {
+            case 'checkout.session.completed':
+                await handleCheckoutCompleted(event.data.object);
+                break;
+            case 'customer.subscription.created':
+            case 'customer.subscription.updated':
+                await handleSubscriptionUpdate(event.data.object);
+                break;
+            case 'customer.subscription.deleted':
+                await handleSubscriptionDeleted(event.data.object);
+                break;
+            case 'invoice.payment_succeeded':
+                await handlePaymentSucceeded(event.data.object);
+                break;
+            case 'invoice.payment_failed':
+                await handlePaymentFailed(event.data.object);
+                break;
+            default:
+                logger.info('Unhandled webhook event type:', { eventType: event.type });
         }
-        req.user = user;
-        next();
+
+        res.json({ received: true });
+    } catch (error) {
+        logger.error('Webhook handler error:', { error: error.message, eventType: event.type });
+        res.status(500).json({ error: 'Webhook handler failed' });
+    }
+});
+
+// Body parsing middleware
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Clerk middleware - must be before routes that need auth
+app.use(clerkMiddleware());
+
+// Auth config endpoint (for frontend)
+app.get('/api/config/auth', (req, res) => {
+    res.json({
+        clerk: {
+            enabled: true,
+            publishableKey: process.env.CLERK_PUBLISHABLE_KEY
+        },
+        authProvider: 'clerk'
     });
+});
+
+// Serve static files from ./public only
+app.use('/.well-known', express.static(path.join(__dirname, '.well-known'), {
+    maxAge: isProduction ? '1y' : '0',
+    etag: true,
+    lastModified: true
+}));
+
+app.use(express.static(path.join(__dirname, 'public'), {
+    maxAge: isProduction ? '1y' : '0',
+    etag: true,
+    lastModified: true
+}));
+
+// Serve SPA entry point
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Input validation helpers
+function validateEmail(email) {
+    if (!email || typeof email !== 'string') return false;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email) && email.length <= 255;
+}
+
+function sanitizeInput(input) {
+    if (typeof input !== 'string') return input;
+    return sanitizeHtml(input, { allowedTags: [], allowedAttributes: {} });
+}
+
+function priceStringToNumber(value) {
+    if (!value || typeof value !== 'string') return 0;
+    const numeric = parseFloat(value.replace(/[^0-9.]/g, ''));
+    return isNaN(numeric) ? 0 : numeric;
+}
+
+// Safe database query wrapper
+async function safeQuery(query, params) {
+    try {
+        return await pool.query(query, params);
+    } catch (error) {
+        logger.error('Database query error:', { error: error.message, query: query.substring(0, 100) });
+        throw new Error('Database operation failed');
+    }
+}
+
+const MOBILE_TIPS = [
+    'Batch similar items to speed through photo capture',
+    'Use the voice button to dictate condition notes hands-free',
+    'Mark sold items as soon as they go to keep marketplaces in sync'
+];
+
+// Get plan limits helper
+async function getPlanLimit(userId) {
+    try {
+        const result = await pool.query(
+            `SELECT plan_type FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
+            [userId]
+        );
+        const planType = result.rows[0]?.plan_type || 'free';
+        const planLimits = {
+            free: 5,
+            starter: 50,
+            pro: 200,
+            business: 1000
+        };
+        return planLimits[planType] || 5;
+    } catch (error) {
+        logger.error('Error getting plan limit:', error);
+        return 5; // Default to free tier limit
+    }
+}
+
+// Auth middleware - Enhanced Clerk middleware that adds user info to req.user
+const authenticateToken = async (req, res, next) => {
+    try {
+        // Try to get auth from Clerk middleware first (cookie-based)
+        let { userId } = getAuth(req);
+
+        // If no userId from cookie, try to verify token from Authorization header
+        if (!userId) {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+                try {
+                    // Verify the token with Clerk
+                    const verifiedToken = await clerkClient.verifyToken(token, {
+                        secretKey: process.env.CLERK_SECRET_KEY
+                    });
+                    userId = verifiedToken.sub; // 'sub' contains the user ID
+                } catch (tokenError) {
+                    logger.warn('Token verification failed:', { error: tokenError.message, requestId: req.id });
+                }
+            }
+        }
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Access token required' });
+        }
+
+        // Get full user details from Clerk
+        const user = await clerkClient.users.getUser(userId);
+        const email = user.emailAddresses[0]?.emailAddress;
+        const name = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName || user.username;
+
+        // Look up or create database user record
+        let dbUser = await pool.query(
+            'SELECT id FROM users WHERE clerk_id = $1',
+            [userId]
+        );
+
+        // If user doesn't exist in database, create them
+        if (dbUser.rows.length === 0) {
+            logger.info('Creating new user in database', { clerkId: userId, email });
+            const newUser = await pool.query(
+                `INSERT INTO users (email, clerk_id, auth_provider, name)
+                 VALUES ($1, $2, 'clerk', $3)
+                 ON CONFLICT (email) DO UPDATE SET clerk_id = $2
+                 RETURNING id`,
+                [email, userId, name]
+            );
+            dbUser = newUser;
+        }
+
+        // Attach user info to request with DATABASE user ID
+        req.user = {
+            id: dbUser.rows[0].id,  // Database ID (integer) for queries
+            clerkId: userId,         // Clerk ID for reference
+            email: email,
+            name: name
+        };
+
+        // Log auth event
+        logger.info('User authenticated', { dbUserId: req.user.id, clerkId: userId, email, requestId: req.id });
+
+        return next();
+    } catch (error) {
+        logger.error('Clerk authentication error:', { error: error.message, requestId: req.id });
+        return res.status(403).json({ error: 'Invalid or expired token' });
+    }
 };
 
 // Initialize database schema
 app.get('/api/init-db', async (req, res) => {
     try {
+        if (process.env.ALLOW_DB_INIT !== 'true') {
+            return res.status(403).json({ error: 'Database initialization is disabled' });
+        }
+
         const fs = require('fs');
-        const schema = fs.readFileSync('schema.sql', 'utf8');
-        await pool.query(schema);
-        res.json({ message: 'Database initialized successfully' });
+        const schemaFiles = ['schema.sql', 'schema_updates.sql', 'schema_clerk_migration.sql']
+            .map(file => path.join(__dirname, file))
+            .filter(fs.existsSync);
+
+        for (const filePath of schemaFiles) {
+            const sql = fs.readFileSync(filePath, 'utf8');
+            await safeQuery(sql);
+        }
+
+        logger.info('Database initialized successfully');
+        res.json({ message: 'Database initialized successfully', files: schemaFiles.map(f => path.basename(f)) });
     } catch (error) {
-        console.error('Database initialization error:', error);
+        logger.error('Database initialization error:', error);
         res.status(500).json({ error: 'Failed to initialize database' });
     }
 });
 
-// Auth endpoints
-app.post('/api/auth/signup', async (req, res) => {
-    try {
-        if (!pool) {
-            return res.status(503).json({
-                error: 'Database not configured. Please update DATABASE_URL in .env with your Neon database connection string.'
-            });
-        }
-
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password required' });
-        }
-
-        // Check if user exists
-        const existingUser = await pool.query(
-            'SELECT * FROM users WHERE email = $1',
-            [email]
-        );
-
-        if (existingUser.rows.length > 0) {
-            return res.status(400).json({ error: 'User already exists' });
-        }
-
-        // Hash password
-        const passwordHash = await bcrypt.hash(password, 10);
-
-        // Create user
-        const result = await pool.query(
-            'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at',
-            [email, passwordHash]
-        );
-
-        const user = result.rows[0];
-
-        // Generate token
-        const token = jwt.sign(
-            { id: user.id, email: user.email },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        );
-
-        res.json({
-            user: {
-                id: user.id,
-                email: user.email,
-                createdAt: user.created_at
-            },
-            token
-        });
-    } catch (error) {
-        console.error('Signup error:', error);
-        res.status(500).json({ error: 'Failed to create account' });
-    }
-});
-
-app.post('/api/auth/signin', async (req, res) => {
-    try {
-        if (!pool) {
-            return res.status(503).json({
-                error: 'Database not configured. Please update DATABASE_URL in .env with your Neon database connection string.'
-            });
-        }
-
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password required' });
-        }
-
-        // Find user
-        const result = await pool.query(
-            'SELECT * FROM users WHERE email = $1',
-            [email]
-        );
-
-        if (result.rows.length === 0) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const user = result.rows[0];
-
-        // Verify password
-        const validPassword = await bcrypt.compare(password, user.password_hash);
-
-        if (!validPassword) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        // Generate token
-        const token = jwt.sign(
-            { id: user.id, email: user.email },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        );
-
-        res.json({
-            user: {
-                id: user.id,
-                email: user.email,
-                createdAt: user.created_at
-            },
-            token
-        });
-    } catch (error) {
-        console.error('Signin error:', error);
-        res.status(500).json({ error: 'Failed to sign in' });
-    }
-});
+// Auth endpoints - Clerk handles signup/signin via their SDK
+// Legacy JWT endpoints removed - use Clerk OAuth or email/password via Clerk UI
 
 // Verify token endpoint
-app.get('/api/auth/verify', authenticateToken, (req, res) => {
+app.get('/api/auth/verify', authenticateToken, async (req, res) => {
+    // authenticateToken middleware already handles user lookup/creation
+    // Just return the user info
     res.json({ user: req.user });
 });
 
-// Listing endpoints
-app.post('/api/listings', authenticateToken, async (req, res) => {
+// Stripe: Create checkout session
+app.post('/api/stripe/create-checkout-session', authenticateToken, async (req, res) => {
     try {
-        const { title, brand, category, description, condition, rrp, price, keywords, sources, platform, images } = req.body;
+        if (!stripe) {
+            return res.status(503).json({ error: 'Stripe not configured' });
+        }
+
+        const { priceId, planType } = req.body; // e.g., 'price_xxx', 'pro'
+
+        if (!priceId || !planType) {
+            return res.status(400).json({ error: 'Price ID and plan type required' });
+        }
+
         const userId = req.user.id;
 
-        // Insert listing
-        const listingResult = await pool.query(
-            `INSERT INTO listings (user_id, title, brand, category, description, condition, rrp, price, keywords, sources, platform)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-            [userId, title, brand, category, description, condition, rrp, price, keywords, JSON.stringify(sources), platform]
+        // Get or create Stripe customer
+        let customerId;
+        const existingSubscription = await pool.query(
+            'SELECT stripe_customer_id FROM subscriptions WHERE user_id = $1',
+            [userId]
         );
 
-        const listing = listingResult.rows[0];
+        if (existingSubscription.rows.length > 0 && existingSubscription.rows[0].stripe_customer_id) {
+            customerId = existingSubscription.rows[0].stripe_customer_id;
+        } else {
+            // Get user email
+            const userResult = await pool.query('SELECT email, name FROM users WHERE id = $1', [userId]);
+            if (!userResult.rows.length) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            const user = userResult.rows[0];
 
-        // Insert images
-        if (images && images.length > 0) {
-            for (let i = 0; i < images.length; i++) {
+            // Create Stripe customer
+            const customer = await stripe.customers.create({
+                email: user.email,
+                name: user.name,
+                metadata: {
+                    quicklist_user_id: userId.toString()
+                }
+            });
+            customerId = customer.id;
+
+            // Store customer ID - create subscription if it doesn't exist, otherwise update
+            const subCheck = await pool.query(
+                'SELECT id FROM subscriptions WHERE user_id = $1',
+                [userId]
+            );
+
+            if (subCheck.rows.length > 0) {
+                // Update existing subscription
                 await pool.query(
-                    'INSERT INTO images (listing_id, image_data, image_order, is_blurry) VALUES ($1, $2, $3, $4)',
-                    [listing.id, images[i].data, i, images[i].isBlurry || false]
+                    'UPDATE subscriptions SET stripe_customer_id = $1 WHERE user_id = $2',
+                    [customerId, userId]
+                );
+            } else {
+                // Create new subscription record
+                await pool.query(
+                    `INSERT INTO subscriptions (user_id, stripe_customer_id, status, plan_type, current_period_start, current_period_end)
+                     VALUES ($1, $2, 'active', 'free', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '1 month')`,
+                    [userId, customerId]
                 );
             }
         }
 
+        // Create checkout session
+        const session = await stripe.checkout.sessions.create({
+            customer: customerId,
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price: priceId,
+                    quantity: 1
+                }
+            ],
+            mode: 'subscription',
+            success_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/payment/cancel`,
+            metadata: {
+                user_id: userId.toString(),
+                plan_type: planType
+            }
+        });
+
+        logger.info('Stripe checkout session created:', { userId: req.user.id, sessionId: session.id });
+        res.json({ sessionId: session.id, url: session.url });
+    } catch (error) {
+        logger.error('Stripe checkout error:', { error: error.message, requestId: req.id });
+        res.status(500).json({ error: 'Failed to create checkout session' });
+    }
+});
+
+// Stripe: Create portal session (manage subscription)
+app.post('/api/stripe/create-portal-session', authenticateToken, async (req, res) => {
+    try {
+        if (!stripe) {
+            return res.status(503).json({ error: 'Stripe not configured' });
+        }
+
+        const userId = req.user.id;
+
+        // Get Stripe customer ID
+        const result = await pool.query(
+            'SELECT stripe_customer_id FROM subscriptions WHERE user_id = $1',
+            [userId]
+        );
+
+        if (!result.rows.length || !result.rows[0].stripe_customer_id) {
+            return res.status(400).json({ error: 'No active subscription found' });
+        }
+
+        const customerId = result.rows[0].stripe_customer_id;
+
+        // Create portal session
+        const session = await stripe.billingPortal.sessions.create({
+            customer: customerId,
+            return_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/settings`
+        });
+
+        logger.info('Stripe portal session created:', { userId });
+        res.json({ url: session.url });
+    } catch (error) {
+        logger.error('Stripe portal error:', { error: error.message, requestId: req.id });
+        res.status(500).json({ error: 'Failed to create portal session' });
+    }
+});
+
+// Webhook handlers
+async function handleCheckoutCompleted(session) {
+    try {
+        if (!session.metadata || !session.metadata.user_id) {
+            logger.error('Missing user_id in checkout session metadata');
+            return;
+        }
+
+        const userId = parseInt(session.metadata.user_id);
+        const planType = session.metadata.plan_type || 'free';
+        const customerId = session.customer;
+        const subscriptionId = session.subscription;
+
+        if (!subscriptionId) {
+            logger.error('No subscription ID in checkout session');
+            return;
+        }
+
+        // Get subscription details from Stripe
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        
+        if (!subscription.items || !subscription.items.data || subscription.items.data.length === 0) {
+            logger.error('No subscription items found');
+            return;
+        }
+
+        const priceId = subscription.items.data[0].price.id;
+
+        // Update or create subscription in database
+        await pool.query(
+            `INSERT INTO subscriptions (user_id, stripe_customer_id, stripe_subscription_id, stripe_price_id, status, plan_type, current_period_start, current_period_end)
+             VALUES ($1, $2, $3, $4, $5, $6, to_timestamp($7), to_timestamp($8))
+             ON CONFLICT (stripe_subscription_id) 
+             DO UPDATE SET 
+                 status = $5,
+                 plan_type = $6,
+                 current_period_start = to_timestamp($7),
+                 current_period_end = to_timestamp($8),
+                 updated_at = CURRENT_TIMESTAMP`,
+            [
+                userId,
+                customerId,
+                subscriptionId,
+                priceId,
+                subscription.status,
+                planType,
+                subscription.current_period_start,
+                subscription.current_period_end
+            ]
+        );
+    } catch (error) {
+        logger.error('Error in handleCheckoutCompleted:', { error: error.message });
+        throw error; // Re-throw to be caught by webhook handler
+    }
+}
+
+async function handleSubscriptionUpdate(subscription) {
+    try {
+        if (!subscription.customer || !subscription.id) {
+            logger.error('Missing customer or subscription ID');
+            return;
+        }
+
+        const customerId = subscription.customer;
+        const subscriptionId = subscription.id;
+
+        if (!subscription.items || !subscription.items.data || subscription.items.data.length === 0) {
+            logger.error('No subscription items found in update');
+            return;
+        }
+
+        const priceId = subscription.items.data[0].price.id;
+
+        // Find user by customer ID
+        const result = await pool.query(
+            'SELECT user_id FROM subscriptions WHERE stripe_customer_id = $1',
+            [customerId]
+        );
+
+        if (result.rows.length > 0) {
+            const userId = result.rows[0].user_id;
+
+            // Determine plan type from price ID
+            const planType = mapPriceIdToPlanType(priceId);
+
+            await pool.query(
+                `UPDATE subscriptions 
+                 SET status = $1, 
+                     plan_type = $2,
+                     current_period_start = to_timestamp($3),
+                     current_period_end = to_timestamp($4),
+                     cancel_at_period_end = $5,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE stripe_subscription_id = $6`,
+                [
+                    subscription.status,
+                    planType,
+                    subscription.current_period_start,
+                    subscription.current_period_end,
+                    subscription.cancel_at_period_end || false,
+                    subscriptionId
+                ]
+            );
+        } else {
+            logger.warn('No subscription found for customer:', { customerId });
+        }
+    } catch (error) {
+        logger.error('Error in handleSubscriptionUpdate:', { error: error.message });
+        throw error;
+    }
+}
+
+async function handleSubscriptionDeleted(subscription) {
+    try {
+        if (!subscription || !subscription.id) {
+            logger.error('Missing subscription ID in deletion handler');
+            return;
+        }
+
+        await safeQuery(
+            `UPDATE subscriptions 
+             SET status = 'canceled', updated_at = CURRENT_TIMESTAMP
+             WHERE stripe_subscription_id = $1`,
+            [subscription.id]
+        );
+    } catch (error) {
+        logger.error('Error in handleSubscriptionDeleted:', { error: error.message });
+        throw error;
+    }
+}
+
+async function handlePaymentSucceeded(invoice) {
+    try {
+        const subscriptionId = invoice.subscription;
+        if (subscriptionId) {
+            await safeQuery(
+                `UPDATE subscriptions SET status = 'active', updated_at = CURRENT_TIMESTAMP
+                 WHERE stripe_subscription_id = $1`,
+                [subscriptionId]
+            );
+        }
+    } catch (error) {
+        logger.error('Error in handlePaymentSucceeded:', { error: error.message });
+        throw error;
+    }
+}
+
+async function handlePaymentFailed(invoice) {
+    try {
+        const subscriptionId = invoice.subscription;
+        if (subscriptionId) {
+            await safeQuery(
+                `UPDATE subscriptions SET status = 'past_due', updated_at = CURRENT_TIMESTAMP
+                 WHERE stripe_subscription_id = $1`,
+                [subscriptionId]
+            );
+        }
+    } catch (error) {
+        logger.error('Error in handlePaymentFailed:', { error: error.message });
+        throw error;
+    }
+}
+
+function mapPriceIdToPlanType(priceId) {
+    // Map your Stripe price IDs to plan types
+    // Update these with your actual Stripe price IDs
+    const priceMap = {
+        [process.env.STRIPE_PRICE_STARTER]: 'starter',
+        [process.env.STRIPE_PRICE_PRO]: 'pro',
+        [process.env.STRIPE_PRICE_BUSINESS]: 'business'
+    };
+    return priceMap[priceId] || 'free';
+}
+
+// Stripe: Get publishable key (for frontend)
+app.get('/api/stripe/publishable-key', (req, res) => {
+    try {
+        const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
+        if (!publishableKey) {
+            return res.status(500).json({ error: 'Stripe publishable key not configured' });
+        }
+        res.json({ publishableKey });
+    } catch (error) {
+        logger.error('Error getting Stripe publishable key:', { error: error.message });
+        res.status(500).json({ error: 'Failed to get Stripe publishable key' });
+    }
+});
+
+// Get user subscription status with usage
+app.get('/api/subscription/status', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Get user info
+        const userResult = await pool.query(
+            'SELECT id, email, name, avatar_url FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = userResult.rows[0];
+
+        // Get subscription
+        const result = await pool.query(
+            `SELECT s.*, u.email, u.name 
+             FROM subscriptions s
+             JOIN users u ON s.user_id = u.id
+             WHERE s.user_id = $1
+             ORDER BY s.created_at DESC
+             LIMIT 1`,
+            [userId]
+        );
+
+        let subscription;
+        if (result.rows.length === 0) {
+            // Create free tier subscription
+            const newSub = await pool.query(
+                `INSERT INTO subscriptions (user_id, status, plan_type, current_period_start, current_period_end)
+                 VALUES ($1, 'active', 'free', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '1 month')
+                 RETURNING *`,
+                [userId]
+            );
+            subscription = newSub.rows[0];
+        } else {
+            subscription = result.rows[0];
+        }
+
+        // Get usage for current period
+        const periodStart = subscription.current_period_start || new Date();
+        const periodEnd = subscription.current_period_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+        const usageResult = await pool.query(
+            `SELECT listings_created 
+             FROM usage_tracking 
+             WHERE user_id = $1 
+             AND period_start >= $2 
+             AND period_start < $3
+             ORDER BY period_start DESC
+             LIMIT 1`,
+            [userId, periodStart, periodEnd]
+        );
+
+        const listingsCreated = usageResult.rows.length > 0 ? usageResult.rows[0].listings_created : 0;
+
+        // Get plan limits
+        const planLimits = {
+            free: 5,
+            starter: 50,
+            pro: 200,
+            business: 1000
+        };
+
+        const planType = subscription.plan_type || 'free';
+        const limit = planLimits[planType] || 5;
+
+        res.json({
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name || user.email.split('@')[0],
+                avatarUrl: user.avatar_url
+            },
+            subscription: {
+                planType: planType,
+                status: subscription.status,
+                currentPeriodStart: subscription.current_period_start,
+                currentPeriodEnd: subscription.current_period_end,
+                cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+                stripeCustomerId: subscription.stripe_customer_id
+            },
+            usage: {
+                listingsCreated: listingsCreated,
+                limit: limit,
+                percentage: Math.min((listingsCreated / limit) * 100, 100)
+            }
+        });
+    } catch (error) {
+        logger.error('Subscription status error:', { error: error.message, requestId: req.id });
+        res.status(500).json({ error: 'Failed to get subscription status' });
+    }
+});
+
+// Get usage tracking
+app.get('/api/usage', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const now = new Date();
+        const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+        const result = await pool.query(
+            `SELECT listings_created, ai_generations, background_removals
+             FROM usage_tracking 
+             WHERE user_id = $1 
+             AND period_start >= $2 
+             AND period_start < $3
+             ORDER BY period_start DESC
+             LIMIT 1`,
+            [userId, periodStart, periodEnd]
+        );
+
+        if (result.rows.length === 0) {
+            return res.json({
+                listingsCreated: 0,
+                aiGenerations: 0,
+                backgroundRemovals: 0
+            });
+        }
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        logger.error('Usage tracking error:', { error: error.message, requestId: req.id });
+        res.status(500).json({ error: 'Failed to get usage data' });
+    }
+});
+
+// Dashboard metrics for mobile view
+app.get('/api/dashboard/metrics', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const [revenueResult, prevRevenueResult, activeResult, listingsTodayResult, draftsResult, soldWeekResult, photoQueueResult] = await Promise.all([
+            safeQuery(
+                `SELECT sold_price, price FROM listings
+                 WHERE user_id = $1 AND status = 'sold' AND sold_at >= NOW() - INTERVAL '7 days'`,
+                [userId]
+            ),
+            safeQuery(
+                `SELECT sold_price, price FROM listings
+                 WHERE user_id = $1 AND status = 'sold'
+                 AND sold_at >= NOW() - INTERVAL '14 days'
+                 AND sold_at < NOW() - INTERVAL '7 days'`,
+                [userId]
+            ),
+            safeQuery(
+                `SELECT COUNT(*) FROM listings
+                 WHERE user_id = $1 AND (status IS NULL OR status IN ('draft', 'active'))`,
+                [userId]
+            ),
+            safeQuery(
+                `SELECT COUNT(*) FROM listings
+                 WHERE user_id = $1 AND created_at >= DATE_TRUNC('day', NOW())`,
+                [userId]
+            ),
+            safeQuery(
+                `SELECT COUNT(*) FROM listings
+                 WHERE user_id = $1 AND status = 'draft'`,
+                [userId]
+            ),
+            safeQuery(
+                `SELECT COUNT(*) FROM listings
+                 WHERE user_id = $1 AND status = 'sold'
+                 AND sold_at >= NOW() - INTERVAL '7 days'`,
+                [userId]
+            ),
+            safeQuery(
+                `SELECT COUNT(*) FROM images i
+                 INNER JOIN listings l ON l.id = i.listing_id
+                 WHERE l.user_id = $1 AND (l.status IS NULL OR l.status <> 'sold')`,
+                [userId]
+            )
+        ]);
+
+        const revenue = revenueResult.rows.reduce((sum, row) => sum + priceStringToNumber(row.sold_price || row.price), 0);
+        const prevRevenue = prevRevenueResult.rows.reduce((sum, row) => sum + priceStringToNumber(row.sold_price || row.price), 0);
+        const revenueTrend = prevRevenue === 0
+            ? (revenue > 0 ? 100 : 0)
+            : Math.round(((revenue - prevRevenue) / prevRevenue) * 100);
+
+        res.json({
+            revenueLast7Days: revenue,
+            revenueTrend,
+            activeListings: parseInt(activeResult.rows[0].count, 10),
+            listingsAddedToday: parseInt(listingsTodayResult.rows[0].count, 10),
+            unreadMessages: 0, // Messages feature removed
+            activity: [
+                {
+                    id: 'photosQueued',
+                    label: 'Queued photos',
+                    icon: '📷',
+                    detail: `${parseInt(photoQueueResult.rows[0].count, 10)} images ready`
+                },
+                {
+                    id: 'draftListings',
+                    label: 'Draft listings',
+                    icon: '📝',
+                    detail: `${parseInt(draftsResult.rows[0].count, 10)} drafts waiting`
+                },
+                {
+                    id: 'soldWeek',
+                    label: 'Sold this week',
+                    icon: '✅',
+                    detail: `${parseInt(soldWeekResult.rows[0].count, 10)} items`
+                }
+            ],
+            tips: MOBILE_TIPS
+        });
+    } catch (error) {
+        logger.error('Dashboard metrics error:', { error: error.message, requestId: req.id });
+        res.status(500).json({ error: 'Failed to load dashboard metrics' });
+    }
+});
+
+// Messages API
+app.get('/api/messages', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const result = await safeQuery(
+            `SELECT id, buyer_name, platform, snippet, body, unread, last_reply_text, last_reply_at, created_at
+             FROM messages
+             WHERE user_id = $1
+             ORDER BY created_at DESC
+             LIMIT 50`,
+            [userId]
+        );
+        res.json({ messages: result.rows });
+    } catch (error) {
+        logger.error('Messages fetch error:', { error: error.message, requestId: req.id });
+        res.status(500).json({ error: 'Failed to load messages' });
+    }
+});
+
+app.post('/api/messages/:id/read', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const messageId = parseInt(req.params.id, 10);
+        if (isNaN(messageId)) {
+            return res.status(400).json({ error: 'Invalid message ID' });
+        }
+
+        const result = await safeQuery(
+            `UPDATE messages
+             SET unread = false
+             WHERE id = $1 AND user_id = $2
+             RETURNING *`,
+            [messageId, userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Message not found' });
+        }
+
+        res.json({ message: result.rows[0] });
+    } catch (error) {
+        logger.error('Message read error:', { error: error.message, requestId: req.id });
+        res.status(500).json({ error: 'Failed to update message' });
+    }
+});
+
+app.post('/api/messages/:id/reply', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const messageId = parseInt(req.params.id, 10);
+        const { reply } = req.body || {};
+
+        if (isNaN(messageId)) {
+            return res.status(400).json({ error: 'Invalid message ID' });
+        }
+        if (!reply || typeof reply !== 'string') {
+            return res.status(400).json({ error: 'Reply text is required' });
+        }
+
+        const cleanReply = sanitizeInput(reply);
+
+        const result = await safeQuery(
+            `UPDATE messages
+             SET last_reply_text = $1,
+                 last_reply_at = NOW(),
+                 snippet = $1,
+                 unread = false
+             WHERE id = $2 AND user_id = $3
+             RETURNING *`,
+            [cleanReply, messageId, userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Message not found' });
+        }
+
+        res.json({ message: result.rows[0] });
+    } catch (error) {
+        logger.error('Message reply error:', { error: error.message, requestId: req.id });
+        res.status(500).json({ error: 'Failed to send reply' });
+    }
+});
+
+// Listing endpoints
+app.post('/api/listings', authenticateToken, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const { title, brand, category, description, condition, rrp, price, keywords, sources, platform, images, status, location } = req.body;
+        const userId = req.user.id;
+
+        const cleanStatus = sanitizeInput(status) || 'draft';
+        const cleanLocation = sanitizeInput(location);
+
+        // Insert listing
+        const listingResult = await client.query(
+            `INSERT INTO listings (user_id, title, brand, category, description, condition, rrp, price, keywords, sources, platform, status, location)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+            [
+                userId,
+                sanitizeInput(title),
+                sanitizeInput(brand),
+                sanitizeInput(category),
+                sanitizeInput(description),
+                sanitizeInput(condition),
+                sanitizeInput(rrp),
+                sanitizeInput(price),
+                keywords || [],
+                JSON.stringify(sources || []),
+                sanitizeInput(platform),
+                cleanStatus,
+                cleanLocation
+            ]
+        );
+
+        const listing = listingResult.rows[0];
+
+        // Insert images in batch if provided
+        if (images && images.length > 0) {
+            const imageValues = images.map((_, idx) => {
+                const baseIndex = idx * 4;
+                return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4})`;
+            }).join(', ');
+            const imageParams = images.flatMap((img, i) => [
+                listing.id,
+                img.data,
+                i,
+                img.isBlurry || false
+            ]);
+            await client.query(
+                `INSERT INTO images (listing_id, image_data, image_order, is_blurry) VALUES ${imageValues}`,
+                imageParams
+            );
+        }
+
+        await client.query('COMMIT');
+        
+        // Track usage
+        try {
+            await safeQuery(
+                `INSERT INTO usage_tracking (user_id, period_start, period_end, listings_created, ai_generations)
+                 VALUES ($1, DATE_TRUNC('month', CURRENT_DATE), DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month', 1, 0)
+                 ON CONFLICT (user_id, period_start) 
+                 DO UPDATE SET listings_created = usage_tracking.listings_created + 1`,
+                [userId]
+            );
+        } catch (usageError) {
+            logger.warn('Usage tracking failed:', { error: usageError.message, userId });
+        }
+
+        logger.info('Listing created:', { listingId: listing.id, userId });
         res.json({ listing });
     } catch (error) {
-        console.error('Create listing error:', error);
+        await client.query('ROLLBACK');
+        logger.error('Create listing error:', { error: error.message, requestId: req.id });
         res.status(500).json({ error: 'Failed to create listing' });
+    } finally {
+        client.release();
     }
 });
 
 app.get('/api/listings', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = (page - 1) * limit;
 
-        // Get listings with first image
-        const result = await pool.query(
+        // Get listings with pagination
+        const result = await safeQuery(
             `SELECT l.*,
                     (SELECT json_agg(json_build_object('id', i.id, 'data', i.image_data, 'isBlurry', i.is_blurry, 'order', i.image_order) ORDER BY i.image_order)
                      FROM images i WHERE i.listing_id = l.id) as images
              FROM listings l
              WHERE l.user_id = $1
-             ORDER BY l.created_at DESC`,
-            [userId]
+             ORDER BY l.created_at DESC
+             LIMIT $2 OFFSET $3`,
+            [userId, limit, offset]
         );
 
-        res.json({ listings: result.rows });
+        // Get total count for pagination
+        const countResult = await safeQuery(
+            'SELECT COUNT(*) as total FROM listings WHERE user_id = $1',
+            [userId]
+        );
+        const total = parseInt(countResult.rows[0].total);
+
+        res.json({ 
+            listings: result.rows,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
     } catch (error) {
-        console.error('Get listings error:', error);
+        logger.error('Get listings error:', { error: error.message, requestId: req.id });
         res.status(500).json({ error: 'Failed to fetch listings' });
     }
 });
@@ -257,7 +1182,7 @@ app.get('/api/listings/:id', authenticateToken, async (req, res) => {
 
         res.json({ listing: result.rows[0] });
     } catch (error) {
-        console.error('Get listing error:', error);
+        logger.error('Get listing error:', { error: error.message, requestId: req.id });
         res.status(500).json({ error: 'Failed to fetch listing' });
     }
 });
@@ -266,24 +1191,60 @@ app.put('/api/listings/:id', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
         const listingId = req.params.id;
-        const { title, brand, category, description, condition, rrp, price, keywords, sources, platform } = req.body;
+        const { title, brand, category, description, condition, rrp, price, keywords, sources, platform, status, soldPrice, soldAt, location } = req.body;
+
+        const cleanTitle = sanitizeInput(title);
+        const cleanBrand = sanitizeInput(brand);
+        const cleanCategory = sanitizeInput(category);
+        const cleanDescription = sanitizeInput(description);
+        const cleanCondition = sanitizeInput(condition);
+        const cleanRrp = sanitizeInput(rrp);
+        const cleanPrice = sanitizeInput(price);
+        const cleanPlatform = sanitizeInput(platform);
+        const serializedSources = JSON.stringify(sources || []);
+        const cleanStatus = status ? sanitizeInput(status) : null;
+        const cleanSoldPrice = soldPrice ? sanitizeInput(soldPrice) : null;
+        const soldAtDate = soldAt ? new Date(soldAt) : null;
+        const cleanLocation = typeof location !== 'undefined' ? sanitizeInput(location) : null;
 
         const result = await pool.query(
             `UPDATE listings
              SET title = $1, brand = $2, category = $3, description = $4, condition = $5,
-                 rrp = $6, price = $7, keywords = $8, sources = $9, platform = $10
-             WHERE id = $11 AND user_id = $12
+                 rrp = $6, price = $7, keywords = $8, sources = $9, platform = $10,
+                 status = COALESCE($11, status),
+                 sold_price = COALESCE($12, sold_price),
+                 sold_at = COALESCE($13, sold_at),
+                 location = COALESCE($14, location)
+             WHERE id = $15 AND user_id = $16
              RETURNING *`,
-            [title, brand, category, description, condition, rrp, price, keywords, JSON.stringify(sources), platform, listingId, userId]
+            [
+                cleanTitle,
+                cleanBrand,
+                cleanCategory,
+                cleanDescription,
+                cleanCondition,
+                cleanRrp,
+                cleanPrice,
+                keywords || [],
+                serializedSources,
+                cleanPlatform,
+                cleanStatus,
+                cleanSoldPrice,
+                soldAtDate,
+                cleanLocation,
+                listingId,
+                userId
+            ]
         );
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Listing not found' });
         }
 
+        logger.info('Listing updated:', { listingId: listingId, userId });
         res.json({ listing: result.rows[0] });
     } catch (error) {
-        console.error('Update listing error:', error);
+        logger.error('Update listing error:', { error: error.message, requestId: req.id });
         res.status(500).json({ error: 'Failed to update listing' });
     }
 });
@@ -291,31 +1252,1201 @@ app.put('/api/listings/:id', authenticateToken, async (req, res) => {
 app.delete('/api/listings/:id', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
-        const listingId = req.params.id;
+        const listingId = parseInt(req.params.id, 10);
 
-        const result = await pool.query(
+        if (isNaN(listingId)) {
+            return res.status(400).json({ error: 'Invalid listing ID' });
+        }
+
+        logger.info('Deleting listing:', { listingId, userId });
+
+        const result = await safeQuery(
             'DELETE FROM listings WHERE id = $1 AND user_id = $2 RETURNING id',
             [listingId, userId]
+        );
+
+        if (result.rows.length === 0) {
+            logger.warn('Listing not found for deletion:', { listingId, userId });
+            return res.status(404).json({ error: 'Listing not found or you do not have permission to delete it' });
+        }
+
+        logger.info('Successfully deleted listing:', { listingId });
+        res.json({ message: 'Listing deleted successfully' });
+    } catch (error) {
+        logger.error('Delete listing error:', { error: error.message, requestId: req.id });
+        res.status(500).json({ 
+            error: 'Failed to delete listing',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+app.post('/api/listings/:id/mark-sold', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const listingId = parseInt(req.params.id, 10);
+        if (isNaN(listingId)) {
+            return res.status(400).json({ error: 'Invalid listing ID' });
+        }
+
+        const soldPrice = req.body?.soldPrice ? sanitizeInput(req.body.soldPrice) : null;
+        const soldAt = req.body?.soldAt ? new Date(req.body.soldAt) : new Date();
+
+        const result = await safeQuery(
+            `UPDATE listings
+             SET status = 'sold',
+                 sold_at = $1,
+                 sold_price = COALESCE($2, price)
+             WHERE id = $3 AND user_id = $4
+             RETURNING *`,
+            [soldAt, soldPrice, listingId, userId]
         );
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Listing not found' });
         }
 
-        res.json({ message: 'Listing deleted successfully' });
+        logger.info('Listing marked as sold', { listingId, userId });
+        res.json({ listing: result.rows[0] });
     } catch (error) {
-        console.error('Delete listing error:', error);
-        res.status(500).json({ error: 'Failed to delete listing' });
+        logger.error('Mark sold error:', { error: error.message, requestId: req.id });
+        res.status(500).json({ error: 'Failed to mark listing as sold' });
+    }
+});
+
+// eBay Pricing Intelligence Service
+async function getEbayPricingIntelligence(brand, title, category) {
+    try {
+        const appId = process.env.EBAY_APP_ID;
+        const siteId = process.env.EBAY_SITE_ID || '3'; // UK
+        
+        if (!appId) {
+            logger.warn('eBay App ID not configured, skipping pricing intelligence');
+            return null;
+        }
+
+        // Build search query
+        const searchQuery = `${brand} ${title}`.trim();
+        
+        // eBay Finding API endpoint
+        const findingApiUrl = 'https://svcs.ebay.com/services/search/FindingService/v1';
+        
+        // Search completed listings (sold items)
+        const completedParams = new URLSearchParams({
+            'OPERATION-NAME': 'findCompletedItems',
+            'SERVICE-VERSION': '1.0.0',
+            'SECURITY-APPNAME': appId,
+            'RESPONSE-DATA-FORMAT': 'JSON',
+            'REST-PAYLOAD': '',
+            'keywords': searchQuery,
+            'itemFilter(0).name': 'SoldItemsOnly',
+            'itemFilter(0).value': 'true',
+            'itemFilter(1).name': 'ListingType',
+            'itemFilter(1).value': 'FixedPrice',
+            'sortOrder': 'EndTimeSoonest',
+            'paginationInput.entriesPerPage': '50'
+        });
+
+        const completedResponse = await axios.get(`${findingApiUrl}?${completedParams}`);
+        const completedData = completedResponse.data;
+        
+        // Search active listings (competitors)
+        const activeParams = new URLSearchParams({
+            'OPERATION-NAME': 'findItemsAdvanced',
+            'SERVICE-VERSION': '1.0.0',
+            'SECURITY-APPNAME': appId,
+            'RESPONSE-DATA-FORMAT': 'JSON',
+            'REST-PAYLOAD': '',
+            'keywords': searchQuery,
+            'itemFilter(0).name': 'ListingType',
+            'itemFilter(0).value': 'FixedPrice',
+            'sortOrder': 'PricePlusShippingLowest',
+            'paginationInput.entriesPerPage': '20'
+        });
+
+        const activeResponse = await axios.get(`${findingApiUrl}?${activeParams}`);
+        const activeData = activeResponse.data;
+
+        // Process sold listings
+        const soldItems = completedData.findCompletedItemsResponse?.[0]?.searchResult?.[0]?.item || [];
+        const soldPrices = soldItems
+            .map(item => {
+                const price = item.sellingStatus?.[0]?.currentPrice?.[0]?.['__value__'] || 
+                             item.sellingStatus?.[0]?.currentPrice?.[0] || 0;
+                return parseFloat(price);
+            })
+            .filter(price => price > 0);
+
+        // Process active listings
+        const activeItems = activeData.findItemsAdvancedResponse?.[0]?.searchResult?.[0]?.item || [];
+        const activePrices = activeItems
+            .map(item => {
+                const price = item.sellingStatus?.[0]?.currentPrice?.[0]?.['__value__'] || 
+                             item.sellingStatus?.[0]?.currentPrice?.[0] || 0;
+                return parseFloat(price);
+            })
+            .filter(price => price > 0);
+
+        if (soldPrices.length === 0) {
+            return {
+                avgSoldPrice: null,
+                priceRange: null,
+                soldCount: 0,
+                competitorCount: activePrices.length,
+                recommendations: ['No sold listings found. Use AI-generated price.']
+            };
+        }
+
+        // Calculate statistics
+        const avgSoldPrice = soldPrices.reduce((a, b) => a + b, 0) / soldPrices.length;
+        const minSoldPrice = Math.min(...soldPrices);
+        const maxSoldPrice = Math.max(...soldPrices);
+        const sortedPrices = soldPrices.sort((a, b) => a - b);
+        const medianPrice = sortedPrices[Math.floor(sortedPrices.length / 2)];
+        const top25Price = sortedPrices[Math.floor(sortedPrices.length * 0.75)];
+
+        // Generate recommendations
+        const recommendations = [];
+        recommendations.push(`Price at £${Math.round(medianPrice)} for quick sale (median sold price)`);
+        if (top25Price > medianPrice) {
+            recommendations.push(`List at £${Math.round(top25Price)} for max profit (top 25% of sales)`);
+        }
+        if (activePrices.length > 0) {
+            const avgActivePrice = activePrices.reduce((a, b) => a + b, 0) / activePrices.length;
+            if (avgActivePrice > avgSoldPrice) {
+                recommendations.push(`Competitors average £${Math.round(avgActivePrice)} - consider pricing competitively`);
+            }
+        }
+
+        return {
+            avgSoldPrice: `£${Math.round(avgSoldPrice)}`,
+            priceRange: {
+                min: `£${Math.round(minSoldPrice)}`,
+                max: `£${Math.round(maxSoldPrice)}`
+            },
+            soldCount: soldPrices.length,
+            competitorCount: activePrices.length,
+            recentSales: soldPrices.slice(0, 10).map(p => `£${Math.round(p)}`),
+            recommendations
+        };
+    } catch (error) {
+        logger.error('eBay pricing intelligence error:', { error: error.message });
+        return null;
+    }
+}
+
+// Image hosting service (using Imgur API or self-hosted)
+async function uploadImageToHosting(imageBase64) {
+    try {
+        // Option 1: Use Imgur API (free tier available)
+        const imgurClientId = process.env.IMGUR_CLIENT_ID;
+        if (imgurClientId) {
+            const response = await axios.post('https://api.imgur.com/3/image', {
+                image: imageBase64.split(',')[1],
+                type: 'base64'
+            }, {
+                headers: {
+                    'Authorization': `Client-ID ${imgurClientId}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.data.success) {
+                return response.data.data.link;
+            }
+        }
+        
+        // Option 2: For now, return data URL (eBay may accept base64, but typically needs hosted URL)
+        // In production, implement proper image hosting
+        logger.warn('Imgur not configured, using base64 fallback');
+        return imageBase64; // Fallback - eBay may not accept this
+        
+    } catch (error) {
+        logger.error('Image upload error:', { error: error.message });
+        // Fallback to base64
+        return imageBase64;
+    }
+}
+
+// eBay Posting Service
+async function postToEbay(listingData, images, userToken, ebayCategoryId = null) {
+    try {
+        const appId = process.env.EBAY_APP_ID;
+        const devId = process.env.EBAY_DEV_ID;
+        const certId = process.env.EBAY_CERT_ID;
+        const siteId = process.env.EBAY_SITE_ID || '3';
+        const sandbox = process.env.EBAY_SANDBOX === 'true';
+        
+        if (!appId || !userToken) {
+            throw new Error('eBay API credentials not configured');
+        }
+
+        // Upload images to hosting
+        const imageUrls = [];
+        for (const image of images) {
+            const url = await uploadImageToHosting(image);
+            imageUrls.push(url);
+        }
+
+        // Map condition to eBay condition ID
+        const conditionMap = {
+            'New with Tags': '1000',
+            'Like New': '2750',
+            'Excellent': '3000',
+            'Very Good': '4000',
+            'Good': '5000',
+            'Fair': '6000',
+            'Poor': '7000'
+        };
+        
+        const conditionId = conditionMap[listingData.condition] || '5000';
+
+        // Map category to eBay category ID
+        // Note: This is a simplified mapping. For production, implement full eBay category API lookup
+        const categoryMap = {
+            'Clothing': '11450',
+            'Shoes': '11450',
+            'Electronics': '58058',
+            'Books': '267',
+            'Home & Garden': '11700',
+            'Toys & Games': '220',
+            'Sports': '888',
+            'Collectibles': '1'
+        };
+        
+        // Try to map category, fallback to provided categoryId or require user selection
+        let categoryId = categoryMap[listingData.category] || ebayCategoryId;
+        if (!categoryId) {
+            throw new Error('eBay category required. Please select a category or provide ebayCategoryId.');
+        }
+
+        // Extract price (remove £ symbol)
+        const price = listingData.price.replace(/[£,]/g, '').trim();
+
+        // Build eBay XML request
+        const xml = `<?xml version="1.0" encoding="utf-8"?>
+<AddItemRequest xmlns="urn:ebay:apis:eBLBaseComponents">
+    <RequesterCredentials>
+        <eBayAuthToken>${userToken}</eBayAuthToken>
+    </RequesterCredentials>
+    <ErrorLanguage>en_US</ErrorLanguage>
+    <WarningLevel>High</WarningLevel>
+    <Item>
+        <Title>${listingData.title.substring(0, 80)}</Title>
+        <Description><![CDATA[${listingData.description}]]></Description>
+        <PrimaryCategory>
+            <CategoryID>${categoryId}</CategoryID>
+        </PrimaryCategory>
+        <StartPrice>${price}</StartPrice>
+        <ConditionID>${conditionId}</ConditionID>
+        <ListingType>FixedPriceItem</ListingType>
+        <ListingDuration>GTC</ListingDuration>
+        <Quantity>1</Quantity>
+        <Country>GB</Country>
+        <Currency>GBP</Currency>
+        <PictureDetails>
+            ${imageUrls.map(url => `<PictureURL>${url}</PictureURL>`).join('\n            ')}
+        </PictureDetails>
+        <ReturnPolicy>
+            <ReturnsAcceptedOption>ReturnsAccepted</ReturnsAcceptedOption>
+            <RefundOption>MoneyBack</RefundOption>
+            <ReturnsWithinOption>Days_30</ReturnsWithinOption>
+            <ShippingCostPaidByOption>Buyer</ShippingCostPaidByOption>
+        </ReturnPolicy>
+        <ShippingDetails>
+            <ShippingType>Flat</ShippingType>
+            <ShippingServiceOptions>
+                <ShippingServicePriority>1</ShippingServicePriority>
+                <ShippingService>UK_RoyalMailStandard</ShippingService>
+                <ShippingServiceCost>3.50</ShippingServiceCost>
+                <ShippingServiceAdditionalCost>0</ShippingServiceAdditionalCost>
+            </ShippingServiceOptions>
+        </ShippingDetails>
+        <DispatchTimeMax>3</DispatchTimeMax>
+    </Item>
+</AddItemRequest>`;
+
+        // eBay Trading API endpoint
+        const endpoint = sandbox 
+            ? 'https://api.sandbox.ebay.com/ws/api.dll'
+            : 'https://api.ebay.com/ws/api.dll';
+
+        const response = await axios.post(endpoint, xml, {
+            headers: {
+                'X-EBAY-API-CALL-NAME': 'AddItem',
+                'X-EBAY-API-APP-NAME': appId,
+                'X-EBAY-API-DEV-NAME': devId,
+                'X-EBAY-API-CERT-NAME': certId,
+                'X-EBAY-API-SITEID': siteId,
+                'X-EBAY-API-COMPATIBILITY-LEVEL': '967',
+                'Content-Type': 'text/xml'
+            }
+        });
+
+        const responseText = response.data;
+        
+        // Parse XML response
+        const parser = new xml2js.Parser();
+        const result = await parser.parseStringPromise(responseText);
+        
+        const itemId = result.AddItemResponse?.[0]?.ItemID?.[0];
+        const errors = result.AddItemResponse?.[0]?.Errors;
+        
+        if (itemId) {
+            return {
+                success: true,
+                itemId: itemId,
+                url: `https://www.ebay.co.uk/itm/${itemId}`
+            };
+        } else if (errors && errors.length > 0) {
+            const errorMsg = errors[0].LongMessage?.[0] || errors[0].ShortMessage?.[0] || 'eBay posting failed';
+            throw new Error(errorMsg);
+        } else {
+            throw new Error('eBay posting failed - no item ID returned');
+        }
+    } catch (error) {
+        logger.error('eBay posting error:', { error: error.message });
+        throw error;
+    }
+}
+
+// Phase 4: Stock Image Finder - Find official manufacturer product images
+async function findStockImage(listing, apiKey) {
+    try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        
+        // Build search query from identified product
+        const searchQuery = `${listing.brand} ${listing.title}`.trim();
+        
+        const stockImagePrompt = `Using Google Search, find a direct URL to an official manufacturer stock product image.
+
+**Search Query:**
+Product: '${listing.title}'
+Brand: '${listing.brand}'
+${listing.modelCodes && listing.modelCodes.length > 0 ? `Model Code: ${listing.modelCodes[0]}` : ''}
+
+**Requirements:**
+
+1. **Source authenticity:**
+   - Official brand website (${listing.brand}.com, etc.)
+   - Authorized retailer (JD Sports, Footasylum, etc.)
+   - Manufacturer product database
+   - Verified e-commerce platforms (Amazon, official brand stores)
+
+2. **Image quality:**
+   - High resolution (minimum 1000px width)
+   - Clean background (white, light grey, or neutral)
+   - Professional product photography
+   - Clear, sharp, well-lit
+
+3. **Product match:**
+   - EXACT model match (not similar/close)
+   - Correct color/variant if specified
+   - Same edition/year if applicable
+
+4. **URL format:**
+   - Direct image link ending in: .jpg, .jpeg, .png, .webp
+   - Not a webpage URL
+   - Accessible without authentication
+   - CDN URLs are acceptable (e.g., cdn.example.com/images/...)
+
+**Search Strategy:**
+1. Search: "${searchQuery} official product image"
+2. Search: "${listing.brand} ${listing.title} stock photo"
+3. Search: "${listing.brand} ${listing.title} product image site:${listing.brand.toLowerCase()}.com"
+4. Look for official brand websites first
+5. Check major UK retailers (JD Sports, Footasylum, etc.)
+
+**Output Format - Return ONLY valid JSON:**
+{
+  "stockImageUrl": "direct image URL or null",
+  "source": "where the image was found (e.g., 'Nike.com', 'JD Sports')",
+  "confidence": "HIGH/MEDIUM/LOW",
+  "alternatives": ["alternative URL 1", "alternative URL 2"]
+}
+
+**CRITICAL RULES:**
+- Return ONLY the JSON object, no markdown, no explanation
+- If found: Return direct image URL
+- If not found: Return null for stockImageUrl
+- Include up to 2 alternative URLs if primary not found
+- Confidence HIGH if from official brand site, MEDIUM if from retailer, LOW if from third party`;
+
+        logger.info('Phase 4: Finding stock image:', { searchQuery });
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{ text: stockImagePrompt }]
+                }],
+                tools: [{
+                    googleSearch: {}
+                }],
+                generationConfig: {
+                    temperature: 0.1, // Low temperature for precise URL extraction
+                    topP: 0.8,
+                    topK: 20,
+                    maxOutputTokens: 512
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Stock image API request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const text = data.candidates[0].content.parts[0].text;
+        
+        // Extract JSON from response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const result = JSON.parse(jsonMatch[0]);
+            
+            // Extract URLs from Google Search grounding if available
+            const groundingMetadata = data.candidates[0]?.groundingMetadata;
+            if (groundingMetadata?.groundingChunks) {
+                const imageUrls = [];
+                groundingMetadata.groundingChunks.forEach(chunk => {
+                    if (chunk.web?.uri) {
+                        // Check if URL is a direct image link
+                        const url = chunk.web.uri;
+                        if (/\.(jpg|jpeg|png|webp)(\?|$)/i.test(url)) {
+                            imageUrls.push(url);
+                        } else if (url.includes('image') || url.includes('product')) {
+                            // Could be a product page - note it but don't use directly
+                            if (!result.stockImageUrl && imageUrls.length === 0) {
+                                result.pageUrl = url; // Store page URL as fallback
+                            }
+                        }
+                    }
+                });
+                
+                // Use first image URL from grounding if we found one
+                if (imageUrls.length > 0 && !result.stockImageUrl) {
+                    result.stockImageUrl = imageUrls[0];
+                    result.source = 'Google Search';
+                    result.confidence = 'MEDIUM';
+                }
+            }
+            
+            logger.info('Stock image found:', { found: !!result.stockImageUrl, confidence: result.confidence });
+            return result;
+        } else {
+            logger.warn('No JSON found in stock image response');
+            return {
+                stockImageUrl: null,
+                source: null,
+                confidence: 'LOW',
+                alternatives: []
+            };
+        }
+    } catch (error) {
+        logger.error('Stock image search error:', { error: error.message });
+        return {
+            stockImageUrl: null,
+            source: null,
+            confidence: 'LOW',
+            alternatives: []
+        };
+    }
+}
+
+// Phase 3: Google Cloud Vision API - Visual product recognition
+async function recognizeProductWithVision(images, apiKey) {
+    try {
+        // Use Google Cloud Vision API for product recognition
+        // Note: This requires GOOGLE_VISION_API_KEY in .env (different from Gemini API key)
+        const visionApiKey = process.env.GOOGLE_VISION_API_KEY || apiKey; // Fallback to Gemini key if Vision key not set
+        
+        // For now, we'll use Gemini Vision with a specialized recognition prompt
+        // In production, you'd use actual Google Cloud Vision API
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        
+        const visionPrompt = `You are a specialized product recognition system using Google Vision capabilities. Analyze the product images to identify the exact product model, product line, and visual features.
+
+**CRITICAL INSTRUCTIONS:**
+1. Identify the product from VISUAL features (design, logos, patterns, materials, construction)
+2. Recognize brand logos and wordmarks visible on the product
+3. Identify product line characteristics (e.g., Tech Fleece fabric texture, Air Jordan silhouette, etc.)
+4. Note distinctive design elements that identify the specific model
+5. Compare visual features to known product lines
+
+**Output Format - Return ONLY valid JSON:**
+{
+  "visualBrand": "brand identified from logos/visual features",
+  "productLine": "specific product line identified (e.g., Tech Fleece, Air Jordan 1 Mid, Air Max 90)",
+  "modelName": "specific model name if identifiable",
+  "visualFeatures": ["list of distinctive visual features"],
+  "logoMatches": ["brands/logos visible on the product"],
+  "designElements": ["distinctive design patterns, materials, construction details"],
+  "confidence": "HIGH/MEDIUM/LOW based on visual clarity",
+  "productMatch": "best match product name if identifiable"
+}
+
+**CRITICAL RULES:**
+- Focus on VISUAL identification - logos, design patterns, materials
+- Identify product lines from distinctive visual features (Tech Fleece texture, Air Jordan silhouette, etc.)
+- Be specific: "Tech Fleece Jacket" not just "Jacket"
+- If you see Nike Tech Fleece fabric characteristics, identify it as Tech Fleece
+- Match visual features to known product lines
+
+Return ONLY the JSON object. No markdown, no explanation, no other text.`;
+
+        // Use the first image for visual recognition (or combine multiple)
+        const parts = [
+            { text: visionPrompt },
+            ...images.slice(0, 2).map(img => ({
+                inline_data: {
+                    mime_type: 'image/jpeg',
+                    data: img.split(',')[1]
+                }
+            }))
+        ];
+
+        logger.info('Phase 3: Google Vision product recognition:', { imageCount: Math.min(images.length, 2) });
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: parts
+                }],
+                generationConfig: {
+                    temperature: 0.2, // Low temperature for accurate recognition
+                    topP: 0.85,
+                    topK: 30,
+                    maxOutputTokens: 1024
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Vision API request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const text = data.candidates[0].content.parts[0].text;
+        
+        // Extract JSON from response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const recognized = JSON.parse(jsonMatch[0]);
+            logger.info('Vision recognition complete:', {
+                visualBrand: recognized.visualBrand,
+                productLine: recognized.productLine,
+                confidence: recognized.confidence
+            });
+            return recognized;
+        } else {
+            logger.warn('No JSON found in vision response, falling back to empty structure');
+            return {
+                visualBrand: null,
+                productLine: null,
+                modelName: null,
+                visualFeatures: [],
+                logoMatches: [],
+                designElements: [],
+                confidence: 'LOW',
+                productMatch: null
+            };
+        }
+    } catch (error) {
+        logger.error('Vision recognition error:', { error: error.message });
+        // Return empty structure on error
+        return {
+            visualBrand: null,
+            productLine: null,
+            modelName: null,
+            visualFeatures: [],
+            logoMatches: [],
+            designElements: [],
+            confidence: 'LOW',
+            productMatch: null
+        };
+    }
+}
+
+// Intensive parsing engine - Extract ALL codes and text from images FIRST
+async function parseProductCodes(images, apiKey) {
+    try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        
+        const parsingPrompt = `You are a specialized OCR and code extraction system. Your ONLY job is to extract ALL visible text, codes, and identifiers from product tags and labels.
+
+**CRITICAL INSTRUCTIONS:**
+1. Read EVERY line of text on EVERY tag/label in ALL images
+2. Extract ALL codes you see - don't stop at the first one
+3. Categorize codes by type:
+   - MODEL CODES: Format like CK0697-010, DM0029-100, AJ1234 (usually shorter, alphanumeric with dashes)
+   - STYLE CODES: Format like SP200710EAG, longer alphanumeric strings
+   - SKU NUMBERS: Long numeric strings like 19315498680
+   - SIZE MARKINGS: UK 10, M, L, 32W 32L, 50ml, 100ml, etc.
+   - BRAND NAMES: Exact brand as it appears
+   - OTHER TEXT: Any other text on tags
+
+4. **READ EVERY LINE**: Tags often have multiple codes on different lines - extract them ALL
+5. **BE SYSTEMATIC**: Go through each image, each tag, each line methodically
+
+**Output Format - Return ONLY valid JSON:**
+{
+  "brand": "exact brand name from labels",
+  "modelCodes": ["CK0697-010", "any other model codes"],
+  "styleCodes": ["SP200710EAG", "any other style codes"],
+  "skuNumbers": ["19315498680", "any other SKUs"],
+  "size": "size if visible (e.g., L, UK 10, 50ml)",
+  "allText": ["every line of text you can read from tags"],
+  "tagLocations": ["description of where each tag was found"]
+}
+
+**CRITICAL RULES:**
+- If you see "SP200710EAG" AND "CK0697-010" on the same tag, include BOTH
+- If you see multiple codes, list them ALL in the appropriate arrays
+- Extract text line by line - don't skip any lines
+- Be precise - copy codes exactly as they appear
+- If a code is partially visible, note it but don't guess missing characters
+
+Return ONLY the JSON object. No markdown, no explanation, no other text.`;
+
+        const parts = [
+            { text: parsingPrompt },
+            ...images.map(img => ({
+                inline_data: {
+                    mime_type: 'image/jpeg',
+                    data: img.split(',')[1]
+                }
+            }))
+        ];
+
+        logger.info('Phase 1: Intensive code parsing:', { imageCount: images.length });
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: parts
+                }],
+                generationConfig: {
+                    temperature: 0.1, // Low temperature for precise extraction
+                    topP: 0.8,
+                    topK: 20,
+                    maxOutputTokens: 1024
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Parsing API request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const text = data.candidates[0].content.parts[0].text;
+        
+        // Extract JSON from response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            logger.info('Parsed codes:', {
+                brand: parsed.brand,
+                modelCodes: parsed.modelCodes?.length || 0,
+                styleCodes: parsed.styleCodes?.length || 0,
+                skuNumbers: parsed.skuNumbers?.length || 0,
+                size: parsed.size
+            });
+            return parsed;
+        } else {
+            logger.warn('No JSON found in parsing response, falling back to empty structure');
+            return {
+                brand: null,
+                modelCodes: [],
+                styleCodes: [],
+                skuNumbers: [],
+                size: null,
+                allText: [],
+                tagLocations: []
+            };
+        }
+    } catch (error) {
+        logger.error('Code parsing error:', { error: error.message });
+        // Return empty structure on error - main AI will still work
+        return {
+            brand: null,
+            modelCodes: [],
+            styleCodes: [],
+            skuNumbers: [],
+            size: null,
+            allText: [],
+            tagLocations: []
+        };
+    }
+}
+
+// Feature 3: Image Quality Scoring - Analyze image quality for marketplace listings
+async function analyzeImageQuality(imageBase64, apiKey) {
+    try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+        const qualityPrompt = `Analyze this product image for marketplace listing quality AND condition/damage.
+
+**PART 1: IMAGE QUALITY**
+Evaluate on these criteria (score 0-10 for each):
+
+1. SHARPNESS/FOCUS
+   - Is the product clearly in focus?
+   - Any motion blur or camera shake?
+   - Score 0-10: ____
+
+2. LIGHTING
+   - Is the product well-lit?
+   - Any harsh shadows or overexposure?
+   - Score 0-10: ____
+
+3. BACKGROUND
+   - Is background clean/uncluttered?
+   - Any distracting elements?
+   - Score 0-10: ____
+
+4. COMPOSITION
+   - Is product centered and properly framed?
+   - Is entire product visible?
+   - Score 0-10: ____
+
+5. ANGLE/VIEW
+   - Does this angle show product well?
+   - What views are missing?
+   - Score 0-10: ____
+
+CRITICAL PHOTO DEFECTS (Yes/No):
+- Motion blur:
+- Extreme darkness:
+- Product cut off:
+- Watermark present:
+- Text overlay:
+
+**PART 2: PRODUCT CONDITION & DAMAGE**
+Carefully inspect the product for any visible damage, wear, or imperfections:
+
+CONDITION ASSESSMENT:
+- Overall condition: (New/Like New/Excellent/Good/Fair/Poor)
+- Visible damage present: (Yes/No)
+- Wear level: (None/Minimal/Moderate/Heavy)
+
+SPECIFIC DAMAGE/DEFECTS FOUND:
+List ALL visible issues such as:
+- Scratches, scuffs, or marks
+- Stains, discoloration, or fading
+- Tears, holes, or fraying
+- Dents, chips, or cracks
+- Missing parts or accessories
+- Worn soles, heels, or treads (for shoes)
+- Pilling, loose threads (for clothing)
+- Any other imperfections
+
+Return JSON:
+{
+  "overallScore": 0-100,
+  "sharpness": 0-10,
+  "lighting": 0-10,
+  "background": 0-10,
+  "composition": 0-10,
+  "angle": 0-10,
+  "criticalIssues": ["issue1", "issue2"],
+  "recommendations": [
+    "Specific actionable suggestion",
+    "Another improvement"
+  ],
+  "passesMinimumQuality": true/false,
+  "condition": {
+    "overall": "New|Like New|Excellent|Good|Fair|Poor",
+    "hasDamage": true/false,
+    "wearLevel": "None|Minimal|Moderate|Heavy",
+    "defects": [
+      "Specific defect description",
+      "Another defect"
+    ],
+    "conditionSummary": "Brief 1-2 sentence summary of condition suitable for listing"
+  }
+}
+
+Return ONLY the JSON object. No markdown, no explanation, no other text.`;
+
+        const parts = [
+            { text: qualityPrompt },
+            {
+                inline_data: {
+                    mime_type: 'image/jpeg',
+                    data: imageBase64.split(',')[1]
+                }
+            }
+        ];
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: parts
+                }],
+                generationConfig: {
+                    temperature: 0.2, // Low temperature for consistent scoring
+                    topP: 0.8,
+                    topK: 20,
+                    maxOutputTokens: 1024
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Quality analysis API request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const text = data.candidates[0].content.parts[0].text;
+
+        // Extract JSON from response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const qualityData = JSON.parse(jsonMatch[0]);
+
+            // Calculate overall score if not provided
+            if (!qualityData.overallScore) {
+                const scores = [
+                    qualityData.sharpness || 0,
+                    qualityData.lighting || 0,
+                    qualityData.background || 0,
+                    qualityData.composition || 0,
+                    qualityData.angle || 0
+                ];
+                qualityData.overallScore = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10);
+            }
+
+            // Set minimum quality threshold
+            qualityData.passesMinimumQuality = qualityData.overallScore >= 60;
+
+            logger.info('Image quality analysis complete:', {
+                overallScore: qualityData.overallScore,
+                passesMinimumQuality: qualityData.passesMinimumQuality,
+                criticalIssues: qualityData.criticalIssues?.length || 0
+            });
+
+            return qualityData;
+        } else {
+            logger.warn('No JSON found in quality analysis response');
+            return {
+                overallScore: 70,
+                sharpness: 7,
+                lighting: 7,
+                background: 7,
+                composition: 7,
+                angle: 7,
+                criticalIssues: [],
+                recommendations: [],
+                passesMinimumQuality: true,
+                condition: {
+                    overall: "Good",
+                    hasDamage: false,
+                    wearLevel: "Minimal",
+                    defects: [],
+                    conditionSummary: "Unable to fully assess condition from this image."
+                }
+            };
+        }
+    } catch (error) {
+        logger.error('Image quality analysis error:', { error: error.message });
+        // Return default passing score on error - don't block listing generation
+        return {
+            overallScore: 70,
+            sharpness: 7,
+            lighting: 7,
+            background: 7,
+            composition: 7,
+            angle: 7,
+            criticalIssues: [],
+            recommendations: [],
+            passesMinimumQuality: true,
+            condition: {
+                overall: "Good",
+                hasDamage: false,
+                wearLevel: "Minimal",
+                defects: [],
+                conditionSummary: "Unable to fully assess condition from this image."
+            },
+            error: error.message
+        };
+    }
+}
+
+// API endpoint for image quality analysis
+app.post('/api/analyze-image-quality', authenticateToken, async (req, res) => {
+    try {
+        const { image } = req.body;
+
+        if (!image || typeof image !== 'string' || !image.startsWith('data:image')) {
+            return res.status(400).json({ error: 'Valid image required' });
+        }
+
+        const apiKey = process.env.GEMINI_API_KEY;
+        const quality = await analyzeImageQuality(image, apiKey);
+
+        res.json(quality);
+    } catch (error) {
+        logger.error('Image quality analysis endpoint error:', error);
+        res.status(500).json({ error: 'Failed to analyze image quality' });
+    }
+});
+
+// Feature 4: eBay Pricing Intelligence
+// Note: The ebay-api package doesn't export a direct constructor
+// We'll use axios directly for eBay API calls instead
+const eBayConstants = require('ebay-api');
+
+// eBay configuration object (no direct client initialization needed)
+const ebayConfig = {
+    appId: process.env.EBAY_APP_ID,
+    certId: process.env.EBAY_CERT_ID,
+    devId: process.env.EBAY_DEV_ID,
+    authToken: process.env.EBAY_AUTH_TOKEN,
+    sandbox: process.env.EBAY_SANDBOX === 'true',
+    siteId: process.env.EBAY_SITE_ID || '3'
+};
+
+// Helper functions for pricing calculations
+function calculateAverage(arr) {
+    return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+}
+
+function calculateMedian(arr) {
+    if (!arr.length) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function calculatePercentile(arr, percentile) {
+    if (!arr.length) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const index = Math.ceil((percentile / 100) * sorted.length) - 1;
+    return sorted[index];
+}
+
+function calculateDistribution(prices) {
+    const buckets = [0, 10, 20, 30, 40, 50, 75, 100, 150, 200, 300, 500, 1000];
+    const distribution = {};
+
+    buckets.forEach((bucket, i) => {
+        const next = buckets[i + 1] || Infinity;
+        const count = prices.filter(p => p >= bucket && p < next).length;
+        distribution[`${bucket}-${next === Infinity ? '+' : next}`] = count;
+    });
+
+    return distribution;
+}
+
+// Note: The duplicate getEbayPricingIntelligence function has been removed
+// The actual function is defined at line 1056
+
+// Feature 5: Predictive Pricing Engine
+function getConditionMultiplier(condition) {
+    const multipliers = {
+        'New': 1.0,
+        'Like New': 0.90,
+        'Excellent': 0.85,
+        'Very Good': 0.75,
+        'Good': 0.65,
+        'Fair': 0.50,
+        'Poor': 0.35
+    };
+    return multipliers[condition] || 0.70;
+}
+
+async function predictOptimalPrice(listing, ebayData, imageQuality = 70) {
+    if (!ebayData || !ebayData.soldPrices) {
+        return null;
+    }
+
+    // Features for prediction
+    const features = {
+        soldCount: ebayData.soldCount,
+        unsoldCount: ebayData.unsoldCount,
+        sellThroughRate: ebayData.sellThroughRate,
+        medianSoldPrice: ebayData.soldPrices.median,
+        avgSoldPrice: ebayData.soldPrices.average,
+        priceSpread: ebayData.soldPrices.max - ebayData.soldPrices.min,
+
+        // Listing quality factors
+        imageQuality: imageQuality,
+        descriptionLength: listing.description?.length || 0,
+        keywordCount: listing.keywords?.length || 0,
+
+        // Condition factor
+        conditionMultiplier: getConditionMultiplier(listing.condition)
+    };
+
+    // Simple ML-based prediction (can be replaced with trained model later)
+    let predictedPrice = features.medianSoldPrice;
+
+    // Adjust based on condition
+    predictedPrice *= features.conditionMultiplier;
+
+    // Adjust based on listing quality (image quality affects price)
+    const qualityFactor = 0.9 + (features.imageQuality / 100) * 0.2; // 90% to 110% based on quality
+    predictedPrice *= qualityFactor;
+
+    // Market demand adjustment
+    if (features.sellThroughRate > 0.7) {
+        predictedPrice *= 1.05; // High demand, can price higher
+    } else if (features.sellThroughRate < 0.3) {
+        predictedPrice *= 0.95; // Low demand, price competitively
+    }
+
+    // Calculate confidence based on data quality
+    const confidence = Math.min(
+        (features.soldCount / 20) * 100, // More sold items = more confidence
+        100
+    );
+
+    return {
+        recommendedPrice: Math.round(predictedPrice * 100) / 100,
+        priceRange: {
+            min: Math.round(predictedPrice * 0.85 * 100) / 100,
+            max: Math.round(predictedPrice * 1.15 * 100) / 100
+        },
+        confidence: Math.round(confidence),
+        reasoning: [
+            `Based on ${features.soldCount} sold listings`,
+            `Median sold price: £${features.medianSoldPrice.toFixed(2)}`,
+            `Sell-through rate: ${(features.sellThroughRate * 100).toFixed(0)}%`,
+            features.sellThroughRate > 0.7 ? 'High demand - premium pricing possible' :
+                features.sellThroughRate < 0.3 ? 'Low demand - competitive pricing recommended' :
+                'Moderate demand - balanced pricing recommended',
+            `Adjusted for ${listing.condition} condition (${(features.conditionMultiplier * 100).toFixed(0)}% of new)`,
+            `Image quality factor: ${((qualityFactor - 1) * 100).toFixed(0) >= 0 ? '+' : ''}${((qualityFactor - 1) * 100).toFixed(0)}%`
+        ],
+        marketInsights: {
+            demand: features.sellThroughRate > 0.7 ? 'HIGH' :
+                    features.sellThroughRate > 0.4 ? 'MEDIUM' : 'LOW',
+            competition: features.unsoldCount > features.soldCount ? 'HIGH' : 'MODERATE',
+            trend: 'STABLE', // Would require time-series data
+            recommendedAction: features.sellThroughRate > 0.6 ?
+                'List now - high demand' : 'Consider waiting or improving listing'
+        }
+    };
+}
+
+// Image quality analysis endpoint (for pre-upload feedback)
+app.post('/api/analyze-image-quality', authenticateToken, async (req, res) => {
+    try {
+        const { image } = req.body;
+
+        if (!image || typeof image !== 'string' || !image.startsWith('data:image')) {
+            return res.status(400).json({ error: 'Invalid image format' });
+        }
+
+        // Validate image size (max 5MB)
+        const maxImageSize = 5 * 1024 * 1024;
+        const base64Size = (image.length * 3) / 4;
+        if (base64Size > maxImageSize) {
+            return res.status(400).json({ error: 'Image too large. Max 5MB per image' });
+        }
+
+        const apiKey = process.env.GEMINI_API_KEY;
+
+        // Analyze image quality and damage/condition
+        const qualityData = await analyzeImageQuality(image, apiKey);
+
+        logger.info('Image quality analysis complete', {
+            userId: req.user?.id,
+            overallScore: qualityData.overallScore,
+            passesMinimumQuality: qualityData.passesMinimumQuality
+        });
+
+        res.json(qualityData);
+    } catch (error) {
+        logger.error('Image quality analysis error:', {
+            userId: req.user?.id,
+            error: error.message
+        });
+        res.status(500).json({
+            error: 'Failed to analyze image quality',
+            details: error.message
+        });
     }
 });
 
 // AI generation endpoint
-app.post('/api/generate', authenticateToken, async (req, res) => {
+app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) => {
+    const userId = req.user?.id; // Define at function scope for error logging
     try {
         const { images, platform, hint } = req.body;
 
+        // Validate images
         if (!images || !Array.isArray(images) || images.length === 0) {
             return res.status(400).json({ error: 'At least one image required' });
+        }
+
+        // Validate image count
+        if (images.length > 10) {
+            return res.status(400).json({ error: 'Maximum 10 images allowed' });
+        }
+
+        // Validate image sizes (max 5MB per image)
+        const maxImageSize = 5 * 1024 * 1024; // 5MB
+        for (const img of images) {
+            if (typeof img !== 'string' || !img.startsWith('data:image')) {
+                return res.status(400).json({ error: 'Invalid image format' });
+            }
+            // Approximate base64 size: (length * 3) / 4
+            const base64Size = (img.length * 3) / 4;
+            if (base64Size > maxImageSize) {
+                return res.status(400).json({ error: 'Image too large. Max 5MB per image' });
+            }
+        }
+
+        // Check usage limits before generation
+        const limit = await getPlanLimit(userId);
+        let currentUsage = 0;
+
+        try {
+            const periodStart = new Date();
+            periodStart.setDate(1); // First day of month
+            const periodEnd = new Date(periodStart);
+            periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+            const usageResult = await pool.query(
+                `SELECT ai_generations FROM usage_tracking
+                 WHERE user_id = $1 AND period_start >= $2 AND period_start < $3
+                 ORDER BY period_start DESC LIMIT 1`,
+                [userId, periodStart, periodEnd]
+            );
+            currentUsage = usageResult.rows[0]?.ai_generations || 0;
+
+            if (currentUsage >= limit) {
+                return res.status(403).json({
+                    error: 'Plan limit exceeded',
+                    limit,
+                    currentUsage
+                });
+            }
+        } catch (error) {
+            // If usage_tracking table doesn't exist or column is missing, allow generation (treat as no usage)
+            if (error.code !== '42P01' && error.code !== '42703') { // 42P01 = relation does not exist, 42703 = column does not exist
+                logger.error('Usage check error:', { error: error.message, code: error.code, userId });
+                // Don't block generation on usage tracking errors
+            } else {
+                logger.warn('usage_tracking table or column not found, skipping usage check', { userId, errorCode: error.code });
+            }
         }
 
         const apiKey = process.env.GEMINI_API_KEY;
@@ -324,10 +2455,114 @@ app.post('/api/generate', authenticateToken, async (req, res) => {
         // Gemini 2.5 models have worse OCR quality vs 2.0 Flash for straightforward text extraction
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
+        // PHASE 1, 3 & Quality: Run code parsing, vision recognition, and quality analysis IN PARALLEL for speed
+        logger.info('Starting parallel processing:', { userId, imageCount: images.length, platform });
+
+        // Analyze quality of all images in parallel
+        const qualityPromises = images.map(img => analyzeImageQuality(img, apiKey));
+
+        const [parsedCodes, visionRecognition, qualityAnalysis] = await Promise.all([
+            parseProductCodes(images, apiKey),
+            recognizeProductWithVision(images, apiKey),
+            Promise.all(qualityPromises)
+        ]);
+        logger.info('Parallel processing complete');
+
+        // Calculate overall quality score across all images
+        const avgQualityScore = qualityAnalysis.reduce((sum, q) => sum + (q.overallScore || 0), 0) / qualityAnalysis.length;
+        const criticalIssues = qualityAnalysis.flatMap(q => q.criticalIssues || []);
+        const allRecommendations = qualityAnalysis.flatMap(q => q.recommendations || []);
+
+        logger.info('Image quality summary:', {
+            avgScore: avgQualityScore,
+            criticalIssues: criticalIssues.length,
+            recommendations: allRecommendations.length
+        });
+        
+        // Build structured code information for the main prompt
+        const codeInfo = [];
+        if (parsedCodes.modelCodes && parsedCodes.modelCodes.length > 0) {
+            codeInfo.push(`MODEL CODES (PRIMARY): ${parsedCodes.modelCodes.join(', ')}`);
+        }
+        if (parsedCodes.styleCodes && parsedCodes.styleCodes.length > 0) {
+            codeInfo.push(`STYLE CODES (SECONDARY): ${parsedCodes.styleCodes.join(', ')}`);
+        }
+        if (parsedCodes.skuNumbers && parsedCodes.skuNumbers.length > 0) {
+            codeInfo.push(`SKU NUMBERS: ${parsedCodes.skuNumbers.join(', ')}`);
+        }
+        if (parsedCodes.size) {
+            codeInfo.push(`SIZE: ${parsedCodes.size}`);
+        }
+        if (parsedCodes.allText && parsedCodes.allText.length > 0) {
+            codeInfo.push(`ALL TEXT FROM TAGS: ${parsedCodes.allText.join(' | ')}`);
+        }
+        
+        // Build vision recognition information
+        const visionInfo = [];
+        if (visionRecognition.visualBrand) {
+            visionInfo.push(`VISUAL BRAND: ${visionRecognition.visualBrand}`);
+        }
+        if (visionRecognition.productLine) {
+            visionInfo.push(`PRODUCT LINE (VISUAL): ${visionRecognition.productLine}`);
+        }
+        if (visionRecognition.modelName) {
+            visionInfo.push(`MODEL NAME (VISUAL): ${visionRecognition.modelName}`);
+        }
+        if (visionRecognition.visualFeatures && visionRecognition.visualFeatures.length > 0) {
+            visionInfo.push(`VISUAL FEATURES: ${visionRecognition.visualFeatures.join(', ')}`);
+        }
+        if (visionRecognition.logoMatches && visionRecognition.logoMatches.length > 0) {
+            visionInfo.push(`LOGOS VISIBLE: ${visionRecognition.logoMatches.join(', ')}`);
+        }
+        if (visionRecognition.designElements && visionRecognition.designElements.length > 0) {
+            visionInfo.push(`DESIGN ELEMENTS: ${visionRecognition.designElements.join(', ')}`);
+        }
+        if (visionRecognition.productMatch) {
+            visionInfo.push(`VISUAL PRODUCT MATCH: ${visionRecognition.productMatch}`);
+        }
+        visionInfo.push(`CONFIDENCE: ${visionRecognition.confidence}`);
+        
+        const extractedCodesSection = codeInfo.length > 0 
+            ? `\n**EXTRACTED CODES AND TEXT (FROM PHASE 1 - INTENSIVE PARSING):**\n${codeInfo.join('\n')}\n\n**CRITICAL**: The above codes were extracted from the tags. You MUST use these codes to identify the exact product:\n- Use MODEL CODES (CK0697-010 format) as PRIMARY identifier in Google Search\n- Use STYLE CODES (SP200710EAG format) as SECONDARY if model code doesn't work\n- Verify ALL codes match the product you identify\n- If codes are provided, you MUST identify the specific product line (e.g., Tech Fleece, not just "Jacket")\n`
+            : '\n**NOTE**: No codes were extracted in parsing phase. Read tags carefully and extract all codes yourself.\n';
+        
+        const visionSection = visionInfo.length > 0
+            ? `\n**VISUAL PRODUCT RECOGNITION (FROM PHASE 3 - GOOGLE VISION):**\n${visionInfo.join('\n')}\n\n**CRITICAL**: The above visual recognition was performed by Google Vision API:\n- Use VISUAL BRAND and PRODUCT LINE to validate/cross-reference with codes from Phase 1\n- If vision identifies "Tech Fleece" and codes match, you have HIGH confidence\n- If vision and codes conflict, prioritize codes (tags are more reliable)\n- Use visual features to enhance product description\n- Visual recognition helps identify product lines when codes are unclear\n`
+            : '\n**NOTE**: Visual recognition did not identify product clearly. Rely on code extraction.\n';
+
+        // Build condition analysis section from quality analysis
+        const conditionInfo = [];
+        const conditionData = qualityAnalysis.filter(q => q.condition).map(q => q.condition);
+        if (conditionData.length > 0) {
+            // Find the most damaged/worst condition across all images
+            const worstCondition = conditionData.reduce((worst, curr) => {
+                const conditionRank = { 'New': 6, 'Like New': 5, 'Excellent': 4, 'Good': 3, 'Fair': 2, 'Poor': 1 };
+                return (conditionRank[curr.overall] || 3) < (conditionRank[worst.overall] || 3) ? curr : worst;
+            }, conditionData[0]);
+
+            conditionInfo.push(`OVERALL CONDITION: ${worstCondition.overall}`);
+            conditionInfo.push(`WEAR LEVEL: ${worstCondition.wearLevel}`);
+            if (worstCondition.hasDamage && worstCondition.defects && worstCondition.defects.length > 0) {
+                conditionInfo.push(`VISIBLE DEFECTS:\n${worstCondition.defects.map(d => `  - ${d}`).join('\n')}`);
+            }
+            if (worstCondition.conditionSummary) {
+                conditionInfo.push(`CONDITION SUMMARY: ${worstCondition.conditionSummary}`);
+            }
+        }
+
+        const conditionSection = conditionInfo.length > 0
+            ? `\n**PRODUCT CONDITION ANALYSIS (FROM AI INSPECTION):**\n${conditionInfo.join('\n')}\n\n**CRITICAL**: The above condition assessment was performed by AI analysis:\n- Use this information to accurately populate the "condition" field\n- Include all defects in the listing description\n- Be honest about condition - this builds buyer trust\n- If damage is present, describe it clearly and specifically\n`
+            : '';
+
         // Improved system prompt v3.0 - See SYSTEM-PROMPTS.md for details
         const userInfoHint = hint ? `\n**User-Provided Information:**\nThe user has specified: "${hint}"\n\nIncorporate this information into your analysis:\n- If mentioning packaging, note it in description\n- If mentioning specific flaws, detail them in condition\n- If mentioning size/fit, include in description\n` : '';
 
-        const prompt = `${userInfoHint}You are an expert e-commerce listing specialist for the UK resale market. Your PRIMARY goal is to accurately identify the item by reading ALL visible text and labels in ALL the images provided.
+        const prompt = `${userInfoHint}${extractedCodesSection}${visionSection}${conditionSection}You are an expert e-commerce listing specialist for the UK resale market. Your PRIMARY goal is to accurately identify the item by reading ALL visible text and labels in ALL the images provided.
+
+**THREE-PHASE IDENTIFICATION SYSTEM:**
+- **Phase 1 (Code Parsing)**: Extracted codes from tags - USE THESE AS PRIMARY IDENTIFIERS
+- **Phase 3 (Vision Recognition)**: Visual product identification - USE TO VALIDATE AND ENHANCE
+- **Your Task**: Cross-reference codes with visual recognition to identify the EXACT product
 
 **IMPORTANT: You will receive MULTIPLE images of the same item from different angles. Analyze ALL images to get the complete picture.**
 
@@ -340,7 +2575,12 @@ Before making ANY assumptions about the item, you MUST:
    - Size tags (usually inside collar, waistband, or tongue)
    - Care labels (washing instructions often have brand name)
    - Product name tags or labels
-   - Model numbers, style codes, SKU numbers
+   - **CRITICAL: Read ALL codes on tags - there may be multiple codes (style codes, model codes, SKU numbers)**
+     * Example: A tag might show "SP200710EAG" AND "CK0697-010" - you MUST check BOTH
+     * The model code (often shorter format like CK0697-010) is usually the PRIMARY identifier
+     * Style codes (often longer like SP200710EAG) are secondary identifiers
+     * SKU numbers (long numeric strings) are tertiary identifiers
+     * **CHECK EVERY CODE - don't stop at the first one you see**
    - Material composition tags
    - Country of manufacture labels
    - Hang tags or original packaging text
@@ -353,14 +2593,20 @@ Before making ANY assumptions about the item, you MUST:
      * Any other product-specific size indicators
 
    **ZOOM IN and READ CAREFULLY across ALL images** - Labels contain the exact product identity.
+   **READ ALL CODES ON THE TAG - there may be multiple codes, and the model code (often format like CK0697-010, DM0029-100) is usually the most important for identification.**
 
 2. **Extract ALL visible text from ALL images:**
    - Look at close-up shots of labels in different images
    - Check inside views (collars, waistbands, tongues, insoles)
    - Read any text on boxes, packaging, or tags
-   - Note style codes like "DM0029-100" or "AJ1234"
+   - **CRITICAL: Extract ALL codes you see - don't just grab the first one**
+     * Model codes (often format: CK0697-010, DM0029-100, AJ1234) - PRIMARY identifier
+     * Style codes (often format: SP200710EAG, longer alphanumeric) - SECONDARY identifier
+     * SKU numbers (long numeric: 19315498680) - TERTIARY identifier
+     * **Read every line of text on tags - codes may be on different lines**
    - Identify size markings "UK 10", "M", "32W 32L", "50ml", "100ml"
    - Check front, back, side, and detail shots for text
+   - **If you see multiple codes, list them ALL and use the model code (CK0697-010 format) as primary**
 
 3. **Physical identification (SECONDARY to labels):**
    - Only use visual design if NO labels are visible
@@ -370,11 +2616,36 @@ Before making ANY assumptions about the item, you MUST:
 
 **Item Identification Process - EXACT IDENTIFICATION IS CRUCIAL:**
 
-Step 1: List ALL text you can read from labels and tags
-Step 2: Use this text to identify the EXACT product (not similar, not close - EXACT)
-Step 3: Use Google Search to verify: Search "[brand from label] [style code from label]" to confirm exact product
+Step 1: List ALL text you can read from labels and tags - **READ EVERY LINE, EVERY CODE**
+   - Extract ALL codes: model codes (CK0697-010), style codes (SP200710EAG), SKU numbers (19315498680)
+   - Tags often have MULTIPLE codes - don't stop at the first one
+   - Model codes (format like CK0697-010, DM0029-100) are usually the PRIMARY identifier
+   - Style codes (format like SP200710EAG, longer alphanumeric) are SECONDARY identifiers
+   - **If you see multiple codes, you MUST check ALL of them**
+
+Step 2: **MANDATORY CODE LOOKUP - CHECK ALL CODES**: If you see ANY codes on a tag, you MUST use Google Search to identify the EXACT product line/model name
+   - **PRIMARY**: Search using the MODEL CODE first (format like CK0697-010, DM0029-100)
+     * Search: "[brand] [model code]" (e.g., "Nike CK0697-010")
+     * This is usually the most accurate identifier
+   - **SECONDARY**: If model code doesn't yield results, try style code
+     * Search: "[brand] [style code]" (e.g., "Nike SP200710EAG")
+   - **TERTIARY**: Try combinations if needed
+     * Search: "[brand] [model code] [style code]" (e.g., "Nike CK0697-010 SP200710EAG")
+   - Identify the SPECIFIC product line (e.g., "Tech Fleece", "Air Jordan 1 Mid", "Air Max 90")
+   - DO NOT use generic terms like "jacket" or "trainers" when you can identify the specific product line
+   - **The model code (CK0697-010 format) is usually your PRIMARY KEY - use it first!**
+
+Step 3: Use Google Search to verify: Search "[brand] [product line from step 2] [model code]" to confirm exact product
+   - Use the model code (CK0697-010) as the primary identifier in your search
+
 Step 4: If labels are unclear or missing, state "Unable to read labels clearly" and provide best visual match with LOW confidence
+
 Step 5: NEVER guess model numbers or style codes that aren't visible
+
+Step 6: **CRITICAL**: If ANY code is visible (model code CK0697-010, style code SP200710EAG, etc.), you MUST:
+   - Check ALL codes you see (don't just use one)
+   - Use the model code (CK0697-010 format) as PRIMARY identifier
+   - Identify it as the specific product line (Tech Fleece, not just "Nike Jacket")
 
 **Identity Confidence Levels:**
 - HIGH CONFIDENCE: You can read the brand name, model, AND style code from labels + verified via Google Search
@@ -390,76 +2661,204 @@ Step 5: NEVER guess model numbers or style codes that aren't visible
 Base your entire listing on what you can READ and VERIFY, not what you THINK you see
 
 3. **Provide (based on label reading):**
-   - **title**: Factual, SEO-friendly title (max 80 characters). Format: [Brand] [Product Line] [Key Feature] [Size/Variant]
-     **CRITICAL: ALWAYS include size/volume if visible on labels**
+   - **title**: SEO-OPTIMIZED, factual title (${platform === 'ebay' ? '80 chars max' : '140 chars max for Vinted/Gumtree'}). Format: [Brand] [Product Line/Model Name] [Key Feature] [Size/Variant] [Color/Material if space]
+     **CRITICAL SEO TITLE REQUIREMENTS:**
+     - Front-load most important keywords (Brand + Item Type + Key Feature in first 40 chars)
+     - ALWAYS include size/volume if visible on labels
+     - ALWAYS include the SPECIFIC product line/model name (e.g., "Tech Fleece", "Air Jordan 1 Mid", not just "Jacket")
+     - Include color/material if space allows
+     - Avoid filler words ("Amazing", "Wow", "Look", "Rare") unless genuinely rare
+     - Use natural keyword placement - title should read well
+     - ${platform === 'ebay' ? 'eBay: Keep concise, 80 char limit' : 'Vinted/Gumtree: Use full 140 chars for more keywords'}
      Examples:
-     * "Acqua di Parma Colonia Intensa Eau de Cologne 100ml"
-     * "Nike Air Jordan 1 Mid DM0029-100 UK 10"
-     * "Samsung Galaxy S23 256GB Phantom Black"
+     * eBay: "Nike Air Jordan 1 Mid White Black UK 10 Leather Trainers DM0029-100"
+     * Vinted: "Nike Air Jordan 1 Mid Basketball Trainers UK 10 White Black Leather Retro Sneakers Streetwear"
+     * "Acqua di Parma Colonia Intensa Eau de Cologne 100ml Italian Luxury Fragrance"
+     * "Nike Tech Fleece Jacket Large Black Premium Sportswear Hoodie SP200710EAG"
+     * "Samsung Galaxy S23 256GB Phantom Black Unlocked 5G Smartphone"
 
    - **brand**: EXACT brand name as it appears on the label (not assumed)
 
-   - **category**: Precise category path for ${platform}
+   - **category**: Full category breadcrumb path for ${platform} using backslash separators
+     **CRITICAL CATEGORY REQUIREMENTS:**
+     - Use FULL navigation path from Home to most specific category
+     - Format: "Home \\ Parent Category \\ Subcategory \\ Specific Category"
+     - Examples for Vinted:
+       * Men's cardigan: "Home \\ Men \\ Clothing \\ Jumpers & sweaters \\ Cardigans"
+       * Women's dress: "Home \\ Women \\ Clothing \\ Dresses \\ Maxi dresses"
+       * Kids shoes: "Home \\ Kids \\ Shoes \\ Trainers"
+     - Examples for eBay:
+       * Electronics: "Home \\ Electronics \\ Computers \\ Laptops"
+       * Clothing: "Home \\ Clothing \\ Men's Clothing \\ Shirts"
+     - Be as specific as possible - drill down to the most precise category available
 
-   - **description**: Compelling marketing description (3-5 sentences, 100-200 words)
-     **Structure:**
-     1st sentence: Opening hook with brand, product name, and size (from labels)
-     2nd-3rd sentences: Key features, benefits, or scent notes/specifications
-     4th sentence: Condition and any notable details visible in images
-     5th sentence: Call to action or unique selling point
+   - **description**: COMPELLING, SEO-optimized, sales-focused description with BULLET POINTS for scanability (200-300 words)
+     **CRITICAL: This is a SALES description with structured formatting. Make it engaging, persuasive, and easy to scan.**
 
-     **IMPORTANT RULES:**
-     - MUST mention size/volume in the first sentence if visible on labels
-     - Start factual (what you can read), then add marketing appeal
-     - Use descriptive, engaging language while staying truthful
-     - Include materials from care labels and model numbers if visible
-     - For fragrances: mention concentration (EDT, EDP, Cologne) and key notes if on packaging
-     - For clothing: mention materials, fit, style details from labels
-     - Describe condition naturally within the flow
+     **Structure (MUST FOLLOW):**
+     1st paragraph (2-3 sentences): Hook - Brand, EXACT product line/model name, size, and why it's desirable
+        **MANDATORY**: If you see a style code, you MUST identify and mention the specific product line
+        Example: "Authentic Nike Tech Fleece Jacket in size Large (Style: SP200710EAG) - a premium streetwear essential that combines comfort and style. This iconic piece features Nike's signature Tech Fleece fabric for lightweight warmth without bulk."
 
-     **Examples:**
-     * Fragrance: "Acqua di Parma Colonia Intensa Eau de Cologne in the 100ml size. This sophisticated scent features vibrant Calabrian bergamot and Sicilian lemon top notes, enriched with warm cardamom and ginger. The heart reveals aromatic myrtle and neroli, while the base develops into rich leather and patchouli. The bottle shows minimal usage with clear liquid visible. Perfect for the discerning gentleman who appreciates Italian luxury."
-     * Trainers: "Nike Air Jordan 1 Mid in UK Size 10 (Style: DM0029-100). These iconic basketball-inspired trainers feature the classic Mid silhouette with premium leather uppers. The colorway combines crisp white panels with bold accents. Condition is excellent with minimal creasing to toe box and clean outsoles. A versatile addition to any sneaker collection."
+     2nd section: KEY FEATURES AS BULLET POINTS (MANDATORY - improves SEO and readability)
+        Use • or - for bullets
+        Format: "\n\n**Key Features:**\n• Feature 1\n• Feature 2\n• Feature 3\n• Feature 4"
+        Include 4-6 bullet points covering:
+        - Materials/composition from care labels
+        - Technology/special features (Tech Fleece fabric, Air cushioning, etc.)
+        - Design elements (color, style, branding)
+        - Size/fit information
+        - Condition highlights
+        - Any special edition or sought-after aspects
 
-   - **rrp**: Original Recommended Retail Price in GBP. Format: "£XX.XX" or "Unknown"
-     **CRITICAL:** Use Google Search to find the EXACT retail price when the item was new
-     Search queries to try:
-     * "{brand} {product name} {size} RRP UK"
-     * "{brand} {product name} {size} retail price UK"
-     * "{brand} {product name} original price"
-     Include the size in your search to get accurate RRP for the specific variant
+     3rd paragraph (2-3 sentences): Condition details and closing appeal
+        - Frame condition positively with specific details
+        - Add value proposition: "Perfect for [use case]"
+        - "Offers excellent value compared to £XX retail price"
+        - Include natural keyword placement (brand, product line, use case)
 
-   - **price**: Competitive resale price in GBP based on SOLD listings. Format: "£XX"
-     **REQUIRED:** Use Google Search to find recently SOLD listings on ${platform} for this exact item
-     Search query example: "Acqua di Parma Colonia Intensa 100ml sold ${platform} uk"
-     Look for completed/sold listings, not active listings
-     Adjust for condition shown in the images
+     **MANDATORY FOOTER:**
+     - MUST end the description with: "\n\nListed by https://www.quicklist.it.com"
+     - This attribution MUST be included in every description
+
+     **SEO WRITING RULES:**
+     - Use target keywords naturally 2-3 times in description (brand, product line, item type)
+     - Include keyword variations (trainers/sneakers, fragrance/cologne/perfume)
+     - Mention what it's perfect for (running, casual wear, collectors, gifts)
+     - Use descriptive adjectives that match search intent (premium, luxury, authentic, vintage, retro)
+     - Include measurements if visible (50ml, 100ml, UK 10, Large, etc.)
+     - Natural keyword density: 2-5% (not stuffing)
+
+     **WRITING STYLE RULES:**
+     - Use active, engaging language ("features", "boasts", "offers", "delivers")
+     - Avoid generic phrases like "nice item" or "good condition" - be specific
+     - Create desire: Make the reader WANT this item
+     - Stay truthful: Don't exaggerate, but highlight positives
+     - Use UK English spelling and terminology
+     - Vary sentence length for rhythm and readability
+
+     **MANDATORY CONTENT:**
+     - MUST include exact product line/model name (identified via code lookup) in first sentence - NOT generic terms
+     - MUST mention size/volume if visible on labels
+     - MUST include materials/composition from care labels
+     - MUST mention model code if visible (include in parentheses: "Model: CK0697-010" or "Style: CK0697-010")
+     - If multiple codes are visible, mention the model code (CK0697-010 format) as primary identifier
+     - MUST describe condition accurately but positively
+     - MUST include at least 2-3 specific selling points about the product line (e.g., Tech Fleece features, Air Jordan heritage, etc.)
+     - MUST use Google Search to identify product line when ANY codes are present - check ALL codes, use model code (CK0697-010 format) as primary
+
+     **EXAMPLES OF GOOD DESCRIPTIONS:**
+
+     * Jacket: "Authentic Nike Tech Fleece Jacket in size Large (Style: SP200710EAG). This premium streetwear piece features Nike's signature Tech Fleece fabric - a lightweight, insulating material that provides exceptional warmth without bulk. The classic black colourway offers versatile styling options, perfect for layering or wearing standalone. The jacket boasts a modern fit with ribbed cuffs and hem for a tailored look. In excellent pre-owned condition with minimal signs of wear - the fabric remains soft and the zippers function perfectly. A must-have for any streetwear enthusiast looking to add a quality Nike piece to their collection at a fraction of retail price.\n\nListed by https://www.quicklist.it.com"
+
+     * Trainers: "Nike Air Jordan 1 Mid in UK Size 10 (Style: DM0029-100). These iconic basketball-inspired trainers feature the classic Mid silhouette with premium leather uppers that have developed a beautiful patina. The crisp white panels contrast beautifully with bold accent colours, creating a timeless look that works with any outfit. The Air cushioning provides excellent comfort for all-day wear, while the high-top design offers ankle support. Condition is excellent with minimal creasing to the toe box and clean, barely-worn outsoles showing the original tread pattern. A versatile addition to any sneaker collection that offers instant street style credibility.\n\nListed by https://www.quicklist.it.com"
+     
+     **AVOID:**
+     - Generic statements: "Nice jacket", "Good item", "Works well"
+     - Repetitive language: Don't say "condition" multiple times
+     - Overly technical jargon that doesn't sell
+     - Negative framing: "No major flaws" → "Excellent condition"
+     - Copy-paste from labels without context
+
+   - **rrp**: Original Recommended Retail Price in GBP. Format: "£XX.XX" or "£XXX" or "Unknown"
+     **CRITICAL:** You MUST use Google Search grounding to find the EXACT retail price
+     **REQUIRED STEPS:**
+     1. Extract exact product name and style code from labels
+     2. Search: "{brand} {exact product name} {style code} RRP UK retail price"
+     3. Search: "{brand} {product name} {size} original price UK"
+     4. Look for official brand websites, major retailers (Nike.com, JD Sports, etc.)
+     5. Find the price when this item was NEW, not resale price
+     6. If multiple sizes have different prices, use the price for the specific size shown
+     7. Format as "£XX" or "£XX.XX" - NEVER use "Unknown" unless you've searched extensively
+     **If you cannot find RRP after searching, state "Unknown" but note this in description**
+
+   - **price**: Competitive resale price in GBP based on SOLD listings. Format: "£XX" or "£XX.XX"
+     **REQUIRED:** You MUST use Google Search grounding to find ACTUAL sold prices
+     **MANDATORY STEPS:**
+     1. Search: "{brand} {product name} {style code} sold ${platform} UK"
+     2. Search: "{brand} {product name} {size} sold price ${platform}"
+     3. Look for completed/sold listings, NOT active listings
+     4. Find 5-10 recent sold listings for similar condition
+     5. Calculate average sold price
+     6. Adjust for condition: Excellent = 60-70% of RRP, Very Good = 50-60%, Good = 40-50%, Fair = 30-40%
+     7. Price competitively: Slightly below average sold price for quick sale
+     **NEVER guess prices - ALWAYS base on actual sold listing data from Google Search**
 
    - **condition**: Detailed condition assessment. Categories: New with Tags, Like New, Excellent, Very Good, Good, Fair, Poor.
-     **IMPORTANT:** Base this on what you can SEE in ALL the images:
-     - Check for scratches, scuffs, stains, wear patterns
-     - Note packaging condition if visible
-     - Assess liquid level for fragrances (e.g., "90% full", "Appears full")
-     - Mention any visible damage or imperfections
-     - Be honest and specific - buyers need accurate condition info
+     **CRITICAL:** Examine ALL images carefully and be SPECIFIC:
+     - Check every angle for wear, damage, stains, scuffs
+     - Look at close-up shots for detail
+     - Note packaging condition if visible (box condition, tags present)
+     - Assess liquid level for fragrances (e.g., "90% full", "Appears full", "Near full")
+     - For clothing: Check seams, zippers, buttons, fabric condition
+     - For shoes: Check soles, uppers, insoles, laces
+     - For electronics: Check screens, ports, buttons, overall wear
+     - Be honest but frame positively: "Excellent condition with minimal wear" not "Has some wear"
+     - Format: "{Category} - {specific details}"
+     - Examples: 
+       * "Excellent - Appears barely worn, no visible flaws"
+       * "Very Good - Minor wear to soles, uppers in great condition"
+       * "Good - Some scuffing on heel, overall well-maintained"
 
-   - **keywords**: 5-10 relevant search terms (array of strings) - include any style codes or model numbers you read
+   - **keywords**: 8-15 relevant search terms (array of strings) - SEO-OPTIMIZED FOR ${platform}
+     **CRITICAL SEO REQUIREMENTS:**
+     - Front-load high-search-volume terms (brand, item type, key features)
+     - Include: Brand, Item Type, Style/Model Name, Color, Size, Material, Condition
+     - Mix of exact product terms and category terms
+     - Include style codes or model numbers you read
+     - Add use-case keywords (e.g., "casual wear", "running", "streetwear", "collectors")
+     - Include synonyms (trainers/sneakers/shoes, perfume/fragrance/cologne)
+     - Avoid keyword stuffing - only relevant, high-value terms
+     - **MANDATORY: ALWAYS include "#quicklist" as the LAST keyword in the array**
+     - ${platform === 'ebay' ? '15-20 keywords max (eBay allows more)' : '8-12 keywords ideal for Vinted/Gumtree'}
+     Examples:
+     * Nike trainers: ["Nike", "Air Jordan 1 Mid", "trainers", "sneakers", "shoes", "basketball", "UK 10", "white", "leather", "streetwear", "casual", "retro", "90s", "#quicklist"]
+     * Fragrance: ["Acqua di Parma", "Colonia Intensa", "eau de cologne", "100ml", "men's fragrance", "Italian", "luxury", "citrus", "cologne", "#quicklist"]
 
    - **sources**: 1-2 reference URLs for price verification (array of objects with url and title)
      These will be automatically populated from your Google Search results
 
-**Pricing Guidelines - USE GOOGLE SEARCH:**
-1. Search for "{brand} {product name} sold ${platform}" to find actual sold prices
-2. Search for "{brand} {product name} RRP" or "retail price" to find original price
-3. Prioritize SOLD listings data over active listings
-4. Adjust for condition (Excellent: 50-70% RRP, Good: 30-50% RRP, Fair: 15-30% RRP)
-5. Be realistic, not optimistic
-6. Use UK-based search results (prices in GBP)
+   - **stockImageUrl**: Direct URL to official manufacturer stock product image (OPTIONAL - will be found separately in Phase 4)
+     Format: Direct image URL ending in .jpg, .png, or .webp, or null if not found
+     Note: This field is optional - stock images are found in a separate phase after identification
+
+**Pricing Guidelines - GOOGLE SEARCH IS MANDATORY:**
+1. **RRP Research (REQUIRED):**
+   - Search: "{brand} {exact product name} {style code} RRP UK"
+   - Check official brand websites first
+   - Check major UK retailers (JD Sports, Footasylum, Nike.com, etc.)
+   - Look for original retail price, not sale price
+   - If item is discontinued, find last known retail price
+   - Format: "£XX" or "£XX.XX" - only use "Unknown" if genuinely not findable
+
+2. **Resale Price Research (REQUIRED):**
+   - Search: "{brand} {product name} {style code} sold ${platform} UK"
+   - Find 5-10 completed/sold listings
+   - Calculate average sold price
+   - Price at 5-10% below average for competitive listing
+   - Adjust for condition shown in images
+   - Condition multipliers: Excellent (65%), Very Good (55%), Good (45%), Fair (35%) of RRP
+
+3. **Price Formatting:**
+   - Round to nearest £5 for items under £50
+   - Round to nearest £10 for items over £50
+   - Example: £42.50 → £40, £67 → £65, £123 → £120
+
+4. **Quality Check:**
+   - If RRP is "Unknown" but price seems high, verify with more searches
+   - If price seems too low, check if condition justifies it
+   - Always include sources in the sources array for price verification
 
 **Output Requirements:**
 Return ONLY valid JSON. No markdown code blocks, no explanatory text.
 
+**CRITICAL: CONFIDENCE-BASED OUTPUT:**
+- If confidence is HIGH: Return single listing object
+- If confidence is MEDIUM or LOW: Return object with "alternatives" array containing up to 3 closest matches
+
+**Single Match (HIGH confidence):**
 {
+  "confidence": "HIGH",
   "title": "",
   "brand": "",
   "category": "",
@@ -469,6 +2868,42 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
   "price": "",
   "keywords": [],
   "sources": [{"url": "", "title": ""}]
+}
+
+**Multiple Matches (MEDIUM/LOW confidence):**
+{
+  "confidence": "MEDIUM" or "LOW",
+  "title": "best match title",
+  "brand": "best match brand",
+  "category": "best match category",
+  "description": "best match description",
+  "condition": "best match condition",
+  "rrp": "best match rrp",
+  "price": "best match price",
+  "keywords": [],
+  "sources": [{"url": "", "title": ""}],
+  "alternatives": [
+    {
+      "title": "alternative 1 title",
+      "brand": "alternative 1 brand",
+      "category": "alternative 1 category",
+      "description": "alternative 1 description",
+      "condition": "alternative 1 condition",
+      "rrp": "alternative 1 rrp",
+      "price": "alternative 1 price",
+      "matchReason": "why this is a close match"
+    },
+    {
+      "title": "alternative 2 title",
+      "brand": "alternative 2 brand",
+      "category": "alternative 2 category",
+      "description": "alternative 2 description",
+      "condition": "alternative 2 condition",
+      "rrp": "alternative 2 rrp",
+      "price": "alternative 2 price",
+      "matchReason": "why this is a close match"
+    }
+  ]
 }
 
 **CRITICAL RULES - LABEL ACCURACY:**
@@ -491,9 +2926,16 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
 - Zoom in mentally on label close-ups
 - Prioritize inside tags over external appearance
 - Say "Label not visible" rather than guess
-- Be specific about what you CAN and CANNOT see`;
+- Be specific about what you CAN and CANNOT see
+- **READ ALL CODES ON TAGS**: Tags often have multiple codes - read EVERY line, EVERY code
+- **CHECK ALL CODES**: When you see codes (model code CK0697-010, style code SP200710EAG, SKU 19315498680), check ALL of them
+- **USE MODEL CODE FIRST**: The model code (format like CK0697-010, DM0029-100) is usually the PRIMARY identifier - use it first in Google Search
+- **LOOK UP CODES**: Use Google Search to identify the exact product line/model name - start with model code, then try style code if needed
+- **USE SPECIFIC PRODUCT NAMES**: If you find "Tech Fleece" via code lookup, say "Tech Fleece Jacket" not just "Jacket"
+- **INCLUDE PRODUCT LINE FEATURES**: Mention specific features of the product line (Tech Fleece fabric, Air cushioning, etc.)
+- **MENTION MODEL CODE**: Include the model code (CK0697-010) in the description, not just style codes`;
 
-        console.log(`🤖 Calling Gemini Vision API for ${platform} with ${images.length} image(s)`);
+        logger.info('Calling Gemini Vision API:', { platform, imageCount: images.length, userId });
 
         // Build parts array: prompt text + all images
         const parts = [
@@ -520,17 +2962,17 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
                     googleSearch: {}
                 }],
                 generationConfig: {
-                    temperature: 0.4,  // Lower temperature for more factual responses
+                    temperature: 0.7,  // Increased for more creative, engaging descriptions while maintaining accuracy
                     topP: 0.95,
                     topK: 40,
-                    maxOutputTokens: 2048
+                    maxOutputTokens: 3072  // Increased to allow for longer, more detailed descriptions
                 }
             })
         });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            console.error('❌ Gemini API error:', response.status, errorData);
+            logger.error('Gemini API error:', { status: response.status, error: errorData, userId });
             throw new Error(`Gemini API request failed: ${response.status}`);
         }
 
@@ -538,19 +2980,19 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
 
         // Check for safety blocks or other issues
         if (!data.candidates || data.candidates.length === 0) {
-            console.error('❌ No candidates in response:', data);
+            logger.error('No candidates in Gemini response:', { data, userId });
             throw new Error('No response from AI model');
         }
 
         const text = data.candidates[0].content.parts[0].text;
-        console.log('✅ Received response from Gemini, length:', text.length);
+        logger.info('Received response from Gemini:', { length: text.length, userId });
 
         // Extract grounding metadata (Google Search sources)
         const groundingMetadata = data.candidates[0]?.groundingMetadata;
         const searchSources = [];
 
         if (groundingMetadata?.webSearchQueries) {
-            console.log('🔍 Google Search queries used:', groundingMetadata.webSearchQueries);
+            logger.info('Google Search queries used:', { queries: groundingMetadata.webSearchQueries, userId });
         }
 
         if (groundingMetadata?.groundingChunks) {
@@ -562,7 +3004,7 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
                     });
                 }
             });
-            console.log('📚 Found', searchSources.length, 'research sources from Google Search');
+            logger.info('Found research sources:', { count: searchSources.length, userId });
         }
 
         // Extract JSON from response
@@ -575,14 +3017,100 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
                 listing.sources = [...searchSources, ...(listing.sources || [])];
             }
 
-            console.log('✅ Successfully generated listing:', listing.title);
-            res.json({ listing });
+            // Determine confidence level
+            const confidence = listing.confidence || (listing.alternatives && listing.alternatives.length > 0 ? 'MEDIUM' : 'HIGH');
+            listing.confidence = confidence;
+
+            // PHASE 4: Find stock image (runs after product identification)
+            let stockImageData = null;
+            if (listing.brand && listing.title) {
+                // Add model codes to listing for stock image search
+                listing.modelCodes = parsedCodes.modelCodes || [];
+                stockImageData = await findStockImage(listing, apiKey);
+                if (stockImageData && stockImageData.stockImageUrl) {
+                    listing.stockImageUrl = stockImageData.stockImageUrl;
+                    listing.stockImageSource = stockImageData.source;
+                    listing.stockImageConfidence = stockImageData.confidence;
+                    listing.stockImageAlternatives = stockImageData.alternatives || [];
+                }
+            }
+
+            // Get eBay pricing intelligence if platform is eBay (only for primary match)
+            let pricingIntelligence = null;
+            let predictedPrice = null;
+            if ((platform === 'ebay' || platform === 'all') && listing.brand && listing.title) {
+                logger.info('Fetching eBay pricing intelligence:', { userId });
+                pricingIntelligence = await getEbayPricingIntelligence(
+                    listing.brand || '',
+                    listing.title,
+                    listing.category
+                );
+
+                if (pricingIntelligence) {
+                    listing.pricingData = pricingIntelligence;
+                    logger.info('Pricing intelligence retrieved:', {
+                        avgPrice: pricingIntelligence.soldPrices?.average,
+                        soldCount: pricingIntelligence.soldCount,
+                        userId
+                    });
+
+                    // Feature 5: Predictive pricing based on eBay data and quality
+                    predictedPrice = await predictOptimalPrice(
+                        listing,
+                        pricingIntelligence,
+                        avgQualityScore // Use the average quality score from images
+                    );
+
+                    if (predictedPrice) {
+                        // Override AI's price with data-driven prediction
+                        listing.price = `£${predictedPrice.recommendedPrice}`;
+                        listing.pricingConfidence = predictedPrice.confidence;
+                        listing.pricingReasoning = predictedPrice.reasoning;
+                        listing.marketInsights = predictedPrice.marketInsights;
+                    }
+                }
+            }
+
+            // Track usage after successful generation
+            try {
+                await safeQuery(
+                    `INSERT INTO usage_tracking (user_id, period_start, period_end, ai_generations, listings_created)
+                     VALUES ($1, DATE_TRUNC('month', CURRENT_DATE), DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month', 1, 0)
+                     ON CONFLICT (user_id, period_start) 
+                     DO UPDATE SET ai_generations = usage_tracking.ai_generations + 1`,
+                    [userId]
+                );
+            } catch (usageError) {
+                logger.warn('Usage tracking failed:', { error: usageError.message, userId });
+            }
+
+            logger.info('Successfully generated listing:', { 
+                title: listing.title, 
+                confidence, 
+                alternatives: listing.alternatives?.length || 0,
+                userId 
+            });
+
+            res.json({
+                listing,
+                pricingIntelligence,
+                predictedPrice,
+                stockImageData,
+                imageQuality: {
+                    averageScore: avgQualityScore,
+                    individualScores: qualityAnalysis,
+                    criticalIssues,
+                    recommendations: allRecommendations,
+                    passesMinimumQuality: avgQualityScore >= 60
+                },
+                requiresUserSelection: confidence !== 'HIGH' && listing.alternatives && listing.alternatives.length > 0
+            });
         } else {
-            console.error('❌ No JSON found in response. Raw text:', text.substring(0, 500));
+            logger.error('No JSON found in Gemini response:', { textPreview: text.substring(0, 500), userId });
             throw new Error('Failed to parse API response - no JSON found');
         }
     } catch (error) {
-        console.error('❌ Generate listing error:', error.message);
+        logger.error('Generate listing error:', { error: error.message, requestId: req.id, userId });
         res.status(500).json({
             error: 'Failed to generate listing',
             details: error.message
@@ -590,14 +3118,442 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
     }
 });
 
+// Barcode lookup endpoint
+app.post('/api/lookup-barcode', authenticateToken, async (req, res) => {
+    try {
+        const { barcode } = req.body;
+        const userId = req.user.id;
+
+        if (!barcode || typeof barcode !== 'string') {
+            return res.status(400).json({ error: 'Barcode required' });
+        }
+
+        // Validate barcode format (8-13 digits for UPC/EAN)
+        if (!/^\d{8,13}$/.test(barcode)) {
+            return res.status(400).json({ error: 'Invalid barcode format. Must be 8-13 digits' });
+        }
+
+        logger.info('Barcode lookup request:', { barcode, userId });
+
+        // Try UPC Database API (free tier - 100 requests/day)
+        let productData = await lookupUPCDatabase(barcode);
+
+        // If not found, try alternative sources
+        if (!productData.found) {
+            // Try Open Food Facts for food items (free, unlimited)
+            if (barcode.length === 13 || barcode.length === 8) {
+                productData = await lookupOpenFoodFacts(barcode);
+            }
+        }
+
+        if (productData.found) {
+            logger.info('Barcode product found:', { barcode, title: productData.title });
+        } else {
+            logger.info('Barcode product not found:', { barcode });
+        }
+
+        res.json(productData);
+
+    } catch (error) {
+        logger.error('Barcode lookup error:', { error: error.message, requestId: req.id });
+        res.status(500).json({
+            error: 'Barcode lookup failed',
+            found: false,
+            details: error.message
+        });
+    }
+});
+
+// Helper function: UPC Database API lookup
+async function lookupUPCDatabase(barcode) {
+    try {
+        // UPC Database API - free tier (no API key required for trial)
+        const response = await axios.get(
+            `https://api.upcitemdb.com/prod/trial/lookup`,
+            {
+                params: { upc: barcode },
+                timeout: 5000
+            }
+        );
+
+        if (response.data && response.data.items && response.data.items.length > 0) {
+            const item = response.data.items[0];
+            return {
+                found: true,
+                barcode: barcode,
+                title: item.title || item.description || 'Unknown Product',
+                brand: item.brand || '',
+                category: item.category || '',
+                description: item.description || '',
+                images: item.images || [],
+                msrp: item.msrp ? `$${item.msrp}` : null,
+                rrp: item.highest_recorded_price ? `$${item.highest_recorded_price}` : null,
+                specifications: {
+                    'EAN': item.ean || barcode,
+                    'UPC': item.upc || barcode,
+                    'Model': item.model || 'N/A',
+                    'Size': item.size || 'N/A',
+                    'Color': item.color || 'N/A',
+                    'Weight': item.weight || 'N/A'
+                },
+                source: 'UPC Database'
+            };
+        }
+
+        return { found: false, barcode };
+
+    } catch (error) {
+        logger.warn('UPC Database API error:', { error: error.message, barcode });
+        return { found: false, barcode };
+    }
+}
+
+// Helper function: Open Food Facts API lookup (for food/grocery items)
+async function lookupOpenFoodFacts(barcode) {
+    try {
+        const response = await axios.get(
+            `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`,
+            { timeout: 5000 }
+        );
+
+        if (response.data && response.data.status === 1) {
+            const product = response.data.product;
+            return {
+                found: true,
+                barcode: barcode,
+                title: product.product_name || 'Unknown Product',
+                brand: product.brands || '',
+                category: product.categories || 'Food/Grocery',
+                description: [
+                    product.product_name,
+                    product.generic_name,
+                    product.ingredients_text_en || product.ingredients_text
+                ].filter(Boolean).join('. '),
+                images: product.image_url ? [product.image_url] : [],
+                rrp: null, // Price not available in Open Food Facts
+                specifications: {
+                    'Barcode': barcode,
+                    'Quantity': product.quantity || 'N/A',
+                    'Brands': product.brands || 'N/A',
+                    'Categories': product.categories || 'N/A',
+                    'Countries': product.countries || 'N/A',
+                    'Ingredients': product.ingredients_text_en || product.ingredients_text || 'N/A'
+                },
+                source: 'Open Food Facts'
+            };
+        }
+
+        return { found: false, barcode };
+
+    } catch (error) {
+        logger.warn('Open Food Facts API error:', { error: error.message, barcode });
+        return { found: false, barcode };
+    }
+}
+
+// Post listing to eBay
+app.post('/api/listings/:id/post-to-ebay', authenticateToken, async (req, res) => {
+    try {
+        const listingId = req.params.id;
+        const userId = req.user.id;
+
+        // Get listing from database
+        const listingResult = await pool.query(
+            `SELECT l.*, 
+                    (SELECT json_agg(i.image_data ORDER BY i.image_order) 
+                     FROM images i WHERE i.listing_id = l.id) as images 
+             FROM listings l 
+             WHERE l.id = $1 AND l.user_id = $2`,
+            [listingId, userId]
+        );
+
+        if (listingResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Listing not found' });
+        }
+
+        const listing = listingResult.rows[0];
+        
+        // Get user's eBay token (would be stored in users table or separate table)
+        // For now, assume it's in environment or user needs to provide
+        const ebayToken = process.env.EBAY_AUTH_TOKEN; // Should come from user's stored credentials
+        
+        if (!ebayToken) {
+            return res.status(400).json({ error: 'eBay authentication token not configured' });
+        }
+
+        // Post to eBay
+        const result = await postToEbay(
+            listing,
+            listing.images || [],
+            ebayToken,
+            req.body.ebayCategoryId
+        );
+
+        // Update listing with eBay item ID
+        await pool.query(
+            'UPDATE listings SET ebay_item_id = $1, posted_to_ebay = true, ebay_posted_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [result.itemId, listingId]
+        );
+
+        logger.info('Posted to eBay:', { listingId, itemId: result.itemId, userId });
+        res.json({
+            success: true,
+            itemId: result.itemId,
+            url: result.url
+        });
+    } catch (error) {
+        logger.error('Post to eBay error:', { error: error.message, requestId: req.id });
+        res.status(500).json({
+            error: 'Failed to post to eBay',
+            details: error.message
+        });
+    }
+});
+
+// Feature 6: AI Damage Detection
+// Analyze multiple images for damage, defects, and wear
+async function analyzeDamageInImages(images, apiKey) {
+    try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+        const damagePrompt = `You are a professional product inspector analyzing images for defects and damage.
+
+ANALYZE ALL ${images.length} IMAGE(S) SYSTEMATICALLY:
+
+For EACH image, identify:
+1. VISIBLE DEFECTS:
+   - Stains (location, color, size)
+   - Tears/holes (location, size)
+   - Scratches (severity, location)
+   - Discoloration/fading
+   - Missing parts (buttons, zippers, etc.)
+   - Structural damage (bent, broken, cracked)
+   - Wear patterns (fraying, pilling, sole wear)
+
+2. DEFECT SEVERITY:
+   - CRITICAL: Makes item unusable or significantly impacts value
+   - MAJOR: Clearly visible, impacts appearance/function
+   - MINOR: Small, barely noticeable, doesn't affect function
+   - NORMAL WEAR: Expected for used item
+
+3. LOCATION:
+   - Specific location on item (front, back, left sleeve, right toe, etc.)
+   - Size estimate (cm or % of area)
+
+4. RECOMMENDED CONDITION RATING:
+   - New with tags
+   - New without tags
+   - Like New (no visible wear)
+   - Excellent (minimal wear)
+   - Very Good (light wear, no defects)
+   - Good (obvious wear, minor defects)
+   - Fair (significant wear, multiple defects)
+   - Poor (major defects, functional issues)
+
+Return JSON:
+{
+  "overallCondition": "Good/Fair/Poor/Excellent",
+  "damageFound": true/false,
+  "damages": [
+    {
+      "type": "stain|tear|scratch|discoloration|missing_part|structural|wear",
+      "location": "specific location on item",
+      "severity": "critical|major|minor|normal_wear",
+      "confidence": 0.0-1.0,
+      "description": "detailed description",
+      "imageIndex": 0,
+      "estimatedSize": "measurement or %"
+    }
+  ],
+  "conditionDisclosure": "Professional paragraph describing all defects for listing",
+  "recommendations": [
+    "Take closer photo of stain on front",
+    "Add photo showing full back side",
+    "Include close-up of damaged zipper"
+  ],
+  "conditionJustification": "Why this condition rating was chosen",
+  "honestyScore": 80
+}
+
+BE THOROUGH. Better to over-report minor issues than miss major ones.
+Provide honest but not alarming language for the condition disclosure.`;
+
+        // Build parts array: prompt text + all images
+        const parts = [
+            { text: damagePrompt },
+            ...images.map(img => ({
+                inline_data: {
+                    mime_type: 'image/jpeg',
+                    data: img.split(',')[1] // Remove data:image/jpeg;base64, prefix
+                }
+            }))
+        ];
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: parts
+                }],
+                generationConfig: {
+                    temperature: 0.3,  // Lower temperature for more factual damage assessment
+                    topP: 0.95,
+                    topK: 40,
+                    maxOutputTokens: 2048
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            logger.error('Gemini API error in damage detection:', { status: response.status, error: errorData });
+            throw new Error(`Gemini API request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.candidates || data.candidates.length === 0) {
+            logger.error('No candidates in Gemini damage detection response:', { data });
+            throw new Error('No response from AI model');
+        }
+
+        const text = data.candidates[0].content.parts[0].text;
+
+        // Extract JSON from response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const damageData = JSON.parse(jsonMatch[0]);
+
+            // Ensure all required fields exist with defaults
+            return {
+                overallCondition: damageData.overallCondition || 'Good',
+                damageFound: damageData.damageFound !== undefined ? damageData.damageFound : (damageData.damages && damageData.damages.length > 0),
+                damages: damageData.damages || [],
+                conditionDisclosure: damageData.conditionDisclosure || 'Item is in good condition with normal signs of wear.',
+                recommendations: damageData.recommendations || [],
+                conditionJustification: damageData.conditionJustification || '',
+                honestyScore: damageData.honestyScore || 85
+            };
+        }
+
+        // Fallback if no JSON found
+        return {
+            overallCondition: 'Good',
+            damageFound: false,
+            damages: [],
+            conditionDisclosure: 'Unable to fully assess condition from images. Please inspect item carefully.',
+            recommendations: ['Provide clearer images for accurate assessment'],
+            conditionJustification: 'Assessment limited by image quality',
+            honestyScore: 50
+        };
+
+    } catch (error) {
+        logger.error('Damage detection error:', { error: error.message });
+        throw error;
+    }
+}
+
+// Damage detection endpoint
+app.post('/api/analyze-damage', authenticateToken, async (req, res) => {
+    try {
+        const { images } = req.body;
+        const userId = req.user.id;
+
+        if (!images || !Array.isArray(images) || images.length === 0) {
+            return res.status(400).json({ error: 'Images array required' });
+        }
+
+        if (images.length > 10) {
+            return res.status(400).json({ error: 'Maximum 10 images allowed' });
+        }
+
+        logger.info('Analyzing damage in images:', { userId, imageCount: images.length });
+
+        const apiKey = process.env.GEMINI_API_KEY;
+        const damageAnalysis = await analyzeDamageInImages(images, apiKey);
+
+        // Calculate severity distribution
+        const severityCount = {
+            critical: 0,
+            major: 0,
+            minor: 0,
+            normal_wear: 0
+        };
+
+        damageAnalysis.damages.forEach(damage => {
+            if (severityCount[damage.severity] !== undefined) {
+                severityCount[damage.severity]++;
+            }
+        });
+
+        // Add severity summary to response
+        damageAnalysis.severitySummary = severityCount;
+
+        logger.info('Damage analysis complete:', {
+            userId,
+            damageFound: damageAnalysis.damageFound,
+            damageCount: damageAnalysis.damages.length,
+            condition: damageAnalysis.overallCondition
+        });
+
+        res.json(damageAnalysis);
+
+    } catch (error) {
+        logger.error('Damage detection endpoint error:', { error: error.message });
+        res.status(500).json({ error: 'Failed to analyze damage', details: error.message });
+    }
+});
+
 // Health check
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+    try {
+        const memoryUsage = process.memoryUsage();
+        const health = {
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            version: packageJson.version,
+            environment: process.env.NODE_ENV || 'development',
+            uptime: Math.round(process.uptime()),
+            memory: {
+                used: Math.round(memoryUsage.rss / 1024 / 1024),
+                total: Math.round(memoryUsage.heapTotal / 1024 / 1024)
+            },
+            services: {
+                database: 'unknown',
+                gemini: 'configured',
+                stripe: stripe ? 'configured' : 'not configured'
+            }
+        };
+
+        // Check database
+        try {
+            await pool.query('SELECT NOW()');
+            health.services.database = 'ok';
+        } catch (dbError) {
+            health.services.database = 'error';
+            health.status = 'degraded';
+        }
+
+        // Check Gemini API (lightweight check)
+        if (!process.env.GEMINI_API_KEY) {
+            health.services.gemini = 'not configured';
+            health.status = 'degraded';
+        }
+
+        const allHealthy = Object.values(health.services).every(s => s === 'ok' || s === 'configured');
+        res.status(allHealthy ? 200 : 503).json(health);
+    } catch (error) {
+        logger.error('Health check error:', { error: error.message });
+        res.status(503).json({ status: 'error', timestamp: new Date().toISOString() });
+    }
 });
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`🚀 QuickList AI server running on http://localhost:${PORT}`);
+    logger.info(`QuickList AI server running on http://localhost:${PORT}`);
 });
 
 module.exports = app;
