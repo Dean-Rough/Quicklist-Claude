@@ -2417,7 +2417,7 @@ app.post('/api/analyze-image-quality', authenticateToken, async (req, res) => {
 app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) => {
     const userId = req.user?.id; // Define at function scope for error logging
     try {
-        const { images, platform, hint } = req.body;
+        const { images, platform, hint, itemModel, conditionInfo } = req.body;
 
         // Validate images
         if (!images || !Array.isArray(images) || images.length === 0) {
@@ -2583,9 +2583,13 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
             : '';
 
         // Improved system prompt v3.0 - See SYSTEM-PROMPTS.md for details
-        const userInfoHint = hint ? `\n🔴 **CRITICAL: USER-PROVIDED ITEM INFORMATION** 🔴\nThe user has explicitly specified this about the item: "${hint}"\n\n**MANDATORY REQUIREMENTS:**\n1. **PRODUCT IDENTIFICATION**: The user's description "${hint}" is your PRIMARY guide for identifying this product\n   - If they say "gaming headphones", you MUST identify gaming headphones, NOT regular headphones\n   - If they mention a specific model name (e.g., "Portal"), prioritize finding that exact model\n   - Use labels/codes to find the exact variant, but the user's description tells you WHAT type of product this is\n   - Example: User says "beoplay portal gaming headphones" → You must identify "Beoplay Portal" (gaming model), NOT "Beoplay HX" (consumer model)\n\n2. **CROSS-REFERENCE**: Compare the user's information with what you see in images\n   - If user says "gaming headphones" and you see a boom mic or gaming-specific features, this confirms it\n   - If there's a mismatch, trust the user's description FIRST, then verify with visual evidence\n\n3. **DESCRIPTION INCORPORATION**: Include user-provided details in your listing:\n   - If mentioning packaging, note it in description\n   - If mentioning specific flaws, detail them in condition\n   - If mentioning size/fit, include in description\n   - If mentioning specific features (gaming, wireless, etc.), highlight these\n\n**This user information is MORE IMPORTANT than visual guesses - the user knows what item they have!**\n\n` : '';
+        const itemModelHint = itemModel ? `\n🔴 **CRITICAL: USER-PROVIDED ITEM NAME/MODEL** 🔴\nThe user has specified the item as: "${itemModel}"\n\n**MANDATORY**:\n- Use this as your PRIMARY guide for product identification\n- Search for this exact model/name to find specifications\n- Cross-reference with visible codes and labels to find the exact variant\n- Include this model/name prominently in the title and description\n\n` : '';
 
-        const prompt = `${userInfoHint}${extractedCodesSection}${visionSection}${conditionSection}You are an expert e-commerce listing specialist for the UK resale market. Your PRIMARY goal is to accurately identify the item by reading ALL visible text and labels in ALL the images provided.
+        const conditionHint = conditionInfo ? `\n🔴 **CRITICAL: USER-PROVIDED CONDITION INFO** 🔴\nThe user has specified: "${conditionInfo}"\n\n**MANDATORY**:\n- Include this information in the condition assessment\n- Detail this prominently in the Condition section\n- Be honest and specific about these condition details\n\n` : '';
+
+        const userInfoHint = hint ? `\n🔴 **USER-PROVIDED ADDITIONAL INFO** 🔴\nAdditional user notes: "${hint}"\n\n**Include this information appropriately in your listing description**\n\n` : '';
+
+        const prompt = `${itemModelHint}${conditionHint}${userInfoHint}${extractedCodesSection}${visionSection}${conditionSection}You are an expert e-commerce listing specialist for the UK resale market. Your PRIMARY goal is to accurately identify the item by reading ALL visible text and labels in ALL the images provided.
 
 **THREE-PHASE IDENTIFICATION SYSTEM:**
 - **Phase 1 (Code Parsing)**: Extracted codes from tags - USE THESE AS PRIMARY IDENTIFIERS
@@ -2689,12 +2693,13 @@ Step 6: **CRITICAL**: If ANY code is visible (model code CK0697-010, style code 
 Base your entire listing on what you can READ and VERIFY, not what you THINK you see
 
 3. **Provide (based on label reading):**
-   - **title**: SEO-OPTIMIZED, factual title (${platform === 'ebay' ? '80 chars max' : '140 chars max for Vinted/Gumtree'}). Format: [Brand] [Product Line/Model Name] [Key Feature] [Size/Variant] [Color/Material if space]
-     **CRITICAL SEO TITLE REQUIREMENTS:**
-     - Front-load most important keywords (Brand + Item Type + Key Feature in first 40 chars)
-     - ALWAYS include size/volume if visible on labels
-     - ALWAYS include the SPECIFIC product line/model name (e.g., "Tech Fleece", "Air Jordan 1 Mid", not just "Jacket")
-     - Include color/material if space allows
+   - **title**: Clear, factual title (${platform === 'ebay' ? '80 chars max' : '140 chars max for Vinted/Gumtree'}).
+     **REQUIRED FORMAT:** [Brand] [Model/Name] [Colourway] [Size] [Model Number if available]
+     **CRITICAL REQUIREMENTS:**
+     - Include brand, model/product name, colourway, and size
+     - Add model number at the end if available (e.g., "AR0479-001")
+     - Keep it clean and factual - avoid marketing language in title
+     - Example: "Nike Air Revaderchi Granite Red Plum UK8 AR0479-001"
      - Avoid filler words ("Amazing", "Wow", "Look", "Rare") unless genuinely rare
      - Use natural keyword placement - title should read well
      - ${platform === 'ebay' ? 'eBay: Keep concise, 80 char limit' : 'Vinted/Gumtree: Use full 140 chars for more keywords'}
@@ -2720,33 +2725,39 @@ Base your entire listing on what you can READ and VERIFY, not what you THINK you
        * Clothing: "Home \\ Clothing \\ Men's Clothing \\ Shirts"
      - Be as specific as possible - drill down to the most precise category available
 
-   - **description**: COMPELLING, SEO-optimized, sales-focused description with BULLET POINTS for scanability (200-300 words)
-     **CRITICAL: This is a SALES description with structured formatting. Make it engaging, persuasive, and easy to scan.**
+   - **description**: Structured marketplace listing with clear sections for maximum clarity and appeal
+     **CRITICAL: Follow this EXACT structure with clear section headers**
 
-     **Structure (MUST FOLLOW):**
-     1st paragraph (2-3 sentences): Hook - Brand, EXACT product line/model name, size, and why it's desirable
-        **MANDATORY**: If you see a style code, you MUST identify and mention the specific product line
-        Example: "Authentic Nike Tech Fleece Jacket in size Large (Style: SP200710EAG) - a premium streetwear essential that combines comfort and style. This iconic piece features Nike's signature Tech Fleece fabric for lightweight warmth without bulk."
+     **REQUIRED FORMAT:**
 
-     2nd section: KEY FEATURES AS BULLET POINTS (MANDATORY - improves SEO and readability)
-        Use • or - for bullets
-        Format: "\n\n**Key Features:**\n• Feature 1\n• Feature 2\n• Feature 3\n• Feature 4"
-        Include 4-6 bullet points covering:
-        - Materials/composition from care labels
-        - Technology/special features (Tech Fleece fabric, Air cushioning, etc.)
-        - Design elements (color, style, branding)
-        - Size/fit information
-        - Condition highlights
-        - Any special edition or sought-after aspects
+     **Marketing Paragraph** (2-3 sentences):
+     - Engaging opening about what the item is, what it offers, and its benefits
+     - Focus on value proposition without being grandiose
+     - Use standard marketing language that highlights key selling points
+     - Example: "The Nike Air Revaderchi brings retro trail-running style to modern streetwear. Inspired by the iconic Air Mowabb, these trainers combine premium materials with classic design elements for a distinctive look that stands out from the crowd."
 
-     3rd paragraph (2-3 sentences): Condition details and closing appeal
-        - Frame condition positively with specific details
-        - Add value proposition: "Perfect for [use case]"
-        - "Offers excellent value compared to £XX retail price"
-        - Include natural keyword placement (brand, product line, use case)
+     **---** (separator line)
+
+     **Facts**
+     List key product specifications and details:
+     • Size: [UK/US/EUR/CM sizing]
+     • Material: [upper materials, construction details]
+     • Colourway: [specific colour names]
+     • Model Number: [style code if available]
+     • [Any other relevant specifications]
+
+     **----** (separator line)
+
+     **Condition**
+     Detailed condition assessment including:
+     - Overall condition category (New/Excellent/Good/Fair etc.)
+     - Specific condition notes from AI analysis
+     - Any user-provided condition information
+     - Visible wear, marks, or defects
+     - Example: "Fair condition with visible dirt and scuff marks on the back heel area and moderate wear on the soles. The uppers show typical signs of use but remain structurally sound. Missing insoles as noted."
 
      **MANDATORY FOOTER:**
-     - MUST end the description with: "\n\nListed by https://www.quicklist.it.com"
+     - MUST end with: "\n\nListing generated from photos by AI, free at www.quicklist.it.com"
      - This attribution MUST be included in every description
 
      **SEO WRITING RULES:**
