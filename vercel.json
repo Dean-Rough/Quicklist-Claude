@@ -1,4 +1,12 @@
 {
+  "outputDirectory": ".",
+  "functions": {
+    "api/server.js": {
+      "memory": 1024,
+      "maxDuration": 10,
+      "includeFiles": "**"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -12,6 +20,15 @@
         {
           "key": "Cache-Control",
           "value": "no-store, no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/(manifest.json|service-worker.js|pwa-features.js|offline.html)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
         }
       ]
     },
@@ -36,5 +53,7 @@
         }
       ]
     }
-  ]
+  ],
+  "trailingSlash": false,
+  "cleanUrls": false
 }
