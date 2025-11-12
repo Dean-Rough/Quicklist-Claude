@@ -4007,6 +4007,12 @@
 
             // Load listings from database
             async loadListingsFromDB() {
+                // Don't try to load if not authenticated
+                if (!this.state.isAuthenticated) {
+                    console.log('Skipping loadListingsFromDB - not authenticated');
+                    return;
+                }
+
                 this.state.loadingSavedItems = true;
                 this.renderSavedItems(); // Show loading state
 
@@ -4029,6 +4035,18 @@
                         }));
                         // Initialize filtered list with all listings
                         this.state.filteredSavedListings = [];
+                    } else {
+                        // Log detailed error for 403s
+                        console.error('Failed to load listings:', {
+                            status: response.status,
+                            statusText: response.statusText,
+                            url: response.url
+                        });
+                        if (response.status === 403) {
+                            console.error('403 Forbidden - Token may be invalid or expired');
+                            // Try to refresh auth
+                            await this.checkClerkAuth();
+                        }
                     }
                 } catch (error) {
                     console.error('Error loading listings:', error);
@@ -6019,12 +6037,26 @@
                             // Update stored token
                             this.state.token = token;
                             localStorage.setItem('quicklist-token', token);
+                            console.log('Got fresh token from Clerk session');
                             return token;
+                        } else {
+                            console.warn('Clerk session exists but getToken() returned null');
                         }
+                    } else {
+                        console.warn('Clerk not available or no active session', {
+                            clerkAvailable: !!window.Clerk,
+                            hasSession: !!(window.Clerk && window.Clerk.session)
+                        });
                     }
 
                     // Fall back to stored token if Clerk is not available
-                    return this.state.token;
+                    const storedToken = this.state.token;
+                    if (storedToken) {
+                        console.log('Using stored token as fallback');
+                    } else {
+                        console.error('No token available - neither from Clerk nor stored');
+                    }
+                    return storedToken;
                 } catch (error) {
                     console.error('Error getting fresh token:', error);
                     return this.state.token;
