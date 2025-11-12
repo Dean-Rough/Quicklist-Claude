@@ -13,7 +13,11 @@ const sanitizeHtml = require('sanitize-html');
 const helmet = require('helmet');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
-require('dotenv').config();
+
+// Only load .env in non-production environments (Vercel provides env vars directly)
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    require('dotenv').config();
+}
 
 // Validate required environment variables
 const requiredEnvVars = [
