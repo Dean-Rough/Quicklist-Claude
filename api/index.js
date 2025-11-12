@@ -5,12 +5,8 @@ try {
     // Load the Express app
     const app = require('../server.js');
 
-    // Wrap to add /api prefix back since Vercel strips it
+    // Export handler for Vercel
     module.exports = (req, res) => {
-        // Vercel strips /api from the path, so add it back
-        if (!req.url.startsWith('/api')) {
-            req.url = '/api' + req.url;
-        }
         console.log('Request:', req.method, req.url);
         try {
             return app(req, res);
