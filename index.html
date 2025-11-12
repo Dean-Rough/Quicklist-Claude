@@ -6525,12 +6525,28 @@ ${description}
                 // Safety check: ensure we're in the app view and form elements exist
                 const titleEl = document.getElementById('outputTitle');
                 const brandEl = document.getElementById('outputBrand');
-                
+
                 if (!titleEl || !brandEl) {
                     console.warn('generateListingHTML called but form elements not found');
                     return '<html><body><p>Listing data not available</p></body></html>';
                 }
-                
+
+                // Helper function to properly escape HTML - first decode any existing entities, then encode properly
+                const escapeHtml = (text) => {
+                    if (!text) return '';
+                    // Create a temporary div to decode HTML entities
+                    const div = document.createElement('div');
+                    div.innerHTML = text;
+                    const decoded = div.textContent || div.innerText || '';
+                    // Now properly escape for HTML
+                    return decoded
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#39;');
+                };
+
                 const title = titleEl.value || '';
                 const brand = brandEl.value || '';
                 const category = document.getElementById('outputCategory')?.value || '';
@@ -6617,50 +6633,50 @@ ${description}
 </head>
 <body>
     <div class="container">
-        <h1>${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</h1>
-        
+        <h1>${escapeHtml(title)}</h1>
+
         <div class="field">
             <span class="field-label">Brand:</span>
-            <span class="field-value">${brand.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
-            <button class="copy-btn" onclick="copyToClipboard('${brand.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;')}')">Copy</button>
+            <span class="field-value">${escapeHtml(brand)}</span>
+            <button class="copy-btn" onclick="copyToClipboard('${brand.replace(/'/g, "\\'")}')">Copy</button>
         </div>
-        
+
         <div class="field">
             <span class="field-label">Category:</span>
-            <span class="field-value">${category.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
-            <button class="copy-btn" onclick="copyToClipboard('${category.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;')}')">Copy</button>
+            <span class="field-value">${escapeHtml(category)}</span>
+            <button class="copy-btn" onclick="copyToClipboard('${category.replace(/'/g, "\\'")}')">Copy</button>
         </div>
-        
+
         <div class="field">
             <span class="field-label">Condition:</span>
-            <span class="field-value">${condition.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
-            <button class="copy-btn" onclick="copyToClipboard('${condition.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;')}')">Copy</button>
+            <span class="field-value">${escapeHtml(condition)}</span>
+            <button class="copy-btn" onclick="copyToClipboard('${condition.replace(/'/g, "\\'")}')">Copy</button>
         </div>
-        
+
         <div class="field">
             <span class="field-label">RRP:</span>
-            <span class="field-value">${rrp.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
-            <button class="copy-btn" onclick="copyToClipboard('${rrp.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;')}')">Copy</button>
+            <span class="field-value">${escapeHtml(rrp)}</span>
+            <button class="copy-btn" onclick="copyToClipboard('${rrp.replace(/'/g, "\\'")}')">Copy</button>
         </div>
-        
+
         <div class="field">
             <span class="field-label">Price:</span>
-            <span class="field-value">${price.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
-            <button class="copy-btn" onclick="copyToClipboard('${price.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;')}')">Copy</button>
+            <span class="field-value">${escapeHtml(price)}</span>
+            <button class="copy-btn" onclick="copyToClipboard('${price.replace(/'/g, "\\'")}')">Copy</button>
         </div>
-        
+
         <div class="field">
             <span class="field-label">Description:</span>
-            <div class="field-value textarea">${description.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</div>
+            <div class="field-value textarea">${escapeHtml(description).replace(/\n/g, '<br>')}</div>
             <button class="copy-btn" onclick="copyToClipboard('${description.replace(/'/g, "\\'").replace(/\\/g, '\\\\').replace(/\n/g, '\\n')}')">Copy</button>
         </div>
-        
+
         <div class="field">
             <span class="field-label">Keywords:</span>
             <div class="keywords">
-                ${keywords.map(kw => `<span class="keyword-tag">${kw.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`).join('')}
+                ${keywords.map(kw => `<span class="keyword-tag">${escapeHtml(kw)}</span>`).join('')}
             </div>
-            <button class="copy-btn" onclick="copyToClipboard('${keywords.join(', ').replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;')}')">Copy All</button>
+            <button class="copy-btn" onclick="copyToClipboard('${keywords.join(', ').replace(/'/g, "\\'")}')">Copy All</button>
         </div>
     </div>
     
