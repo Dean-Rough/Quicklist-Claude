@@ -2621,7 +2621,6 @@
             <nav class="nav-links">
                 <a class="nav-link" onclick="app.navigateToApp('newItem')" aria-label="Create new listing">New Item</a>
                 <a class="nav-link" onclick="app.navigateToApp('savedItems')" aria-label="View saved listings">Saved Items</a>
-                <a class="nav-link" onclick="app.navigateToApp('dashboard')" aria-label="View dashboard">Dashboard</a>
                 <a class="nav-link" onclick="app.navigateToApp('settings')" aria-label="Open settings">Settings</a>
                 <button class="btn btn-secondary" onclick="app.signOut()" style="margin-left: auto;">Sign Out</button>
             </nav>
@@ -3390,38 +3389,6 @@
             </div>
         </div>
 
-        <!-- Dashboard View -->
-        <div id="dashboardView" class="hidden">
-            <div class="container section">
-                <h1 class="section-title">Mobile Dashboard</h1>
-                <div class="stat-grid">
-                    <div class="stat-card">
-                        <h3>Revenue (7d)</h3>
-                        <div class="stat-value" id="statRevenue">£0</div>
-                        <div class="stat-trend" id="statRevenueTrend">+0%</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Active Listings</h3>
-                        <div class="stat-value" id="statListings">0</div>
-                        <div class="stat-trend" id="statListingsTrend">+0 today</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Messages</h3>
-                        <div class="stat-value" id="statMessages">0</div>
-                        <div class="stat-trend" id="statMessagesTrend">Inbox clear</div>
-                    </div>
-                </div>
-                <div class="card" style="margin-bottom: 2rem;">
-                    <h2 style="margin-bottom: 1rem;">Activity Overview</h2>
-                    <div id="dashboardActivity" style="display: grid; gap: 1rem;"></div>
-                </div>
-                <div class="card">
-                    <h2 style="margin-bottom: 1rem;">Workflow Tips</h2>
-                    <ul id="dashboardTips" style="list-style: none; padding: 0; display: grid; gap: 0.75rem;"></ul>
-                </div>
-            </div>
-        </div>
-
         <!-- Messages View -->
         <div id="messagesView" class="hidden">
             <div class="container section">
@@ -4068,7 +4035,6 @@
                 } finally {
                     this.state.loadingSavedItems = false;
                     this.filterSavedItems(); // Use filterSavedItems to render (which calls renderSavedItems)
-                    this.loadDashboardMetrics(true);
                     this.updateBottomNavBadges();
                 }
             },
@@ -7605,26 +7571,6 @@ ${this.state.currentListing?.keywords?.join(', ')}
                 this.initSwipeableCards();
             },
 
-            async loadDashboardMetrics(force = false) {
-                if (!this.state.isAuthenticated) return;
-                if (this.state.dashboardMetrics && !force) {
-                    this.renderDashboard();
-                    return;
-                }
-
-                try {
-                    const response = await this.authenticatedFetch(`${this.apiUrl}/dashboard/metrics`);
-                    if (!response.ok) {
-                        throw new Error('Failed to load dashboard metrics');
-                    }
-                    this.state.dashboardMetrics = await response.json();
-                    this.renderDashboard();
-                } catch (error) {
-                    console.error('Dashboard metrics error:', error);
-                    this.showToast('Could not load dashboard data', 'error');
-                }
-            },
-
             async loadMessages(force = false) {
                 if (!this.state.isAuthenticated || !this.state.token) return;
                 if (this.state.messages.length && !force) {
@@ -7680,80 +7626,11 @@ ${this.state.currentListing?.keywords?.join(', ')}
                         item.id === data.listing.id ? data.listing : item
                     );
                     this.filterSavedItems();
-                    this.loadDashboardMetrics(true);
                     this.showToast('Marked as sold!');
                 } catch (error) {
                     console.error('Mark sold error:', error);
                     this.showToast(error.message || 'Could not mark item as sold', 'error');
                 }
-            },
-
-            renderDashboard() {
-                const revenueEl = document.getElementById('statRevenue');
-                const revenueTrendEl = document.getElementById('statRevenueTrend');
-                const listingsEl = document.getElementById('statListings');
-                const listingsTrendEl = document.getElementById('statListingsTrend');
-                const messagesEl = document.getElementById('statMessages');
-                const messagesTrendEl = document.getElementById('statMessagesTrend');
-                const activityEl = document.getElementById('dashboardActivity');
-                const tipsEl = document.getElementById('dashboardTips');
-
-                if (!revenueEl) return;
-
-                const metrics = this.state.dashboardMetrics;
-
-                if (!metrics) {
-                    revenueEl.textContent = '£0.00';
-                    revenueTrendEl.textContent = 'Loading...';
-                    listingsEl.textContent = '—';
-                    listingsTrendEl.textContent = 'Loading...';
-                    messagesEl.textContent = '—';
-                    messagesTrendEl.textContent = 'Loading...';
-                    if (activityEl) {
-                        activityEl.innerHTML = '<p style="color: var(--text-muted);">Loading activity...</p>';
-                    }
-                    if (tipsEl) {
-                        tipsEl.innerHTML = this.state.dashboardTips.map(tip => `<li style="color: var(--text-secondary);">• ${tip}</li>`).join('');
-                    }
-                    return;
-                }
-
-                const revenueValue = metrics.revenueLast7Days || 0;
-                revenueEl.textContent = `£${revenueValue.toFixed(2)}`;
-                revenueTrendEl.textContent = `${metrics.revenueTrend >= 0 ? '+' : ''}${metrics.revenueTrend}% vs last week`;
-                listingsEl.textContent = metrics.activeListings ?? 0;
-                listingsTrendEl.textContent = metrics.listingsAddedToday
-                    ? `${metrics.listingsAddedToday} added today`
-                    : 'No new listings today';
-                messagesEl.textContent = metrics.unreadMessages ?? 0;
-                messagesTrendEl.textContent = metrics.unreadMessages
-                    ? `${metrics.unreadMessages} awaiting reply`
-                    : 'Inbox clear';
-
-                if (activityEl) {
-                    const items = (metrics.activity || []).map(item => {
-                        const detail = typeof item.detail !== 'undefined' ? item.detail : item.value;
-                        return `
-                        <div style="display: flex; gap: 0.75rem; align-items: center;">
-                            <div style="font-size: 1.5rem;">${item.icon || '•'}</div>
-                            <div>
-                                <strong>${item.label}</strong>
-                                <p style="margin: 0; color: var(--text-muted);">${detail}</p>
-                            </div>
-                        </div>
-                    `;
-                    });
-                    activityEl.innerHTML = items.length ? items.join('') : '<p style="color: var(--text-muted);">No recent activity yet</p>';
-                }
-
-                if (tipsEl) {
-                    const tipSource = metrics.tips && metrics.tips.length ? metrics.tips : this.state.dashboardTips;
-                    tipsEl.innerHTML = tipSource.map(tip => `<li style="color: var(--text-secondary);">• ${tip}</li>`).join('');
-                }
-            },
-
-            updateDashboard() {
-                this.renderDashboard();
             },
 
             renderMessages() {
@@ -7935,8 +7812,6 @@ ${this.state.currentListing?.keywords?.join(', ')}
 
                 if (view === 'savedItems') {
                     this.renderSavedItems();
-                } else if (view === 'dashboard') {
-                    this.loadDashboardMetrics();
                 } else if (view === 'settings') {
                     this.loadSubscriptionData();
                 } else if (view === 'profile') {
@@ -7961,15 +7836,6 @@ ${this.state.currentListing?.keywords?.join(', ')}
             },
 
             // Go to dashboard - for authenticated users
-            goToDashboard() {
-                if (!this.state.isAuthenticated && !(window.Clerk && window.Clerk.user)) {
-                    this.showAuthModal('signIn');
-                    return;
-                }
-                this.updateUI();
-                this.navigateToApp('newItem');
-            },
-
             // Check Clerk authentication
             setupClerkListeners() {
                 // Listen for Clerk sign-in events
@@ -8160,12 +8026,6 @@ ${this.state.currentListing?.keywords?.join(', ')}
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
                             </svg>
                             Saved Items
-                        </a>
-                        <a onclick="app.navigateToApp('dashboard'); app.closeMobileMenu()">
-                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                            </svg>
-                            Dashboard
                         </a>
                         <div class="menu-divider"></div>
                         <a onclick="app.navigateToApp('settings'); app.closeMobileMenu()">
@@ -8646,9 +8506,6 @@ ${this.state.currentListing?.keywords?.join(', ')}
 
                     // ALWAYS go to New Item page for authenticated users
                     this.navigateToApp('newItem');
-
-                    // Load app data
-                    this.loadDashboardMetrics();
                 } else {
                     // User is NOT signed in - show marketing, hide app
                     marketingView.style.display = 'block';
