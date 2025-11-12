@@ -899,23 +899,26 @@
 
         .image-thumbnail-delete {
             position: absolute;
-            top: 4px;
-            right: 4px;
-            width: 28px;
-            height: 28px;
-            background: var(--error);
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            background: rgba(0, 0, 0, 0.5);
             border: none;
-            border-radius: 6px;
+            border-radius: 50%;
             color: white;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 0;
+            pointer-events: auto;
             opacity: 0.9;
         }
 
         .image-thumbnail-delete:hover {
             opacity: 1;
+            background: rgba(0, 0, 0, 0.7);
         }
 
         .image-thumbnail-status {
@@ -4456,8 +4459,8 @@
                         <img src="${img.url}" alt="Uploaded" style="transform: rotate(${img.rotation || 0}deg); pointer-events: none;">
 
                         <!-- Delete button with white trash can icon -->
-                        <button class="image-thumbnail-delete" onclick="event.stopPropagation(); app.deleteImage('${img.id}')" aria-label="Delete image" title="Delete" style="background: rgba(0,0,0,0.5); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <button class="image-thumbnail-delete" onclick="event.stopPropagation(); app.deleteImage('${img.id}')" aria-label="Delete image" title="Delete">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
                                 <polyline points="3 6 5 6 21 6"></polyline>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                 <line x1="10" y1="11" x2="10" y2="17"></line>
