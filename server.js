@@ -254,7 +254,17 @@ app.get('/api/ping', (req, res) => {
 });
 
 // Clerk middleware - must be before routes that need auth
-app.use(clerkMiddleware());
+// Only use Clerk middleware if properly configured
+if (process.env.CLERK_SECRET_KEY && process.env.CLERK_PUBLISHABLE_KEY) {
+    try {
+        app.use(clerkMiddleware());
+        logger.info('Clerk middleware initialized');
+    } catch (error) {
+        logger.error('Failed to initialize Clerk middleware:', error);
+    }
+} else {
+    logger.warn('Clerk not configured - skipping middleware');
+}
 
 // Auth config endpoint (for frontend)
 app.get('/api/config/auth', (req, res) => {
