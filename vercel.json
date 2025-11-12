@@ -1,54 +1,8 @@
 {
-  "version": 2,
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "builds": [
+  "rewrites": [
     {
-      "src": "index.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "api/server.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/server.js"
-    },
-    {
-      "src": "/manifest.json",
-      "dest": "/manifest.json"
-    },
-    {
-      "src": "/service-worker.js",
-      "dest": "/service-worker.js"
-    },
-    {
-      "src": "/pwa-features.js",
-      "dest": "/pwa-features.js"
-    },
-    {
-      "src": "/offline.html",
-      "dest": "/offline.html"
-    },
-    {
-      "src": "/brand/(.*)",
-      "dest": "/brand/$1"
-    },
-    {
-      "src": "/icons/(.*)",
-      "dest": "/icons/$1"
-    },
-    {
-      "src": "/json_anim/(.*)",
-      "dest": "/json_anim/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/api/:path*",
+      "destination": "/api/server.js"
     }
   ],
   "headers": [
