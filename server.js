@@ -3340,6 +3340,121 @@ app.post('/api/listings/:id/post-to-ebay', authenticateToken, async (req, res) =
 
 // Feature 6: AI Damage Detection
 // Analyze multiple images for damage, defects, and wear
+async function analyzeLabelImage(image, apiKey) {
+    try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+        const labelPrompt = `You are a product information extraction AI analyzing a product label image.
+
+EXTRACT ALL VISIBLE INFORMATION from this product label:
+
+1. PRODUCT IDENTIFICATION:
+   - Product name/title
+   - Brand name
+   - Model number/code
+   - SKU/Product code
+   - Barcode number (UPC, EAN, etc.)
+
+2. PRODUCT DETAILS:
+   - Category (e.g., clothing, electronics, shoes, toys, etc.)
+   - Size (if applicable - clothing size, dimensions, volume, weight)
+   - Color
+   - Material/fabric composition
+   - Country of origin/manufacture
+   - Date of manufacture (if visible)
+
+3. PRICING INFORMATION:
+   - Retail price/RRP/MSRP (if visible)
+   - Any price tags or stickers
+
+4. CARE INSTRUCTIONS:
+   - Washing instructions
+   - Care symbols
+   - Storage instructions
+
+5. OTHER INFORMATION:
+   - Serial numbers
+   - Batch/lot numbers
+   - Certifications (CE, UL, etc.)
+   - Age recommendations
+   - Warnings or safety information
+
+Return JSON:
+{
+  "found": true/false,
+  "title": "product name",
+  "brand": "brand name",
+  "model": "model number",
+  "barcode": "barcode number",
+  "category": "product category",
+  "size": "size information",
+  "color": "color",
+  "material": "material composition",
+  "rrp": "retail price",
+  "price": "any visible price",
+  "countryOfOrigin": "country",
+  "careInstructions": ["instruction 1", "instruction 2"],
+  "features": ["feature 1", "feature 2"],
+  "description": "comprehensive product description based on label info",
+  "confidence": 0.0-1.0,
+  "extractedText": "all readable text from label"
+}
+
+BE COMPREHENSIVE. Extract every piece of readable information from the label.
+If you can't read certain parts clearly, note this in the response.`;
+
+        const parts = [
+            { text: labelPrompt },
+            {
+                inline_data: {
+                    mime_type: 'image/jpeg',
+                    data: image.split(',')[1] // Remove data:image/jpeg;base64, prefix
+                }
+            }
+        ];
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: parts
+                }],
+                generationConfig: {
+                    temperature: 0.2,  // Low temperature for accurate text extraction
+                    topP: 0.95,
+                    topK: 40,
+                    maxOutputTokens: 2048
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            logger.error('Gemini API error in label analysis:', { status: response.status, error: errorData });
+            throw new Error(`Gemini API request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.candidates || data.candidates.length === 0) {
+            throw new Error('No response from Gemini API');
+        }
+
+        const text = data.candidates[0].content.parts[0].text;
+        const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const labelData = JSON.parse(cleanedText);
+
+        return labelData;
+
+    } catch (error) {
+        logger.error('Label analysis error:', { error: error.message, stack: error.stack });
+        throw error;
+    }
+}
+
 async function analyzeDamageInImages(images, apiKey) {
     try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
@@ -3532,6 +3647,37 @@ app.post('/api/analyze-damage', authenticateToken, async (req, res) => {
     } catch (error) {
         logger.error('Damage detection endpoint error:', { error: error.message });
         res.status(500).json({ error: 'Failed to analyze damage', details: error.message });
+    }
+});
+
+// Label Analysis - Extract all product information from a label image
+app.post('/api/analyze-label', authenticateToken, async (req, res) => {
+    try {
+        const { image } = req.body;
+        const userId = req.user.id;
+
+        if (!image) {
+            return res.status(400).json({ error: 'Image data required' });
+        }
+
+        logger.info('Analyzing product label:', { userId });
+
+        const apiKey = process.env.GEMINI_API_KEY;
+        const labelData = await analyzeLabelImage(image, apiKey);
+
+        logger.info('Label analysis complete:', {
+            userId,
+            found: labelData.found,
+            hasTitle: !!labelData.title,
+            hasBrand: !!labelData.brand,
+            hasBarcode: !!labelData.barcode
+        });
+
+        res.json(labelData);
+
+    } catch (error) {
+        logger.error('Label analysis endpoint error:', { error: error.message });
+        res.status(500).json({ error: 'Failed to analyze label', details: error.message });
     }
 });
 
