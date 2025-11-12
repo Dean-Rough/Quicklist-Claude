@@ -6718,6 +6718,7 @@ ${description}
                     const zip = new JSZip();
                     const imagesFolder = zip.folder('images');
                     const generateHero = document.getElementById('toggleHero').checked;
+                    const getStockImage = document.getElementById('toggleStock').checked;
                     const fixBlur = document.getElementById('toggleBlur').checked;
                     const autoEnhance = document.getElementById('toggleEnhance').checked;
 
@@ -6789,6 +6790,24 @@ ${this.state.currentListing?.keywords?.join(', ')}
                             zip.file('hero.jpg', heroBlob);
                         } catch (error) {
                             console.warn('Hero image generation failed:', error);
+                        }
+                    }
+
+                    // Get stock image if enabled and available
+                    if (getStockImage && this.state.currentListing?.stockImageData) {
+                        try {
+                            btn.innerHTML = '<span class="spinner"></span> Downloading stock image...';
+                            const stockData = this.state.currentListing.stockImageData;
+                            if (stockData.imageUrl) {
+                                // Fetch the stock image
+                                const response = await fetch(stockData.imageUrl);
+                                if (response.ok) {
+                                    const blob = await response.blob();
+                                    zip.file('stock-image.jpg', blob);
+                                }
+                            }
+                        } catch (error) {
+                            console.warn('Stock image download failed:', error);
                         }
                     }
 
