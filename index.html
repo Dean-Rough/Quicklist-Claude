@@ -2917,7 +2917,7 @@
                                 <li>Image enhancement</li>
                                 <li>Keywords & hashtags</li>
                             </ul>
-                            <button class="btn btn-secondary" onclick="app.showAuthModal()">Choose Casual</button>
+                            <button class="btn btn-secondary" onclick="app.handlePlanSelection('casual', 'price_casual')">Choose Casual</button>
                         </div>
                         <div class="pricing-card featured">
                             <div class="pricing-tier">Pro</div>
@@ -2931,7 +2931,7 @@
                                 <li>Blur detection & fixing</li>
                                 <li>Batch processing</li>
                             </ul>
-                            <button class="btn btn-primary" onclick="app.showAuthModal()">Choose Pro</button>
+                            <button class="btn btn-primary" onclick="app.handlePlanSelection('pro', 'price_pro')">Choose Pro</button>
                         </div>
                         <div class="pricing-card">
                             <div class="pricing-tier">Max</div>
@@ -2945,7 +2945,7 @@
                                 <li>Custom integrations</li>
                                 <li>Priority support</li>
                             </ul>
-                            <button class="btn btn-secondary" onclick="app.showAuthModal()">Choose Max</button>
+                            <button class="btn btn-secondary" onclick="app.handlePlanSelection('max', 'price_max')">Choose Max</button>
                         </div>
                     </div>
                 </div>
@@ -7360,6 +7360,19 @@ ${this.state.currentListing?.keywords?.join(', ')}
                         this.showToast('Welcome back!', 'success');
                         this.state.hasShownWelcomeToast = true;
                     }
+
+                    // Check for pending plan selection
+                    const pendingPlan = localStorage.getItem('pendingPlanSelection');
+                    if (pendingPlan) {
+                        try {
+                            const { planType, priceId } = JSON.parse(pendingPlan);
+                            localStorage.removeItem('pendingPlanSelection');
+                            // Small delay to ensure everything is initialized
+                            setTimeout(() => this.startCheckout(priceId, planType), 1000);
+                        } catch (error) {
+                            console.error('Error processing pending plan:', error);
+                        }
+                    }
                 });
 
                 // Listen for Clerk sign-out events
@@ -7831,33 +7844,35 @@ ${this.state.currentListing?.keywords?.join(', ')}
                     console.error('Error fetching current plan:', error);
                 }
 
-                // Define plans (price IDs should be set in your Stripe dashboard)
-                // For now using placeholder IDs - you'll need to replace these with actual Stripe price IDs
+                // Define plans with Stripe test price IDs
                 const plans = [
                     {
-                        name: 'Starter',
-                        price: '£19',
+                        name: 'Casual',
+                        price: '£4.99',
                         period: 'month',
-                        priceId: 'price_starter', // Replace with actual Stripe price ID
-                        features: ['50 listings/month', 'All marketplaces', 'API posting', 'Cross-listing', 'Auto-delist', 'Basic analytics'],
-                        current: currentPlan === 'starter'
+                        planType: 'casual',
+                        priceId: 'price_casual',
+                        features: ['50 listings per month', 'Advanced AI descriptions', 'Market data pricing', 'Image enhancement', 'Keywords & hashtags'],
+                        current: currentPlan === 'casual'
                     },
                     {
                         name: 'Pro',
-                        price: '£39',
+                        price: '£9.99',
                         period: 'month',
-                        priceId: 'price_pro', // Replace with actual Stripe price ID
-                        features: ['200 listings/month', 'Bulk processing', 'Advanced analytics', 'Priority support', 'Export data'],
+                        planType: 'pro',
+                        priceId: 'price_pro',
+                        features: ['200 listings per month', 'Premium AI descriptions', 'Real-time market data', 'Hero image generation', 'Blur detection & fixing', 'Batch processing'],
                         current: currentPlan === 'pro',
                         featured: true
                     },
                     {
-                        name: 'Business',
-                        price: '£69',
+                        name: 'Max',
+                        price: '£19.99',
                         period: 'month',
-                        priceId: 'price_business', // Replace with actual Stripe price ID
-                        features: ['1,000 listings/month', 'Cloud automation', 'Scheduled publishing', 'Template system', 'Priority support'],
-                        current: currentPlan === 'business'
+                        planType: 'max',
+                        priceId: 'price_max',
+                        features: ['Unlimited listings', 'Everything in Pro', 'Priority processing', 'API access', 'Custom integrations', 'Priority support'],
+                        current: currentPlan === 'max'
                     }
                 ];
 
@@ -7873,9 +7888,9 @@ ${this.state.currentListing?.keywords?.join(', ')}
                         <ul style="list-style: none; padding: 0; margin-bottom: 1.5rem;">
                             ${plan.features.map(f => `<li style="padding: 0.5rem 0; border-bottom: 1px solid var(--bg-secondary);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle"><polyline points="20 6 9 17 4 12"></polyline></svg> ${f}</li>`).join('')}
                         </ul>
-                        ${plan.current 
+                        ${plan.current
                             ? '<button class="btn btn-secondary" disabled>Current Plan</button>'
-                            : `<button class="btn ${plan.featured ? 'btn-primary' : 'btn-secondary'}" onclick="app.startCheckout('${plan.priceId}', '${plan.name.toLowerCase()}')">Upgrade to ${plan.name}</button>`
+                            : `<button class="btn ${plan.featured ? 'btn-primary' : 'btn-secondary'}" onclick="app.startCheckout('${plan.priceId}', '${plan.planType}')">Upgrade to ${plan.name}</button>`
                         }
                     </div>
                 `).join('');
@@ -7886,6 +7901,19 @@ ${this.state.currentListing?.keywords?.join(', ')}
             closeUpgradeModal() {
                 const modal = document.getElementById('upgradeModal');
                 if (modal) modal.classList.add('hidden');
+            },
+
+            handlePlanSelection(planType, priceId) {
+                // Check if user is authenticated
+                if (!this.state.isAuthenticated) {
+                    // Store the selected plan for after authentication
+                    localStorage.setItem('pendingPlanSelection', JSON.stringify({ planType, priceId }));
+                    this.showAuthModal();
+                    return;
+                }
+
+                // If authenticated, start checkout immediately
+                this.startCheckout(priceId, planType);
             },
 
             async startCheckout(priceId, planType) {
