@@ -248,6 +248,11 @@ app.post('/api/stripe/webhook', stripeWebhookMiddleware, async (req, res) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Test endpoint before Clerk middleware
+app.get('/api/ping', (req, res) => {
+    res.json({ message: 'pong', timestamp: new Date().toISOString() });
+});
+
 // Clerk middleware - must be before routes that need auth
 app.use(clerkMiddleware());
 
