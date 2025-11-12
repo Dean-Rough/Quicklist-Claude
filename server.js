@@ -3551,9 +3551,11 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
-// Start server
-app.listen(PORT, () => {
-    logger.info(`QuickList AI server running on http://localhost:${PORT}`);
-});
+// Start server (only in non-serverless environments)
+if (process.env.VERCEL !== '1') {
+    app.listen(PORT, () => {
+        logger.info(`QuickList AI server running on http://localhost:${PORT}`);
+    });
+}
 
 module.exports = app;
