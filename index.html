@@ -3910,7 +3910,8 @@
                 this.setupOfflineDetection();
 
                 // Setup pull-to-refresh
-                this.setupPullToRefresh();
+                // Disabled - was causing issues on mobile
+                // this.setupPullToRefresh();
 
                 // Check for onboarding
                 this.checkOnboarding();
@@ -4425,32 +4426,45 @@
                     uploader.classList.remove('compact');
                 }
 
-                grid.innerHTML = this.state.uploadedImages.map((img, index) => `
-                    <div class="image-thumbnail" style="position: relative;" data-rotation="${img.rotation || 0}">
-                        <img src="${img.url}" alt="Uploaded" style="transform: rotate(${img.rotation || 0}deg);">
-                        <button class="image-thumbnail-delete" onclick="app.deleteImage('${img.id}')" aria-label="Delete image" title="Delete">×</button>
-                        <button class="image-thumbnail-rotate" onclick="app.rotateImage('${img.id}')" aria-label="Rotate image" title="Rotate" style="position: absolute; top: 5px; right: 35px; width: 24px; height: 24px; background: rgba(0,0,0,0.6); border: none; border-radius: 4px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-                            </svg>
-                        </button>
-                        ${img.status === 'checking' ?
-                            '<div class="image-thumbnail-status">Checking...</div>' :
-                            img.isBlurry ?
-                            '<div class="image-thumbnail-status warning"><span style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Blur Detected</div>' :
-                            ''
+                grid.innerHTML = this.state.uploadedImages.map((img, index) => {
+                    // Determine quality score color
+                    let scoreColor = '#10b981'; // green
+                    if (img.qualityScore !== undefined) {
+                        if (img.qualityScore <= 40) {
+                            scoreColor = '#ef4444'; // red
+                        } else if (img.qualityScore <= 70) {
+                            scoreColor = '#f59e0b'; // yellow/orange
                         }
+                    }
+
+                    return `
+                    <div class="image-thumbnail" style="position: relative; cursor: pointer;" data-rotation="${img.rotation || 0}" onclick="app.openImageEditor(${index})">
+                        <img src="${img.url}" alt="Uploaded" style="transform: rotate(${img.rotation || 0}deg); pointer-events: none;">
+
+                        <!-- Delete button -->
+                        <button class="image-thumbnail-delete" onclick="event.stopPropagation(); app.deleteImage('${img.id}')" aria-label="Delete image" title="Delete">×</button>
+
+                        <!-- Quality score circle (top left) -->
                         ${img.qualityScore !== undefined ? `
-                            <button onclick="app.showQualityAnalysis(${index})" style="position: absolute; bottom: 5px; left: 5px; right: 5px; background: ${
-                                img.qualityScore >= 80 ? 'var(--success-color)' :
-                                img.qualityScore >= 60 ? 'var(--warning-color)' :
-                                'var(--error-color)'
-                            }; color: white; padding: 6px; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;">
-                                Score: ${img.qualityScore} - View Analysis
-                            </button>
+                            <div style="position: absolute; top: 8px; left: 8px; width: 40px; height: 40px; background: ${scoreColor}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.3); pointer-events: none;">
+                                ${img.qualityScore}
+                            </div>
                         ` : ''}
+
+                        <!-- Warning icon (top right) if blurry -->
+                        ${img.isBlurry ? `
+                            <div style="position: absolute; top: 8px; right: 40px; width: 32px; height: 32px; background: rgba(245, 158, 11, 0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); pointer-events: none;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M12 9v4M12 17h.01" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        ` : ''}
+
+                        ${img.status === 'checking' ? '<div class="image-thumbnail-status">Analyzing...</div>' : ''}
                     </div>
-                `).join('');
+                `;
+                }).join('');
 
                 this.renderReviewImages();
             },
@@ -4469,6 +4483,99 @@
                     img.rotation = ((img.rotation || 0) + 90) % 360;
                     this.renderImageGrid();
                 }
+            },
+
+            // Open image editor modal
+            openImageEditor(index) {
+                this.state.editingImageIndex = index;
+                const img = this.state.uploadedImages[index];
+                if (!img) return;
+
+                const modal = document.getElementById('imageEditorModal');
+                const canvas = document.getElementById('imageEditorCanvas');
+                const ctx = canvas.getContext('2d');
+
+                modal.classList.remove('hidden');
+
+                // Load image onto canvas
+                const image = new Image();
+                image.onload = () => {
+                    // Set canvas size to image size
+                    canvas.width = image.width;
+                    canvas.height = image.height;
+
+                    // Apply current rotation
+                    const rotation = img.rotation || 0;
+                    if (rotation !== 0) {
+                        // Adjust canvas size for rotation
+                        if (rotation === 90 || rotation === 270) {
+                            canvas.width = image.height;
+                            canvas.height = image.width;
+                        }
+                        // Save context, translate and rotate
+                        ctx.save();
+                        ctx.translate(canvas.width / 2, canvas.height / 2);
+                        ctx.rotate((rotation * Math.PI) / 180);
+                        ctx.drawImage(image, -image.width / 2, -image.height / 2);
+                        ctx.restore();
+                    } else {
+                        ctx.drawImage(image, 0, 0);
+                    }
+                };
+                image.src = img.url;
+            },
+
+            // Rotate image in editor
+            rotateEditorImage(degrees) {
+                const index = this.state.editingImageIndex;
+                const img = this.state.uploadedImages[index];
+                if (!img) return;
+
+                // Update rotation
+                img.rotation = ((img.rotation || 0) + degrees + 360) % 360;
+
+                // Redraw canvas
+                const canvas = document.getElementById('imageEditorCanvas');
+                const ctx = canvas.getContext('2d');
+                const image = new Image();
+
+                image.onload = () => {
+                    const rotation = img.rotation;
+                    // Adjust canvas size for rotation
+                    if (rotation === 90 || rotation === 270) {
+                        canvas.width = image.height;
+                        canvas.height = image.width;
+                    } else {
+                        canvas.width = image.width;
+                        canvas.height = image.height;
+                    }
+
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    if (rotation !== 0) {
+                        ctx.save();
+                        ctx.translate(canvas.width / 2, canvas.height / 2);
+                        ctx.rotate((rotation * Math.PI) / 180);
+                        ctx.drawImage(image, -image.width / 2, -image.height / 2);
+                        ctx.restore();
+                    } else {
+                        ctx.drawImage(image, 0, 0);
+                    }
+                };
+                image.src = img.url;
+            },
+
+            // Save image edits
+            saveImageEdits() {
+                // Close modal and update grid
+                this.closeImageEditor();
+                this.renderImageGrid();
+            },
+
+            // Close image editor
+            closeImageEditor() {
+                const modal = document.getElementById('imageEditorModal');
+                modal.classList.add('hidden');
+                this.state.editingImageIndex = null;
             },
 
             // Show quality analysis modal
@@ -7455,7 +7562,8 @@ ${this.state.currentListing?.keywords?.join(', ')}
                 document.getElementById(view + 'View').classList.remove('hidden');
 
                 this.state.currentView = view;
-                window.scrollTo(0, 0);
+                // Removed auto-scroll - was causing unwanted scrolling during auth checks
+                // window.scrollTo(0, 0);
             },
 
             navigateToApp(view) {
@@ -7498,7 +7606,8 @@ ${this.state.currentListing?.keywords?.join(', ')}
                 }
 
                 this.highlightBottomTab(view);
-                window.scrollTo(0, 0);
+                // Removed auto-scroll - was causing unwanted scrolling during auth checks
+                // window.scrollTo(0, 0);
             },
 
             // Authentication
@@ -8718,8 +8827,13 @@ ${this.state.currentListing?.keywords?.join(', ')}
 
             // Check if device is mobile
             isMobile() {
-                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                       window.matchMedia('(max-width: 768px)').matches;
+                // Check for touch capability AND mobile user agent OR small screen
+                const hasTouchScreen = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                const isSmallScreen = window.matchMedia('(max-width: 768px)').matches;
+
+                // If it's a mobile device by user agent, always return true regardless of orientation
+                return isMobileUA || (hasTouchScreen && isSmallScreen);
             },
 
             initBarcodeScanner() {
@@ -9393,6 +9507,42 @@ ${this.state.currentListing?.keywords?.join(', ')}
                 <button class="btn btn-secondary" onclick="app.closeImageSourceModal()" style="margin-top: 0.5rem;">
                     Cancel
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Editor Modal -->
+    <div id="imageEditorModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 800px; padding: 0;">
+            <div class="modal-header" style="padding: 1rem; background: var(--bg-primary); border-bottom: 1px solid var(--border-color);">
+                <h3>Edit Image</h3>
+                <button class="btn-close" onclick="app.closeImageEditor()">×</button>
+            </div>
+
+            <div style="background: #000; position: relative;">
+                <canvas id="imageEditorCanvas" style="max-width: 100%; max-height: 70vh; display: block; margin: 0 auto;"></canvas>
+            </div>
+
+            <div style="padding: 1rem; background: var(--bg-primary); border-top: 1px solid var(--border-color);">
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <button class="btn btn-secondary" onclick="app.rotateEditorImage(-90)" style="flex: 1;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:4px;">
+                            <path d="M2.5 2v6h6M2 11.5a10 10 0 0 1 18.8-4.3"/>
+                        </svg>
+                        Rotate Left
+                    </button>
+                    <button class="btn btn-secondary" onclick="app.rotateEditorImage(90)" style="flex: 1;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:4px;">
+                            <path d="M21.5 2v6h-6M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                        </svg>
+                        Rotate Right
+                    </button>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-secondary" onclick="app.closeImageEditor()" style="flex: 1;">Cancel</button>
+                    <button class="btn btn-primary" onclick="app.saveImageEdits()" style="flex: 1;">Save Changes</button>
+                </div>
             </div>
         </div>
     </div>
