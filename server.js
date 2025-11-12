@@ -39,7 +39,7 @@ const stripe = process.env.STRIPE_SECRET_KEY
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
-const frontendUrl = process.env.FRONTEND_URL || (isProduction ? 'https://quicklist.ai' : 'http://localhost:4577');
+const frontendUrl = process.env.FRONTEND_URL || (isProduction ? 'https://quicklist.it.com' : 'http://localhost:4577');
 
 // Database connection with proper configuration
 let pool;
@@ -157,6 +157,7 @@ const corsOptions = {
             frontendUrl,
             'http://localhost:4577',
             'http://localhost:3000',
+            'https://quicklist.it.com',
             'https://quicklist.ai',
             process.env.FRONTEND_URL
         ].filter(Boolean);
