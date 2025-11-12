@@ -9128,7 +9128,10 @@ ${this.state.currentListing?.keywords?.join(', ')}
             initSwipeableCards() {
                 const cards = document.querySelectorAll('.swipeable-card');
 
-                cards.forEach(card => {
+                // Check if user has seen the swipe hint animation
+                const hasSeenSwipeHint = localStorage.getItem('hasSeenSwipeHint');
+
+                cards.forEach((card, index) => {
                     if (card.dataset.swipeBound === 'true') return;
                     card.dataset.swipeBound = 'true';
 
@@ -9137,6 +9140,14 @@ ${this.state.currentListing?.keywords?.join(', ')}
                     let isDragging = false;
 
                     const content = card.querySelector('.swipeable-card-content');
+
+                    // Show hint animation on first card only, and only once
+                    if (!hasSeenSwipeHint && index === 0) {
+                        setTimeout(() => {
+                            this.playSwipeHintAnimation(content);
+                            localStorage.setItem('hasSeenSwipeHint', 'true');
+                        }, 500); // Small delay so user notices it
+                    }
 
                     card.addEventListener('touchstart', (e) => {
                         startX = e.touches[0].clientX;
@@ -9172,6 +9183,27 @@ ${this.state.currentListing?.keywords?.join(', ')}
                         content.style.transform = 'translateX(0)';
                     });
                 });
+            },
+
+            // Play subtle hint animation showing swipe capability
+            playSwipeHintAnimation(content) {
+                if (!content) return;
+
+                // Gentle slide right, then left, then center
+                const keyframes = [
+                    { transform: 'translateX(0px)', easing: 'ease-out' },
+                    { transform: 'translateX(40px)', easing: 'ease-in-out' },
+                    { transform: 'translateX(-40px)', easing: 'ease-in-out' },
+                    { transform: 'translateX(0px)', easing: 'ease-out' }
+                ];
+
+                const timing = {
+                    duration: 2000, // 2 seconds total
+                    iterations: 1,
+                    easing: 'ease-in-out'
+                };
+
+                content.animate(keyframes, timing);
             },
 
             handleSwipeAction(card, action) {
