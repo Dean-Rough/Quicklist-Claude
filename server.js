@@ -30,7 +30,10 @@ const missing = requiredEnvVars.filter(v => !process.env[v]);
 if (missing.length > 0) {
     logger.error('Missing required environment variables:', missing.join(', '));
     logger.error('Required: DATABASE_URL, GEMINI_API_KEY, CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY');
-    process.exit(1);
+    // Don't exit in serverless - log error and continue
+    if (!process.env.VERCEL) {
+        process.exit(1);
+    }
 }
 
 logger.info('Clerk authentication enabled');
@@ -58,18 +61,23 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL !== 'postgresql://place
         connectionTimeoutMillis: 2000,
     });
 
-    // Test database connection
-    pool.query('SELECT NOW()', (err, res) => {
-        if (err) {
-            logger.error('Database connection error:', err);
-            process.exit(1);
-        } else {
-            logger.info('Database connected successfully');
-        }
-    });
+    // Test database connection (only in non-serverless environments)
+    if (!process.env.VERCEL) {
+        pool.query('SELECT NOW()', (err, res) => {
+            if (err) {
+                logger.error('Database connection error:', err);
+                process.exit(1);
+            } else {
+                logger.info('Database connected successfully');
+            }
+        });
+    }
 } else {
     logger.error('No valid DATABASE_URL found. Database connection required.');
-    process.exit(1);
+    // Don't exit in serverless - let requests fail gracefully
+    if (!process.env.VERCEL) {
+        process.exit(1);
+    }
 }
 
 // Clerk is now the only authentication method
