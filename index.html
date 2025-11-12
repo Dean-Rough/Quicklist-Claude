@@ -4423,10 +4423,15 @@
                     uploader.classList.remove('compact');
                 }
 
-                grid.innerHTML = this.state.uploadedImages.map(img => `
-                    <div class="image-thumbnail" style="position: relative;">
-                        <img src="${img.url}" alt="Uploaded">
-                        <button class="image-thumbnail-delete" onclick="app.deleteImage('${img.id}')" aria-label="Delete image">×</button>
+                grid.innerHTML = this.state.uploadedImages.map((img, index) => `
+                    <div class="image-thumbnail" style="position: relative;" data-rotation="${img.rotation || 0}">
+                        <img src="${img.url}" alt="Uploaded" style="transform: rotate(${img.rotation || 0}deg);">
+                        <button class="image-thumbnail-delete" onclick="app.deleteImage('${img.id}')" aria-label="Delete image" title="Delete">×</button>
+                        <button class="image-thumbnail-rotate" onclick="app.rotateImage('${img.id}')" aria-label="Rotate image" title="Rotate" style="position: absolute; top: 5px; right: 35px; width: 24px; height: 24px; background: rgba(0,0,0,0.6); border: none; border-radius: 4px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                            </svg>
+                        </button>
                         ${img.status === 'checking' ?
                             '<div class="image-thumbnail-status">Checking...</div>' :
                             img.isBlurry ?
@@ -4434,13 +4439,13 @@
                             ''
                         }
                         ${img.qualityScore !== undefined ? `
-                            <div style="position: absolute; bottom: 5px; right: 5px; background: ${
+                            <button onclick="app.showQualityAnalysis(${index})" style="position: absolute; bottom: 5px; left: 5px; right: 5px; background: ${
                                 img.qualityScore >= 80 ? 'var(--success-color)' :
                                 img.qualityScore >= 60 ? 'var(--warning-color)' :
                                 'var(--error-color)'
-                            }; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600;">
-                                ${img.qualityScore}
-                            </div>
+                            }; color: white; padding: 6px; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;">
+                                Score: ${img.qualityScore} - View Analysis
+                            </button>
                         ` : ''}
                     </div>
                 `).join('');
@@ -4453,6 +4458,125 @@
                 this.state.uploadedImages = this.state.uploadedImages.filter(img => img.id !== id);
                 this.renderImageGrid();
                 this.updateGenerateButton();
+            },
+
+            // Rotate image
+            rotateImage(id) {
+                const img = this.state.uploadedImages.find(i => i.id === id);
+                if (img) {
+                    img.rotation = ((img.rotation || 0) + 90) % 360;
+                    this.renderImageGrid();
+                }
+            },
+
+            // Show quality analysis modal
+            showQualityAnalysis(index) {
+                this.state.currentAnalysisIndex = index;
+                this.renderQualityAnalysisModal();
+            },
+
+            // Render quality analysis modal
+            renderQualityAnalysisModal() {
+                const index = this.state.currentAnalysisIndex || 0;
+                const img = this.state.uploadedImages[index];
+                if (!img || !img.qualityAnalysis) return;
+
+                const analysis = img.qualityAnalysis;
+                const modalHTML = `
+                    <div class="modal-overlay" onclick="app.closeQualityAnalysisModal(event)">
+                        <div class="modal" style="max-width: 600px;" onclick="event.stopPropagation()">
+                            <div class="modal-header">
+                                <h3>Image Quality Analysis</h3>
+                                <button class="modal-close" onclick="app.closeQualityAnalysisModal()">&times;</button>
+                            </div>
+                            <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                                <div style="text-align: center; margin-bottom: 20px;">
+                                    <img src="${img.url}" style="max-width: 100%; max-height: 300px; border-radius: 8px; transform: rotate(${img.rotation || 0}deg);">
+                                    <div style="margin-top: 10px;">
+                                        <strong>Image ${index + 1} of ${this.state.uploadedImages.length}</strong>
+                                    </div>
+                                </div>
+
+                                <div style="background: ${
+                                    img.qualityScore >= 80 ? 'var(--success-bg)' :
+                                    img.qualityScore >= 60 ? 'var(--warning-bg)' :
+                                    'var(--error-bg)'
+                                }; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                    <h4 style="margin: 0 0 5px 0;">Overall Score: ${img.qualityScore}/100</h4>
+                                    <p style="margin: 0; color: var(--text-muted);">${
+                                        img.qualityScore >= 80 ? 'Excellent photo quality' :
+                                        img.qualityScore >= 60 ? 'Good photo, minor improvements possible' :
+                                        'Photo needs improvement'
+                                    }</p>
+                                </div>
+
+                                ${analysis.strengths && analysis.strengths.length > 0 ? `
+                                    <div style="margin-bottom: 20px;">
+                                        <h4>✓ Strengths</h4>
+                                        <ul style="margin: 0; padding-left: 20px;">
+                                            ${analysis.strengths.map(s => `<li>${s}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                ` : ''}
+
+                                ${analysis.weaknesses && analysis.weaknesses.length > 0 ? `
+                                    <div style="margin-bottom: 20px;">
+                                        <h4>⚠ Areas for Improvement</h4>
+                                        <ul style="margin: 0; padding-left: 20px;">
+                                            ${analysis.weaknesses.map(w => `<li>${w}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                ` : ''}
+
+                                ${analysis.recommendations && analysis.recommendations.length > 0 ? `
+                                    <div>
+                                        <h4>💡 Recommendations</h4>
+                                        <ul style="margin: 0; padding-left: 20px;">
+                                            ${analysis.recommendations.map(r => `<li>${r}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                                <button class="btn btn-secondary" onclick="app.navigateQualityAnalysis(-1)" ${index === 0 ? 'disabled' : ''}>
+                                    ← Previous
+                                </button>
+                                <span style="color: var(--text-muted); font-size: 14px;">
+                                    ${index + 1} / ${this.state.uploadedImages.length}
+                                </span>
+                                <button class="btn btn-secondary" onclick="app.navigateQualityAnalysis(1)" ${index === this.state.uploadedImages.length - 1 ? 'disabled' : ''}>
+                                    Next →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Remove existing modal if any
+                const existing = document.getElementById('qualityAnalysisModal');
+                if (existing) existing.remove();
+
+                // Add new modal
+                const modalDiv = document.createElement('div');
+                modalDiv.id = 'qualityAnalysisModal';
+                modalDiv.innerHTML = modalHTML;
+                document.body.appendChild(modalDiv);
+            },
+
+            // Navigate quality analysis
+            navigateQualityAnalysis(direction) {
+                const newIndex = (this.state.currentAnalysisIndex || 0) + direction;
+                if (newIndex >= 0 && newIndex < this.state.uploadedImages.length) {
+                    this.state.currentAnalysisIndex = newIndex;
+                    this.renderQualityAnalysisModal();
+                }
+            },
+
+            // Close quality analysis modal
+            closeQualityAnalysisModal(event) {
+                if (event && event.target !== event.currentTarget) return;
+                const modal = document.getElementById('qualityAnalysisModal');
+                if (modal) modal.remove();
             },
 
             renderReviewImages(images = null) {
@@ -5508,7 +5632,7 @@
             },
 
             // Convert file to base64
-            fileToBase64(file, maxWidth = 1920, quality = 0.85) {
+            fileToBase64(file, maxWidth = 1200, quality = 0.7) {
                 return new Promise((resolve, reject) => {
                     // If not an image, read as-is
                     if (!file.type.startsWith('image/')) {
