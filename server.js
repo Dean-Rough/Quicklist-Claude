@@ -2559,7 +2559,7 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
             : '\n**NOTE**: Visual recognition did not identify product clearly. Rely on code extraction.\n';
 
         // Build condition analysis section from quality analysis
-        const conditionInfo = [];
+        const aiConditionAnalysis = [];
         const conditionData = qualityAnalysis.filter(q => q.condition).map(q => q.condition);
         if (conditionData.length > 0) {
             // Find the most damaged/worst condition across all images
@@ -2568,18 +2568,18 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
                 return (conditionRank[curr.overall] || 3) < (conditionRank[worst.overall] || 3) ? curr : worst;
             }, conditionData[0]);
 
-            conditionInfo.push(`OVERALL CONDITION: ${worstCondition.overall}`);
-            conditionInfo.push(`WEAR LEVEL: ${worstCondition.wearLevel}`);
+            aiConditionAnalysis.push(`OVERALL CONDITION: ${worstCondition.overall}`);
+            aiConditionAnalysis.push(`WEAR LEVEL: ${worstCondition.wearLevel}`);
             if (worstCondition.hasDamage && worstCondition.defects && worstCondition.defects.length > 0) {
-                conditionInfo.push(`VISIBLE DEFECTS:\n${worstCondition.defects.map(d => `  - ${d}`).join('\n')}`);
+                aiConditionAnalysis.push(`VISIBLE DEFECTS:\n${worstCondition.defects.map(d => `  - ${d}`).join('\n')}`);
             }
             if (worstCondition.conditionSummary) {
-                conditionInfo.push(`CONDITION SUMMARY: ${worstCondition.conditionSummary}`);
+                aiConditionAnalysis.push(`CONDITION SUMMARY: ${worstCondition.conditionSummary}`);
             }
         }
 
-        const conditionSection = conditionInfo.length > 0
-            ? `\n**PRODUCT CONDITION ANALYSIS (FROM AI INSPECTION):**\n${conditionInfo.join('\n')}\n\n**CRITICAL**: The above condition assessment was performed by AI analysis:\n- Use this information to accurately populate the "condition" field\n- Include all defects in the listing description\n- Be honest about condition - this builds buyer trust\n- If damage is present, describe it clearly and specifically\n`
+        const conditionSection = aiConditionAnalysis.length > 0
+            ? `\n**PRODUCT CONDITION ANALYSIS (FROM AI INSPECTION):**\n${aiConditionAnalysis.join('\n')}\n\n**CRITICAL**: The above condition assessment was performed by AI analysis:\n- Use this information to accurately populate the "condition" field\n- Include all defects in the listing description\n- Be honest about condition - this builds buyer trust\n- If damage is present, describe it clearly and specifically\n`
             : '';
 
         // Improved system prompt v3.0 - See SYSTEM-PROMPTS.md for details
