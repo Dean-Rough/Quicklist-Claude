@@ -4625,7 +4625,7 @@
                     // Convert file to base64
                     const base64 = await this.fileToBase64(imageData.file);
 
-                    const response = await fetch(`${this.apiUrl}/api/analyze-image-quality`, {
+                    const response = await fetch(`${this.apiUrl}/analyze-image-quality`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -4785,7 +4785,7 @@
                         this.state.uploadedImages.map(img => this.fileToBase64(img.file))
                     );
 
-                    const response = await fetch(`${this.apiUrl}/api/analyze-damage`, {
+                    const response = await fetch(`${this.apiUrl}/analyze-damage`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -8444,7 +8444,7 @@ ${this.state.currentListing?.keywords?.join(', ')}
                         throw new Error('Not authenticated');
                     }
             
-                    const response = await fetch(`${this.apiUrl}/api/lookup-barcode`, {
+                    const response = await fetch(`${this.apiUrl}/lookup-barcode`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
