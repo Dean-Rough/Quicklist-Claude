@@ -4549,11 +4549,21 @@
                 const canvas = document.getElementById('imageEditorCanvas');
                 const ctx = canvas.getContext('2d');
 
+                // Reset crop state
+                this.state.cropArea = null;
+                this.state.currentEditorTool = 'rotate';
+
                 modal.classList.remove('hidden');
+
+                // Display quality information
+                this.displayQualityInfo(img);
 
                 // Load image onto canvas
                 const image = new Image();
                 image.onload = () => {
+                    // Store original image for crop operations
+                    this.state.originalEditorImage = image;
+
                     // Set canvas size to image size
                     canvas.width = image.width;
                     canvas.height = image.height;
@@ -4577,6 +4587,244 @@
                     }
                 };
                 image.src = img.url;
+            },
+
+            // Display quality information in sidebar
+            displayQualityInfo(img) {
+                const qualityDisplay = document.getElementById('qualityScoreDisplay');
+
+                if (!img.qualityScore || !img.qualityData) {
+                    qualityDisplay.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">No quality data available</p>';
+                    return;
+                }
+
+                const quality = img.qualityData;
+                const score = img.qualityScore;
+
+                let scoreColor = '#10b981'; // green
+                if (score < 60) scoreColor = '#ef4444'; // red
+                else if (score < 80) scoreColor = '#f59e0b'; // yellow
+
+                qualityDisplay.innerHTML = `
+                    <div style="text-align: center; padding: 1rem; background: var(--bg-primary); border-radius: 8px; margin-bottom: 1rem;">
+                        <div style="font-size: 2rem; font-weight: bold; color: ${scoreColor};">${score}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Overall Score</div>
+                    </div>
+
+                    ${quality.sharpness !== undefined ? `
+                        <div style="margin-bottom: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <span style="font-size: 0.85rem;">Sharpness</span>
+                                <span style="font-size: 0.85rem; font-weight: 600;">${quality.sharpness}/100</span>
+                            </div>
+                            <div style="height: 6px; background: var(--bg-primary); border-radius: 3px; overflow: hidden;">
+                                <div style="height: 100%; width: ${quality.sharpness}%; background: ${quality.sharpness >= 60 ? '#10b981' : '#ef4444'}; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${quality.lighting !== undefined ? `
+                        <div style="margin-bottom: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <span style="font-size: 0.85rem;">Lighting</span>
+                                <span style="font-size: 0.85rem; font-weight: 600;">${quality.lighting}/100</span>
+                            </div>
+                            <div style="height: 6px; background: var(--bg-primary); border-radius: 3px; overflow: hidden;">
+                                <div style="height: 100%; width: ${quality.lighting}%; background: ${quality.lighting >= 60 ? '#10b981' : '#ef4444'}; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${quality.background !== undefined ? `
+                        <div style="margin-bottom: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <span style="font-size: 0.85rem;">Background</span>
+                                <span style="font-size: 0.85rem; font-weight: 600;">${quality.background}/100</span>
+                            </div>
+                            <div style="height: 6px; background: var(--bg-primary); border-radius: 3px; overflow: hidden;">
+                                <div style="height: 100%; width: ${quality.background}%; background: ${quality.background >= 60 ? '#10b981' : '#ef4444'}; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${quality.composition !== undefined ? `
+                        <div style="margin-bottom: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <span style="font-size: 0.85rem;">Composition</span>
+                                <span style="font-size: 0.85rem; font-weight: 600;">${quality.composition}/100</span>
+                            </div>
+                            <div style="height: 6px; background: var(--bg-primary); border-radius: 3px; overflow: hidden;">
+                                <div style="height: 100%; width: ${quality.composition}%; background: ${quality.composition >= 60 ? '#10b981' : '#ef4444'}; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${quality.suggestions && quality.suggestions.length > 0 ? `
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                            <h5 style="font-size: 0.85rem; margin: 0 0 0.5rem 0;">Suggestions:</h5>
+                            <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted);">
+                                ${quality.suggestions.map(s => `<li style="margin-bottom: 0.25rem;">${s}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                `;
+            },
+
+            // Switch between editor tools
+            switchEditorTool(tool) {
+                this.state.currentEditorTool = tool;
+
+                // Update tab styling
+                document.getElementById('rotateTab').style.background = tool === 'rotate' ? 'var(--primary-color)' : 'var(--bg-secondary)';
+                document.getElementById('rotateTab').style.color = tool === 'rotate' ? 'white' : 'var(--text-primary)';
+                document.getElementById('cropTab').style.background = tool === 'crop' ? 'var(--primary-color)' : 'var(--bg-secondary)';
+                document.getElementById('cropTab').style.color = tool === 'crop' ? 'white' : 'var(--text-primary)';
+
+                // Show/hide controls
+                document.getElementById('rotateControls').style.display = tool === 'rotate' ? 'flex' : 'none';
+                document.getElementById('cropControls').style.display = tool === 'crop' ? 'block' : 'none';
+
+                // Enable/disable crop interaction
+                const canvas = document.getElementById('imageEditorCanvas');
+                const overlay = document.getElementById('cropOverlay');
+
+                if (tool === 'crop') {
+                    overlay.style.display = 'block';
+                    this.enableCropInteraction();
+                } else {
+                    overlay.style.display = 'none';
+                    this.disableCropInteraction();
+                }
+            },
+
+            // Enable crop interaction
+            enableCropInteraction() {
+                const canvas = document.getElementById('imageEditorCanvas');
+                const overlay = document.getElementById('cropOverlay');
+                const cropBox = document.getElementById('cropBox');
+
+                overlay.style.pointerEvents = 'auto';
+
+                let isDragging = false;
+                let startX, startY;
+
+                const handleMouseDown = (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    startX = e.clientX - rect.left;
+                    startY = e.clientY - rect.top;
+                    isDragging = true;
+
+                    cropBox.style.left = startX + 'px';
+                    cropBox.style.top = startY + 'px';
+                    cropBox.style.width = '0px';
+                    cropBox.style.height = '0px';
+                };
+
+                const handleMouseMove = (e) => {
+                    if (!isDragging) return;
+
+                    const rect = canvas.getBoundingClientRect();
+                    const currentX = e.clientX - rect.left;
+                    const currentY = e.clientY - rect.top;
+
+                    const width = Math.abs(currentX - startX);
+                    const height = Math.abs(currentY - startY);
+                    const left = Math.min(currentX, startX);
+                    const top = Math.min(currentY, startY);
+
+                    cropBox.style.left = left + 'px';
+                    cropBox.style.top = top + 'px';
+                    cropBox.style.width = width + 'px';
+                    cropBox.style.height = height + 'px';
+                };
+
+                const handleMouseUp = (e) => {
+                    if (!isDragging) return;
+                    isDragging = false;
+
+                    // Store crop area
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+
+                    this.state.cropArea = {
+                        x: parseInt(cropBox.style.left) * scaleX,
+                        y: parseInt(cropBox.style.top) * scaleY,
+                        width: parseInt(cropBox.style.width) * scaleX,
+                        height: parseInt(cropBox.style.height) * scaleY
+                    };
+                };
+
+                overlay.onmousedown = handleMouseDown;
+                overlay.onmousemove = handleMouseMove;
+                overlay.onmouseup = handleMouseUp;
+                overlay.onmouseleave = handleMouseUp;
+            },
+
+            // Disable crop interaction
+            disableCropInteraction() {
+                const overlay = document.getElementById('cropOverlay');
+                overlay.style.pointerEvents = 'none';
+                overlay.onmousedown = null;
+                overlay.onmousemove = null;
+                overlay.onmouseup = null;
+                overlay.onmouseleave = null;
+            },
+
+            // Reset crop
+            resetCrop() {
+                this.state.cropArea = null;
+                const cropBox = document.getElementById('cropBox');
+                cropBox.style.width = '0px';
+                cropBox.style.height = '0px';
+            },
+
+            // Apply crop
+            async applyCrop() {
+                if (!this.state.cropArea || this.state.cropArea.width === 0 || this.state.cropArea.height === 0) {
+                    this.showToast('Please select an area to crop', 'error');
+                    return;
+                }
+
+                const img = this.state.uploadedImages[this.state.editingImageIndex];
+                const canvas = document.getElementById('imageEditorCanvas');
+                const ctx = canvas.getContext('2d');
+
+                // Create new canvas for cropped image
+                const croppedCanvas = document.createElement('canvas');
+                const croppedCtx = croppedCanvas.getContext('2d');
+
+                croppedCanvas.width = this.state.cropArea.width;
+                croppedCanvas.height = this.state.cropArea.height;
+
+                // Draw cropped portion
+                croppedCtx.drawImage(
+                    canvas,
+                    this.state.cropArea.x,
+                    this.state.cropArea.y,
+                    this.state.cropArea.width,
+                    this.state.cropArea.height,
+                    0,
+                    0,
+                    this.state.cropArea.width,
+                    this.state.cropArea.height
+                );
+
+                // Convert to blob
+                croppedCanvas.toBlob(async (blob) => {
+                    const file = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
+                    img.file = file;
+                    img.url = URL.createObjectURL(file);
+
+                    // Update main canvas
+                    canvas.width = croppedCanvas.width;
+                    canvas.height = croppedCanvas.height;
+                    ctx.drawImage(croppedCanvas, 0, 0);
+
+                    // Reset crop
+                    this.resetCrop();
+                    this.showToast('Crop applied successfully');
+                }, 'image/jpeg', 0.9);
             },
 
             // Rotate image in editor
@@ -4931,11 +5179,11 @@
                     imageData.qualityScore = quality.overallScore;
                     imageData.qualityData = quality;
 
-                    // Show warning if quality is poor
-                    if (quality.overallScore < 60 && !imageData.qualityWarningShown) {
-                        imageData.qualityWarningShown = true;
-                        this.showQualityWarning(imageData, quality);
-                    }
+                    // Don't show automatic warning - user can view quality info in image editor
+                    // if (quality.overallScore < 60 && !imageData.qualityWarningShown) {
+                    //     imageData.qualityWarningShown = true;
+                    //     this.showQualityWarning(imageData, quality);
+                    // }
 
                     // Update the image grid to show quality score
                     this.renderImageGrid();
@@ -5335,9 +5583,10 @@
                     const hint = document.getElementById('itemHint').value;
                     const location = document.getElementById('itemLocation')?.value || '';
 
-                    // Convert all images to base64
+                    // Convert all images to base64 with aggressive compression for API
+                    // Use smaller max width (800px) and lower quality (0.6) to stay under Vercel's 4.5MB payload limit
                     const base64Images = await Promise.all(
-                        this.state.uploadedImages.map(img => this.fileToBase64(img.file))
+                        this.state.uploadedImages.map(img => this.fileToBase64(img.file, 800, 0.6))
                     );
 
                     // Check if cancelled during image conversion
@@ -9679,18 +9928,43 @@ ${this.state.currentListing?.keywords?.join(', ')}
 
     <!-- Image Editor Modal -->
     <div id="imageEditorModal" class="modal hidden">
-        <div class="modal-content" style="max-width: 800px; padding: 0;">
+        <div class="modal-content" style="max-width: 900px; padding: 0;">
             <div class="modal-header" style="padding: 1rem; background: var(--bg-primary); border-bottom: 1px solid var(--border-color);">
                 <h3>Edit Image</h3>
                 <button class="btn-close" onclick="app.closeImageEditor()">×</button>
             </div>
 
-            <div style="background: #000; position: relative;">
-                <canvas id="imageEditorCanvas" style="max-width: 100%; max-height: 70vh; display: block; margin: 0 auto;"></canvas>
+            <div style="display: flex; flex-wrap: wrap;">
+                <!-- Image Preview Section -->
+                <div style="flex: 1; min-width: 400px; background: #000; position: relative;">
+                    <canvas id="imageEditorCanvas" style="max-width: 100%; max-height: 60vh; display: block; margin: 0 auto;"></canvas>
+
+                    <!-- Crop overlay (hidden by default) -->
+                    <div id="cropOverlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+                        <div style="position: absolute; border: 2px dashed #fff; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);" id="cropBox"></div>
+                    </div>
+                </div>
+
+                <!-- Quality Info Sidebar -->
+                <div id="qualityInfoSidebar" style="width: 280px; padding: 1rem; background: var(--bg-secondary); border-left: 1px solid var(--border-color); max-height: 60vh; overflow-y: auto;">
+                    <h4 style="margin: 0 0 1rem 0; font-size: 0.95rem;">Image Quality</h4>
+                    <div id="qualityScoreDisplay"></div>
+                </div>
             </div>
 
             <div style="padding: 1rem; background: var(--bg-primary); border-top: 1px solid var(--border-color);">
-                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                <!-- Tool Tabs -->
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                    <button class="btn btn-small" id="rotateTab" onclick="app.switchEditorTool('rotate')" style="padding: 0.5rem 1rem; background: var(--primary-color); color: white;">
+                        Rotate
+                    </button>
+                    <button class="btn btn-small" id="cropTab" onclick="app.switchEditorTool('crop')" style="padding: 0.5rem 1rem;">
+                        Crop
+                    </button>
+                </div>
+
+                <!-- Rotate Controls -->
+                <div id="rotateControls" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
                     <button class="btn btn-secondary" onclick="app.rotateEditorImage(-90)" style="flex: 1;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:4px;">
                             <path d="M2.5 2v6h6M2 11.5a10 10 0 0 1 18.8-4.3"/>
@@ -9703,6 +9977,17 @@ ${this.state.currentListing?.keywords?.join(', ')}
                         </svg>
                         Rotate Right
                     </button>
+                </div>
+
+                <!-- Crop Controls (hidden by default) -->
+                <div id="cropControls" style="display: none; margin-bottom: 1rem;">
+                    <p style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: var(--text-muted);">
+                        Drag on the image to select crop area
+                    </p>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary" onclick="app.resetCrop()" style="flex: 1;">Reset</button>
+                        <button class="btn btn-primary" onclick="app.applyCrop()" style="flex: 1;">Apply Crop</button>
+                    </div>
                 </div>
 
                 <div style="display: flex; gap: 1rem;">
