@@ -7,7 +7,9 @@ module.exports = (req, res) => {
             VERCEL: process.env.VERCEL,
             NODE_ENV: process.env.NODE_ENV,
             hasDatabase: !!process.env.DATABASE_URL,
-            hasClerk: !!process.env.CLERK_SECRET_KEY
+            hasClerkSecret: !!process.env.CLERK_SECRET_KEY,
+            hasClerkPublishable: !!process.env.CLERK_PUBLISHABLE_KEY,
+            clerkPublishableValue: process.env.CLERK_PUBLISHABLE_KEY ? 'set' : 'undefined'
         }
     });
 };
