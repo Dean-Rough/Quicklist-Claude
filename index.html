@@ -4043,9 +4043,7 @@
                             url: response.url
                         });
                         if (response.status === 403) {
-                            console.error('403 Forbidden - Token may be invalid or expired');
-                            // Try to refresh auth
-                            await this.checkClerkAuth();
+                            console.error('403 Forbidden - Token may be invalid or expired. Please sign out and sign in again.');
                         }
                     }
                 } catch (error) {
@@ -6067,8 +6065,11 @@
             async authenticatedFetch(url, options = {}) {
                 const token = await this.getFreshToken();
                 if (!token) {
+                    console.error('authenticatedFetch: No token available');
                     throw new Error('No authentication token available');
                 }
+
+                console.log('authenticatedFetch: Making request to', url, 'with token starting with', token.substring(0, 20) + '...');
 
                 const headers = {
                     ...options.headers,
