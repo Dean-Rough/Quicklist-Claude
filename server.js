@@ -406,6 +406,19 @@ function priceStringToNumber(value) {
   return isNaN(numeric) ? 0 : numeric;
 }
 
+/**
+ * Gemini sometimes emits single backslashes (e.g. "Home \ Men") inside strings,
+ * which breaks JSON.parse. Escape only the unsupported sequences so valid escapes
+ * like \n, \t, or \u1234 continue to work as intended.
+ */
+function repairGeminiJsonString(jsonString) {
+  if (typeof jsonString !== 'string') {
+    return jsonString;
+  }
+
+  return jsonString.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+}
+
 // Safe database query wrapper
 async function safeQuery(query, params) {
   try {
@@ -3636,7 +3649,19 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
     // Extract JSON from response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      const listing = JSON.parse(jsonMatch[0]);
+      const extractedJson = jsonMatch[0];
+      const sanitizedJson = repairGeminiJsonString(extractedJson);
+      let listing;
+      try {
+        listing = JSON.parse(sanitizedJson);
+      } catch (parseError) {
+        logger.error('Failed to parse Gemini JSON response:', {
+          error: parseError.message,
+          userId,
+          snippet: sanitizedJson.substring(0, 500),
+        });
+        throw new Error('AI response JSON parsing failed');
+      }
 
       // Merge AI-generated sources with grounding sources
       if (searchSources.length > 0) {
