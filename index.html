@@ -1927,6 +1927,20 @@
         overflow: hidden;
         border: 1px solid var(--border-color);
       }
+      .review-image--clickable {
+        cursor: pointer;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      .review-image--clickable:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.15);
+      }
+      .review-image--clickable:focus-visible {
+        outline: 2px solid var(--accent-indigo);
+        outline-offset: 3px;
+      }
 
       .review-image img {
         width: 100%;
@@ -7514,6 +7528,54 @@
           if (modal) modal.remove();
         },
 
+        // Attempt to map a generated/review image back to the uploadedImages array
+        getUploadedImageIndexForReview(image, fallbackIndex = null) {
+          if (!Array.isArray(this.state.uploadedImages) || this.state.uploadedImages.length === 0) {
+            return null;
+          }
+
+          const matchIndex = this.state.uploadedImages.findIndex((uploaded) => {
+            if (image.id && uploaded.id === image.id) return true;
+            if (image.image_id && uploaded.id === image.image_id) return true;
+            if (image.public_id && uploaded.cloudinaryPublicId === image.public_id) return true;
+            if (
+              image.cloudinaryPublicId &&
+              uploaded.cloudinaryPublicId === image.cloudinaryPublicId
+            )
+              return true;
+            if (
+              image.cloudinary_public_id &&
+              uploaded.cloudinaryPublicId === image.cloudinary_public_id
+            )
+              return true;
+
+            const imageUrls = [
+              image.cloudinaryUrl,
+              image.image_url,
+              image.url,
+              image.thumbnail_url,
+              image.data,
+            ].filter(Boolean);
+            if (imageUrls.length === 0) return false;
+
+            const uploadedUrls = [
+              uploaded.cloudinaryUrl,
+              uploaded.image_url,
+              uploaded.url,
+              uploaded.thumbnail_url,
+              uploaded.data,
+            ].filter(Boolean);
+
+            return imageUrls.some((imgUrl) => uploadedUrls.includes(imgUrl));
+          });
+
+          if (matchIndex !== -1) {
+            return matchIndex;
+          }
+
+          return fallbackIndex;
+        },
+
         renderReviewImages(images = null) {
           const container = document.getElementById('reviewImages');
           const countEl = document.getElementById('reviewImageCount');
@@ -7521,6 +7583,7 @@
 
           const sourceImages =
             Array.isArray(images) && images.length ? images : this.state.uploadedImages;
+          const usingUploadedState = sourceImages === this.state.uploadedImages;
 
           if (!sourceImages || sourceImages.length === 0) {
             container.innerHTML =
@@ -7541,8 +7604,16 @@
                   '/upload/w_200,h_200,c_fill,g_auto,q_auto,f_auto,e_improve,e_sharpen:100/'
                 );
               }
+              const editorIndex = this.getUploadedImageIndexForReview(
+                img,
+                usingUploadedState ? index : null
+              );
+              const isClickable = editorIndex !== null && editorIndex !== undefined;
+              const interactiveAttrs = isClickable
+                ? ` role="button" tabindex="0" aria-label="Edit photo ${index + 1}" onclick="event.preventDefault(); app.openImageEditor(${editorIndex});" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); app.openImageEditor(${editorIndex});}"`
+                : '';
               return `
-                        <div class="review-image">
+                        <div class="review-image${isClickable ? ' review-image--clickable' : ''}"${interactiveAttrs}>
                             <img src="${url}" alt="Listing photo ${index + 1}" loading="lazy">
                             <span>${index + 1}</span>
                         </div>
