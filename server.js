@@ -4396,6 +4396,190 @@ app.get('/api/listings-with-platforms', authenticateToken, async (req, res) => {
 });
 
 // ============================================================================
+// EBAY OAUTH & INVENTORY API
+// ============================================================================
+
+const ebayAuth = require('./utils/ebayAuth');
+const EbayInventory = require('./utils/ebayInventory');
+
+// Step 1: Redirect user to eBay authorization
+app.get('/auth/ebay/authorize', authenticateToken, async (req, res) => {
+  try {
+    const authUrl = await ebayAuth.getAuthorizationUrl(req.user.id);
+    res.redirect(authUrl);
+  } catch (error) {
+    logger.error('eBay authorization error:', error);
+    res.redirect('/?ebay=error');
+  }
+});
+
+// Step 2: Handle OAuth callback from eBay
+app.get('/auth/ebay/callback', authenticateToken, async (req, res) => {
+  const { code, state } = req.query;
+
+  try {
+    // Verify state (CSRF protection)
+    const stateValid = await ebayAuth.verifyState(req.user.id, state);
+    if (!stateValid) {
+      logger.warn('eBay OAuth state verification failed');
+      return res.redirect('/?ebay=error&reason=invalid_state');
+    }
+
+    // Exchange code for tokens
+    const tokens = await ebayAuth.getAccessToken(code);
+
+    // Get eBay user info
+    let ebayUserId = null;
+    try {
+      const userInfo = await ebayAuth.getUserInfo(tokens.accessToken);
+      ebayUserId = userInfo.userId;
+    } catch (_error) {
+      // User info fetch failed, but continue anyway
+      logger.warn('Failed to fetch eBay user info, continuing without it');
+    }
+
+    // Store tokens
+    await ebayAuth.storeTokens(req.user.id, tokens, ebayUserId);
+
+    logger.info('eBay account connected:', { userId: req.user.id, ebayUserId });
+
+    // Redirect back to app
+    res.redirect('/?ebay=connected');
+  } catch (error) {
+    logger.error('eBay OAuth callback error:', error);
+    res.redirect('/?ebay=error');
+  }
+});
+
+// Check eBay connection status
+app.get('/api/ebay/status', authenticateToken, async (req, res) => {
+  try {
+    const status = await ebayAuth.getConnectionStatus(req.user.id);
+    res.json(status);
+  } catch (error) {
+    logger.error('eBay status check error:', error);
+    res.status(500).json({ error: 'Failed to check eBay status' });
+  }
+});
+
+// Disconnect eBay account
+app.post('/api/ebay/disconnect', authenticateToken, async (req, res) => {
+  try {
+    await ebayAuth.disconnect(req.user.id);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('eBay disconnect error:', error);
+    res.status(500).json({ error: 'Failed to disconnect eBay account' });
+  }
+});
+
+// Post listing to eBay
+app.post('/api/ebay/post-listing', authenticateToken, async (req, res) => {
+  const { listingId, variation } = req.body;
+
+  try {
+    // Get valid eBay access token
+    const accessToken = await ebayAuth.getValidToken(req.user.id);
+
+    // Get listing details
+    const listingResult = await pool.query(
+      'SELECT * FROM listings WHERE id = $1 AND user_id = $2',
+      [listingId, req.user.id]
+    );
+
+    if (listingResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+
+    const listing = listingResult.rows[0];
+
+    // Initialize eBay Inventory API
+    const isSandbox = process.env.EBAY_SANDBOX === 'true' || process.env.NODE_ENV !== 'production';
+    const ebayInventory = new EbayInventory(accessToken, isSandbox);
+
+    // Create and publish listing
+    const published = await ebayInventory.createAndPublishListing(listing);
+
+    // Update platform status in database
+    await pool.query(
+      `INSERT INTO listing_platform_status (
+        listing_id, platform, status, platform_listing_id, platform_url, posted_at
+      )
+      VALUES ($1, 'ebay', 'posted', $2, $3, NOW())
+      ON CONFLICT (listing_id, platform)
+      DO UPDATE SET
+        status = 'posted',
+        platform_listing_id = EXCLUDED.platform_listing_id,
+        platform_url = EXCLUDED.platform_url,
+        posted_at = NOW(),
+        updated_at = NOW()`,
+      [listingId, published.itemId, published.url]
+    );
+
+    logger.info('Listing posted to eBay:', { listingId, itemId: published.itemId });
+
+    res.json({
+      success: true,
+      itemId: published.itemId,
+      url: published.url,
+      listingId: published.listingId,
+      offerId: published.offerId,
+      sku: published.sku
+    });
+  } catch (error) {
+    logger.error('eBay posting error:', { error: error.message, listingId });
+    res.status(500).json({
+      error: 'Failed to post to eBay',
+      message: error.message
+    });
+  }
+});
+
+// Get eBay listing analytics
+app.get('/api/ebay/analytics/:listingId', authenticateToken, async (req, res) => {
+  const { listingId } = req.params;
+
+  try {
+    // Get eBay item ID from platform status
+    const result = await pool.query(
+      `SELECT platform_listing_id
+       FROM listing_platform_status
+       WHERE listing_id = $1 AND platform = 'ebay'`,
+      [listingId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'eBay listing not found' });
+    }
+
+    const itemId = result.rows[0].platform_listing_id;
+
+    // Get access token
+    const accessToken = await ebayAuth.getValidToken(req.user.id);
+
+    // Fetch analytics
+    const isSandbox = process.env.EBAY_SANDBOX === 'true' || process.env.NODE_ENV !== 'production';
+    const ebayInventory = new EbayInventory(accessToken, isSandbox);
+    const analytics = await ebayInventory.getItemAnalytics(itemId);
+
+    // Update database
+    await pool.query(
+      `UPDATE listing_platform_status
+       SET view_count = $1,
+           watcher_count = $2,
+           updated_at = NOW()
+       WHERE listing_id = $3 AND platform = 'ebay'`,
+      [analytics.viewCount, analytics.watcherCount, listingId]
+    );
+
+    res.json(analytics);
+  } catch (error) {
+    logger.error('eBay analytics error:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
+
+// ============================================================================
 // HEALTH CHECK
 // ============================================================================
 
