@@ -461,19 +461,49 @@ const authenticateToken = async (req, res, next) => {
     logger.info('Got user from Clerk', { userId, email, requestId: req.id });
 
     // Look up or create database user record
-    let dbUser = await pool.query('SELECT id FROM users WHERE clerk_id = $1', [userId]);
+    let dbUser;
+    try {
+      dbUser = await pool.query('SELECT id FROM users WHERE clerk_id = $1', [userId]);
+      logger.info('Database user lookup result', {
+        userId,
+        found: dbUser.rows.length > 0,
+        requestId: req.id
+      });
+    } catch (dbError) {
+      logger.error('Database user lookup failed', {
+        error: dbError.message,
+        userId,
+        requestId: req.id
+      });
+      throw dbError;
+    }
 
     // If user doesn't exist in database, create them
     if (dbUser.rows.length === 0) {
       logger.info('Creating new user in database', { clerkId: userId, email });
-      const newUser = await pool.query(
-        `INSERT INTO users (email, clerk_id, auth_provider, name)
-                 VALUES ($1, $2, 'clerk', $3)
-                 ON CONFLICT (email) DO UPDATE SET clerk_id = $2
-                 RETURNING id`,
-        [email, userId, name]
-      );
-      dbUser = newUser;
+      try {
+        const newUser = await pool.query(
+          `INSERT INTO users (email, clerk_id, auth_provider, name)
+                   VALUES ($1, $2, 'clerk', $3)
+                   ON CONFLICT (email) DO UPDATE SET clerk_id = $2
+                   RETURNING id`,
+          [email, userId, name]
+        );
+        dbUser = newUser;
+        logger.info('User created successfully', {
+          dbUserId: dbUser.rows[0].id,
+          email,
+          requestId: req.id
+        });
+      } catch (createError) {
+        logger.error('Failed to create user in database', {
+          error: createError.message,
+          email,
+          userId,
+          requestId: req.id
+        });
+        throw createError;
+      }
     }
 
     // Attach user info to request with DATABASE user ID
