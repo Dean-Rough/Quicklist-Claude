@@ -2050,15 +2050,7 @@ async function recognizeProductWithVision(images, apiKey) {
 Return ONLY the JSON object. No markdown, no explanation, no other text.`;
 
     // Use the first image for visual recognition (or combine multiple)
-    const parts = [
-      { text: visionPrompt },
-      ...images.slice(0, 2).map((img) => ({
-        inline_data: {
-          mime_type: 'image/jpeg',
-          data: img.split(',')[1],
-        },
-      })),
-    ];
+    const parts = [{ text: visionPrompt }, ...images.slice(0, 2).map(prepareImageForGemini)];
 
     logger.info('Phase 3: Google Vision product recognition:', {
       imageCount: Math.min(images.length, 2),
@@ -2171,15 +2163,7 @@ async function parseProductCodes(images, apiKey) {
 
 Return ONLY the JSON object. No markdown, no explanation, no other text.`;
 
-    const parts = [
-      { text: parsingPrompt },
-      ...images.map((img) => ({
-        inline_data: {
-          mime_type: 'image/jpeg',
-          data: img.split(',')[1],
-        },
-      })),
-    ];
+    const parts = [{ text: parsingPrompt }, ...images.map(prepareImageForGemini)];
 
     logger.info('Phase 1: Intensive code parsing:', { imageCount: images.length });
 
@@ -2247,6 +2231,53 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
       tagLocations: [],
     };
   }
+}
+
+// Helper: Prepare image for Gemini API (handles both base64 and URLs)
+function prepareImageForGemini(image) {
+  // Validate input
+  if (!image || typeof image !== 'string') {
+    throw new Error('Invalid image: must be a non-empty string');
+  }
+
+  // Check if it's a Cloudinary URL
+  if (
+    image.startsWith('https://res.cloudinary.com/') ||
+    image.startsWith('http://res.cloudinary.com/')
+  ) {
+    // Gemini 2.0+ supports file URIs - use file_data with URL
+    return {
+      file_data: {
+        mime_type: 'image/jpeg',
+        file_uri: image,
+      },
+    };
+  }
+
+  // Validate base64 format
+  if (!image.startsWith('data:image')) {
+    throw new Error(
+      `Invalid image format: expected base64 data URI or Cloudinary URL, got: ${image.substring(0, 50)}...`
+    );
+  }
+
+  // Safely extract base64 data
+  const parts = image.split(',');
+  if (parts.length !== 2) {
+    throw new Error(`Invalid base64 format: missing comma separator in data URI`);
+  }
+
+  const base64Data = parts[1];
+  if (!base64Data || base64Data.trim().length === 0) {
+    throw new Error(`Invalid base64 format: empty data after comma`);
+  }
+
+  return {
+    inline_data: {
+      mime_type: 'image/jpeg',
+      data: base64Data,
+    },
+  };
 }
 
 // Feature 3: Image Quality Scoring - Analyze image quality for marketplace listings
@@ -2338,15 +2369,7 @@ Return JSON:
 
 Return ONLY the JSON object. No markdown, no explanation, no other text.`;
 
-    const parts = [
-      { text: qualityPrompt },
-      {
-        inline_data: {
-          mime_type: 'image/jpeg',
-          data: imageBase64.split(',')[1],
-        },
-      },
-    ];
+    const parts = [{ text: qualityPrompt }, prepareImageForGemini(imageBase64)];
 
     const response = await fetch(url, {
       method: 'POST',
@@ -2883,16 +2906,82 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
       return res.status(400).json({ error: 'Maximum 10 images allowed' });
     }
 
-    // Validate image sizes (max 5MB per image)
+    // Validate image format - accept both base64 and Cloudinary URLs
     const maxImageSize = 5 * 1024 * 1024; // 5MB
-    for (const img of images) {
-      if (typeof img !== 'string' || !img.startsWith('data:image')) {
-        return res.status(400).json({ error: 'Invalid image format' });
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i];
+
+      // Type checks with specific error messages
+      if (img === null) {
+        return res.status(400).json({
+          error: `Image ${i + 1} is null`,
+          imageIndex: i,
+        });
       }
-      // Approximate base64 size: (length * 3) / 4
-      const base64Size = (img.length * 3) / 4;
-      if (base64Size > maxImageSize) {
-        return res.status(400).json({ error: 'Image too large. Max 5MB per image' });
+
+      if (img === undefined) {
+        return res.status(400).json({
+          error: `Image ${i + 1} is undefined`,
+          imageIndex: i,
+        });
+      }
+
+      if (typeof img !== 'string') {
+        return res.status(400).json({
+          error: `Image ${i + 1} has invalid type: ${typeof img}. Expected string.`,
+          imageIndex: i,
+        });
+      }
+
+      // Empty string check
+      if (img.trim().length === 0) {
+        return res.status(400).json({
+          error: `Image ${i + 1} is empty`,
+          imageIndex: i,
+        });
+      }
+
+      // Accept either base64 data URIs or Cloudinary URLs
+      const isBase64 = img.startsWith('data:image');
+      const isCloudinaryUrl =
+        img.startsWith('https://res.cloudinary.com/') ||
+        img.startsWith('http://res.cloudinary.com/');
+
+      if (!isBase64 && !isCloudinaryUrl) {
+        return res.status(400).json({
+          error: `Image ${i + 1} has invalid format. Must be base64 data URI (starting with "data:image") or Cloudinary URL (starting with "https://res.cloudinary.com/")`,
+          imageIndex: i,
+          receivedPrefix: img.substring(0, 50),
+          receivedLength: img.length,
+        });
+      }
+
+      // Base64 validation
+      if (isBase64) {
+        // Check for comma separator
+        if (!img.includes(',')) {
+          return res.status(400).json({
+            error: `Image ${i + 1} is malformed base64: missing comma separator`,
+            imageIndex: i,
+          });
+        }
+
+        const parts = img.split(',');
+        if (parts.length !== 2 || !parts[1] || parts[1].trim().length === 0) {
+          return res.status(400).json({
+            error: `Image ${i + 1} is malformed base64: empty data after comma`,
+            imageIndex: i,
+          });
+        }
+
+        // Size check
+        const base64Size = (img.length * 3) / 4;
+        if (base64Size > maxImageSize) {
+          return res.status(400).json({
+            error: `Image ${i + 1} too large: ${Math.round(base64Size / 1024 / 1024)}MB. Max 5MB per image`,
+            imageIndex: i,
+          });
+        }
       }
     }
 
@@ -3449,15 +3538,7 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
     logger.info('Calling Gemini Vision API:', { platform, imageCount: images.length, userId });
 
     // Build parts array: prompt text + all images
-    const parts = [
-      { text: prompt },
-      ...images.map((img) => ({
-        inline_data: {
-          mime_type: 'image/jpeg',
-          data: img.split(',')[1],
-        },
-      })),
-    ];
+    const parts = [{ text: prompt }, ...images.map(prepareImageForGemini)];
 
     // Enable Google Search grounding for real-time price research
     const response = await fetch(url, {
@@ -3909,15 +3990,7 @@ Return JSON:
 BE COMPREHENSIVE. Extract every piece of readable information from the label.
 If you can't read certain parts clearly, note this in the response.`;
 
-    const parts = [
-      { text: labelPrompt },
-      {
-        inline_data: {
-          mime_type: 'image/jpeg',
-          data: image.split(',')[1], // Remove data:image/jpeg;base64, prefix
-        },
-      },
-    ];
+    const parts = [{ text: labelPrompt }, prepareImageForGemini(image)];
 
     const response = await fetch(url, {
       method: 'POST',
@@ -4035,15 +4108,7 @@ BE THOROUGH. Better to over-report minor issues than miss major ones.
 Provide honest but not alarming language for the condition disclosure.`;
 
     // Build parts array: prompt text + all images
-    const parts = [
-      { text: damagePrompt },
-      ...images.map((img) => ({
-        inline_data: {
-          mime_type: 'image/jpeg',
-          data: img.split(',')[1], // Remove data:image/jpeg;base64, prefix
-        },
-      })),
-    ];
+    const parts = [{ text: damagePrompt }, ...images.map(prepareImageForGemini)];
 
     const response = await fetch(url, {
       method: 'POST',

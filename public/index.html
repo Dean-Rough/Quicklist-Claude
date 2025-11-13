@@ -8167,6 +8167,7 @@
               this.state.uploadedImages.map(async (img) => {
                 // If already uploaded, return existing URL
                 if (img.cloudinaryUrl) {
+                  console.log('Using cached Cloudinary URL:', img.cloudinaryUrl);
                   return img.cloudinaryUrl;
                 }
 
@@ -8176,7 +8177,24 @@
                   this.renderImageGrid();
 
                   // Upload to Cloudinary
+                  console.log('Uploading image to Cloudinary...');
                   const cloudinaryData = await this.uploadImageToCloudinary(img.file);
+
+                  // Validate response
+                  if (!cloudinaryData || !cloudinaryData.secure_url) {
+                    throw new Error('Cloudinary upload returned invalid response');
+                  }
+
+                  // Validate URL format
+                  if (
+                    !cloudinaryData.secure_url.startsWith('https://res.cloudinary.com/') &&
+                    !cloudinaryData.secure_url.startsWith('http://res.cloudinary.com/')
+                  ) {
+                    throw new Error(
+                      'Cloudinary URL has invalid format: ' + cloudinaryData.secure_url
+                    );
+                  }
+
                   // Store the URL in the image object for future reference
                   img.cloudinaryUrl = cloudinaryData.secure_url;
                   img.cloudinaryPublicId = cloudinaryData.public_id;
@@ -8185,6 +8203,7 @@
                   img.status = 'ready';
                   this.renderImageGrid();
 
+                  console.log('Successfully uploaded to Cloudinary:', cloudinaryData.secure_url);
                   return cloudinaryData.secure_url;
                 } catch (error) {
                   console.error(
@@ -8195,7 +8214,17 @@
                   img.status = 'ready';
                   this.renderImageGrid();
                   // Fallback to base64 if Cloudinary upload fails
-                  return await this.fileToBase64(img.file, 800, 0.6);
+                  console.log('Converting to base64 fallback...');
+                  const base64 = await this.fileToBase64(img.file, 800, 0.6);
+
+                  // Validate base64 format
+                  if (!base64 || !base64.startsWith('data:image')) {
+                    console.error('Invalid base64 format:', base64?.substring(0, 50));
+                    throw new Error('Failed to convert image to valid format');
+                  }
+
+                  console.log('Successfully converted to base64, length:', base64.length);
+                  return base64;
                 }
               })
             );
@@ -8205,6 +8234,64 @@
               this.showInitialState();
               return;
             }
+
+            // Validate all image URLs before sending to API
+            console.log('Validating image URLs before API call...');
+
+            const validationResults = imageUrls.map((url, index) => {
+              // Type check
+              if (url === null) {
+                return { index, valid: false, error: 'Image is null' };
+              }
+              if (url === undefined) {
+                return { index, valid: false, error: 'Image is undefined' };
+              }
+              if (typeof url !== 'string') {
+                return { index, valid: false, error: `Image has invalid type: ${typeof url}` };
+              }
+              if (url.trim().length === 0) {
+                return { index, valid: false, error: 'Image is empty string' };
+              }
+
+              // Format check
+              const isBase64 = url.startsWith('data:image');
+              const isCloudinaryUrl =
+                url.startsWith('https://res.cloudinary.com/') ||
+                url.startsWith('http://res.cloudinary.com/');
+
+              if (!isBase64 && !isCloudinaryUrl) {
+                return {
+                  index,
+                  valid: false,
+                  error: `Invalid format (got: ${url.substring(0, 50)}...)`,
+                };
+              }
+
+              // Base64 structure check
+              if (isBase64 && !url.includes(',')) {
+                return {
+                  index,
+                  valid: false,
+                  error: 'Malformed base64: missing comma separator',
+                };
+              }
+
+              return { index, valid: true };
+            });
+
+            const invalidImages = validationResults.filter((r) => !r.valid);
+
+            if (invalidImages.length > 0) {
+              console.error('Invalid images detected:', invalidImages);
+
+              const errorMsg = invalidImages
+                .map((r) => `Image ${r.index + 1}: ${r.error}`)
+                .join('\n');
+
+              throw new Error(`${invalidImages.length} image(s) failed validation:\n${errorMsg}`);
+            }
+
+            console.log(`All ${imageUrls.length} images validated successfully. Sending to API...`);
 
             // Call Gemini API with image URLs (much smaller payload!)
             const response = await this.callGeminiAPI(
@@ -8765,13 +8852,29 @@
         },
 
         // Convert file to base64
-        fileToBase64(file, maxWidth = 1200, quality = 0.7) {
+        fileToBase64(file, maxWidth = 1200, quality = 0.7, timeoutMs = 30000) {
           return new Promise((resolve, reject) => {
+            // Timeout protection
+            const timeout = setTimeout(() => {
+              reject(new Error(`Image conversion timed out after ${timeoutMs}ms`));
+            }, timeoutMs);
+
+            const clearTimeoutAndResolve = (result) => {
+              clearTimeout(timeout);
+              resolve(result);
+            };
+
+            const clearTimeoutAndReject = (error) => {
+              clearTimeout(timeout);
+              reject(error);
+            };
+
             // If not an image, read as-is
             if (!file.type.startsWith('image/')) {
               const reader = new FileReader();
-              reader.onload = () => resolve(reader.result);
-              reader.onerror = reject;
+              reader.onload = () => clearTimeoutAndResolve(reader.result);
+              reader.onerror = () =>
+                clearTimeoutAndReject(new Error(`Failed to read file: ${file.name}`));
               reader.readAsDataURL(file);
               return;
             }
@@ -8781,29 +8884,54 @@
             reader.onload = (e) => {
               const img = new Image();
               img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
+                try {
+                  const canvas = document.createElement('canvas');
+                  let width = img.width;
+                  let height = img.height;
 
-                // Scale down if image is too large
-                if (width > maxWidth) {
-                  height = (height * maxWidth) / width;
-                  width = maxWidth;
+                  // Scale down if image is too large
+                  if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                  }
+
+                  canvas.width = width;
+                  canvas.height = height;
+                  const ctx = canvas.getContext('2d');
+
+                  if (!ctx) {
+                    clearTimeoutAndReject(new Error('Failed to get canvas context'));
+                    return;
+                  }
+
+                  ctx.drawImage(img, 0, 0, width, height);
+
+                  // Convert to JPEG with compression
+                  const compressed = canvas.toDataURL('image/jpeg', quality);
+
+                  // Validate result
+                  if (!compressed || !compressed.startsWith('data:image')) {
+                    clearTimeoutAndReject(new Error('Canvas compression produced invalid result'));
+                    return;
+                  }
+
+                  clearTimeoutAndResolve(compressed);
+                } catch (error) {
+                  clearTimeoutAndReject(new Error(`Image compression failed: ${error.message}`));
                 }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                // Convert to JPEG with compression
-                const compressed = canvas.toDataURL('image/jpeg', quality);
-                resolve(compressed);
               };
-              img.onerror = reject;
+
+              img.onerror = () =>
+                clearTimeoutAndReject(
+                  new Error(`Failed to load image for compression: ${file.name}`)
+                );
+
               img.src = e.target.result;
             };
-            reader.onerror = reject;
+
+            reader.onerror = () =>
+              clearTimeoutAndReject(new Error(`Failed to read file: ${file.name}`));
+
             reader.readAsDataURL(file);
           });
         },
@@ -8849,6 +8977,14 @@
               const errorMsg =
                 error.error?.message || error.message || 'Failed to upload image to Cloudinary';
 
+              console.error('Cloudinary upload error:', {
+                status: response.status,
+                statusText: response.statusText,
+                error: error,
+                preset: CLOUDINARY_UPLOAD_PRESET,
+                cloudName: CLOUDINARY_CLOUD_NAME,
+              });
+
               // Provide helpful guidance for common errors
               if (errorMsg.includes('Unknown API key') || errorMsg.includes('Upload preset')) {
                 throw new Error(
@@ -8856,10 +8992,38 @@
                 );
               }
 
-              throw new Error(errorMsg);
+              if (
+                response.status === 401 ||
+                response.status === 403 ||
+                errorMsg.includes('permission')
+              ) {
+                throw new Error(
+                  `Cloudinary permission error (${response.status}): The upload preset "${CLOUDINARY_UPLOAD_PRESET}" may not exist or is not configured as unsigned. Please check your Cloudinary settings.`
+                );
+              }
+
+              throw new Error(`Cloudinary upload failed (${response.status}): ${errorMsg}`);
             }
 
             const data = await response.json();
+
+            // Validate required fields
+            const requiredFields = ['secure_url', 'public_id', 'format', 'bytes'];
+            const missingFields = requiredFields.filter((field) => !data[field]);
+
+            if (missingFields.length > 0) {
+              throw new Error(
+                `Cloudinary response missing required fields: ${missingFields.join(', ')}`
+              );
+            }
+
+            // Validate URL format
+            if (
+              !data.secure_url.startsWith('https://res.cloudinary.com/') &&
+              !data.secure_url.startsWith('http://res.cloudinary.com/')
+            ) {
+              throw new Error(`Cloudinary returned invalid URL format: ${data.secure_url}`);
+            }
 
             console.log('Cloudinary direct upload successful:', {
               url: data.secure_url,
@@ -8868,12 +9032,12 @@
             });
 
             return {
-              url: data.url,
+              url: data.url || data.secure_url, // Fallback to secure_url if url missing
               secure_url: data.secure_url,
               public_id: data.public_id,
               format: data.format,
-              width: data.width,
-              height: data.height,
+              width: data.width || 0,
+              height: data.height || 0,
               bytes: data.bytes,
             };
           } catch (error) {
