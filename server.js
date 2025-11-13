@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const logger = require('console-log-level')({ level: process.env.LOG_LEVEL || 'info' });
 const { clerkClient, clerkMiddleware, getAuth, requireAuth } = require('@clerk/express');
 const path = require('path');
+const fs = require('fs');
 const packageJson = require('./package.json');
 const { v4: uuidv4 } = require('uuid');
 const sanitizeHtml = require('sanitize-html');
@@ -115,6 +116,10 @@ if (
       }
     });
   }
+
+  ensureSchemaReady().catch((error) => {
+    logger.error('Initial schema ensure failed:', { error: error.message });
+  });
 } else {
   logger.error('No valid DATABASE_URL found. Database connection required.');
   // Don't exit in serverless - let requests fail gracefully
@@ -419,13 +424,60 @@ function repairGeminiJsonString(jsonString) {
   return jsonString.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
 }
 
+let schemaEnsurePromise = null;
+async function ensureCoreSchema() {
+  const schemaFiles = [
+    'schema.sql',
+    'schema_updates.sql',
+    'schema_listing_updates.sql',
+    'schema_clerk_migration.sql',
+    'schema_cloudinary_migration.sql',
+  ];
+
+  for (const fileName of schemaFiles) {
+    const filePath = path.join(__dirname, fileName);
+    if (!fs.existsSync(filePath)) {
+      continue;
+    }
+
+    const sql = fs.readFileSync(filePath, 'utf8');
+    if (!sql || sql.trim().length === 0) {
+      continue;
+    }
+
+    await pool.query(sql);
+  }
+
+  logger.info('Core database schema ensured');
+}
+
+function ensureSchemaReady() {
+  if (!pool) {
+    throw new Error('Database pool not initialized');
+  }
+
+  if (!schemaEnsurePromise) {
+    schemaEnsurePromise = ensureCoreSchema().catch((error) => {
+      logger.error('Schema ensure failed:', { error: error.message });
+      throw error;
+    });
+  }
+
+  return schemaEnsurePromise;
+}
+
 // Safe database query wrapper
 async function safeQuery(query, params) {
   try {
+    await ensureSchemaReady();
     return await pool.query(query, params);
   } catch (error) {
-    logger.error('Database query error:', { error: error.message, query: query.substring(0, 100) });
-    throw new Error('Database operation failed');
+    logger.error('Database query error:', {
+      error: error.message,
+      code: error.code,
+      query: query.substring(0, 100),
+    });
+    throw error;
   }
 }
 
@@ -459,6 +511,7 @@ async function getPlanLimit(userId) {
 // Auth middleware - Enhanced Clerk middleware that adds user info to req.user
 const authenticateToken = async (req, res, next) => {
   try {
+    await ensureSchemaReady();
     // Try to get auth from Clerk middleware first (cookie-based)
     let { userId } = getAuth(req);
 
@@ -1244,6 +1297,7 @@ app.post('/api/messages/:id/reply', authenticateToken, async (req, res) => {
 
 // Listing endpoints
 app.post('/api/listings', authenticateToken, async (req, res) => {
+  await ensureSchemaReady();
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -1292,22 +1346,58 @@ app.post('/api/listings', authenticateToken, async (req, res) => {
 
     // Insert images in batch if provided
     if (images && images.length > 0) {
-      const imageValues = images
-        .map((_, idx) => {
-          const baseIndex = idx * 4;
-          return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4})`;
+      const preparedImages = images
+        .map((img, idx) => {
+          const dataSources = [
+            typeof img.data === 'string' ? img.data.trim() : '',
+            typeof img.url === 'string' ? img.url.trim() : '',
+            typeof img.image_url === 'string' ? img.image_url.trim() : '',
+            typeof img.thumbnail_url === 'string' ? img.thumbnail_url.trim() : '',
+          ].filter(Boolean);
+
+          const imageData = dataSources[0];
+
+          if (!imageData) {
+            logger.warn('Skipping image with no data or URL when saving listing', {
+              listingId: listing.id,
+              imageIndex: idx,
+            });
+            return null;
+          }
+
+          return {
+            listingId: listing.id,
+            imageData,
+            order: idx,
+            isBlurry: !!img.isBlurry,
+          };
         })
-        .join(', ');
-      const imageParams = images.flatMap((img, i) => [
-        listing.id,
-        img.data,
-        i,
-        img.isBlurry || false,
-      ]);
-      await client.query(
-        `INSERT INTO images (listing_id, image_data, image_order, is_blurry) VALUES ${imageValues}`,
-        imageParams
-      );
+        .filter(Boolean);
+
+      if (preparedImages.length > 0) {
+        const imageValues = preparedImages
+          .map((_, idx) => {
+            const baseIndex = idx * 4;
+            return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4})`;
+          })
+          .join(', ');
+
+        const imageParams = preparedImages.flatMap((img) => [
+          img.listingId,
+          img.imageData,
+          img.order,
+          img.isBlurry,
+        ]);
+
+        await client.query(
+          `INSERT INTO images (listing_id, image_data, image_order, is_blurry) VALUES ${imageValues}`,
+          imageParams
+        );
+      } else {
+        logger.warn('All images skipped due to missing data when saving listing', {
+          listingId: listing.id,
+        });
+      }
     }
 
     await client.query('COMMIT');
