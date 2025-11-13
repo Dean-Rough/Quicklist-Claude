@@ -66,6 +66,9 @@
     <!-- CSP temporarily disabled for development -->
     <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.clerk.dev https://*.clerk.accounts.dev https://*.clerk.dev https://*.lottiefiles.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' http://localhost:3000 https://api.clerk.dev https://*.clerk.accounts.dev https://*.clerk.dev https://clerk.clerk.com; frame-src 'self' https://accounts.clerk.dev https://*.clerk.accounts.dev; worker-src 'self' blob:;"> -->
 
+    <!-- Cloudinary Media Editor SDK -->
+    <script src="https://media-editor.cloudinary.com/all.js" type="text/javascript"></script>
+
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
       {
@@ -4323,6 +4326,11 @@
           <div class="saved-items-grid swipeable-list" id="savedItemsGrid">
             <!-- Saved items will be populated here -->
           </div>
+          <div id="loadMoreContainer" class="hidden" style="text-align: center; margin: 2rem 0;">
+            <button id="loadMoreBtn" class="btn btn-secondary" onclick="app.loadMoreListings()">
+              Load More
+            </button>
+          </div>
           <div id="savedItemsEmpty" class="empty-state hidden">
             <div class="empty-state-icon">
               <svg
@@ -5123,6 +5131,11 @@
             'Turn on auto-download to keep listings organized offline',
           ],
           progressTimeouts: [],
+          // Pagination state
+          currentPage: 1,
+          totalPages: 1,
+          itemsPerPage: 20,
+          totalItems: 0,
         },
 
         setWizardPhase(phase = 'photos') {
@@ -5380,7 +5393,7 @@
         },
 
         // Load listings from database
-        async loadListingsFromDB() {
+        async loadListingsFromDB(loadMore = false) {
           // Don't try to load if not authenticated
           if (!this.state.isAuthenticated) {
             console.log('Skipping loadListingsFromDB - not authenticated');
@@ -5391,11 +5404,27 @@
           this.renderSavedItems(); // Show loading state
 
           try {
-            const response = await this.authenticatedFetch(`${this.apiUrl}/listings`);
+            // If loading more, increment page, otherwise reset to page 1
+            if (!loadMore) {
+              this.state.currentPage = 1;
+              this.state.savedListings = [];
+            } else {
+              this.state.currentPage += 1;
+            }
+
+            const response = await this.authenticatedFetch(
+              `${this.apiUrl}/listings?page=${this.state.currentPage}&limit=${this.state.itemsPerPage}`
+            );
 
             if (response.ok) {
               const data = await response.json();
-              this.state.savedListings = data.listings.map((listing) => ({
+
+              // Update pagination state
+              this.state.totalPages = data.pagination.pages;
+              this.state.totalItems = data.pagination.total;
+
+              // Map the listings with thumbnail URLs
+              const newListings = data.listings.map((listing) => ({
                 ...listing,
                 keywords: listing.keywords || [],
                 sources:
@@ -5404,12 +5433,21 @@
                     : listing.sources,
                 images: (listing.images || []).map((img) => ({
                   id: img.id,
-                  data: img.data,
-                  url: img.data,
+                  url: img.thumbnail_url || img.image_url,
+                  thumbnail_url: img.thumbnail_url,
+                  image_url: img.image_url,
                   isBlurry: img.isBlurry,
                   status: 'ready',
                 })),
               }));
+
+              // Append or replace listings
+              if (loadMore) {
+                this.state.savedListings = [...this.state.savedListings, ...newListings];
+              } else {
+                this.state.savedListings = newListings;
+              }
+
               // Initialize filtered list with all listings
               this.state.filteredSavedListings = [];
             } else {
@@ -5436,6 +5474,11 @@
 
         async loadSavedItems() {
           return this.loadListingsFromDB();
+        },
+
+        // Load more listings (pagination)
+        async loadMoreListings() {
+          await this.loadListingsFromDB(true);
         },
 
         // Event listeners
@@ -5870,9 +5913,20 @@
                 }
               }
 
+              // Use Cloudinary URL with transformations if available, otherwise use local URL
+              let imgSrc = img.url;
+              if (img.cloudinaryUrl) {
+                // Apply Cloudinary transformations for thumbnails: 300x300 fill, auto gravity, auto quality, auto format
+                // Add AI enhancements: improve and sharpen for product photos
+                imgSrc = img.cloudinaryUrl.replace(
+                  '/upload/',
+                  '/upload/w_300,h_300,c_fill,g_auto,q_auto,f_auto,e_improve,e_sharpen:100/'
+                );
+              }
+
               return `
                     <div class="image-thumbnail" style="position: relative; cursor: pointer;" data-rotation="${img.rotation || 0}" onclick="app.openImageEditor(${index})">
-                        <img src="${img.url}" alt="Uploaded" style="transform: rotate(${img.rotation || 0}deg); pointer-events: none;">
+                        <img src="${imgSrc}" alt="Uploaded" style="transform: rotate(${img.rotation || 0}deg); pointer-events: none;" loading="lazy">
 
                         <!-- Delete button with white trash can icon -->
                         <button class="image-thumbnail-delete" onclick="event.stopPropagation(); app.deleteImage('${img.id}')" aria-label="Delete image" title="Delete">
@@ -5910,6 +5964,7 @@
                         }
 
                         ${img.status === 'checking' ? '<div class="image-thumbnail-status">Analyzing...</div>' : ''}
+                        ${img.status === 'uploading' ? '<div class="image-thumbnail-status">Uploading...</div>' : ''}
                     </div>
                 `;
             })
@@ -5934,54 +5989,113 @@
           }
         },
 
-        // Open image editor modal
-        openImageEditor(index) {
+        // Open image editor modal with Cloudinary Media Editor
+        async openImageEditor(index) {
           this.state.editingImageIndex = index;
           const img = this.state.uploadedImages[index];
           if (!img) return;
 
+          // Display quality information in modal (fallback for non-Cloudinary images)
           const modal = document.getElementById('imageEditorModal');
-          const canvas = document.getElementById('imageEditorCanvas');
-          const ctx = canvas.getContext('2d');
+          if (modal) {
+            modal.classList.remove('hidden');
+            this.displayQualityInfo(img);
+          }
 
-          // Reset crop state
-          this.state.cropArea = null;
-          this.state.currentEditorTool = 'rotate';
+          try {
+            // If image not yet uploaded to Cloudinary, upload it first
+            if (!img.cloudinaryPublicId) {
+              this.showToast('Uploading image to Cloudinary...', 'info');
+              img.status = 'uploading';
+              this.renderImageGrid();
 
-          modal.classList.remove('hidden');
+              const cloudinaryData = await this.uploadImageToCloudinary(img.file);
+              img.cloudinaryUrl = cloudinaryData.secure_url;
+              img.cloudinaryPublicId = cloudinaryData.public_id;
 
-          // Display quality information
-          this.displayQualityInfo(img);
-
-          // Load image onto canvas
-          const image = new Image();
-          image.onload = () => {
-            // Store original image for crop operations
-            this.state.originalEditorImage = image;
-
-            // Set canvas size to image size
-            canvas.width = image.width;
-            canvas.height = image.height;
-
-            // Apply current rotation
-            const rotation = img.rotation || 0;
-            if (rotation !== 0) {
-              // Adjust canvas size for rotation
-              if (rotation === 90 || rotation === 270) {
-                canvas.width = image.height;
-                canvas.height = image.width;
+              // Update with AI-generated tags and quality scores from Cloudinary
+              if (cloudinaryData.tags) {
+                img.cloudinaryTags = cloudinaryData.tags;
               }
-              // Save context, translate and rotate
-              ctx.save();
-              ctx.translate(canvas.width / 2, canvas.height / 2);
-              ctx.rotate((rotation * Math.PI) / 180);
-              ctx.drawImage(image, -image.width / 2, -image.height / 2);
-              ctx.restore();
-            } else {
-              ctx.drawImage(image, 0, 0);
+              if (cloudinaryData.quality_score) {
+                img.cloudinaryQualityScore = cloudinaryData.quality_score;
+              }
+
+              img.status = 'ready';
+              this.renderImageGrid();
             }
-          };
-          image.src = img.url;
+
+            // Initialize Cloudinary Media Editor widget
+            const cloudinary = window.cloudinary;
+            if (!cloudinary) {
+              throw new Error('Cloudinary Media Editor SDK not loaded');
+            }
+
+            const editor = cloudinary.mediaEditor();
+            editor.update({
+              cloudName: 'dqmxmwfiv',
+              publicIds: [img.cloudinaryPublicId],
+
+              // Configure export settings
+              export: {
+                transformations: {
+                  quality: 'auto:good',
+                  format: 'auto',
+                }
+              },
+
+              // Callback when user saves edits
+              onSave: async (result) => {
+                try {
+                  // Get the edited image URL
+                  const editedUrl = result.assets[0].secure_url;
+                  const editedPublicId = result.assets[0].public_id;
+
+                  // Update the image object with new URL and public ID
+                  img.cloudinaryUrl = editedUrl;
+                  img.cloudinaryPublicId = editedPublicId;
+                  img.url = editedUrl; // Update local URL for display
+
+                  // Update UI
+                  this.renderImageGrid();
+                  this.showToast('Image edited successfully', 'success');
+
+                  // Close the modal if open
+                  if (modal) {
+                    modal.classList.add('hidden');
+                  }
+                } catch (error) {
+                  console.error('Error saving edited image:', error);
+                  this.showToast('Failed to save edited image', 'error');
+                }
+              },
+
+              // Callback when user closes without saving
+              onClose: () => {
+                if (modal) {
+                  modal.classList.add('hidden');
+                }
+              }
+            });
+
+            // Show the editor
+            editor.show();
+
+            // Close our custom modal since we're using Cloudinary's UI
+            if (modal) {
+              modal.classList.add('hidden');
+            }
+
+          } catch (error) {
+            console.error('Error opening Cloudinary Media Editor:', error);
+            this.showToast('Failed to open image editor. Displaying quality info only.', 'warning');
+
+            // Fall back to showing quality info only
+            if (modal) {
+              modal.classList.remove('hidden');
+              this.displayQualityInfo(img);
+            }
+          }
         },
 
         // Display quality information in sidebar
@@ -6087,7 +6201,13 @@
                 `;
         },
 
-        // Switch between editor tools
+        // ============================================================================
+        // DEPRECATED: Canvas-based editing functions
+        // These functions are deprecated in favor of Cloudinary Media Editor
+        // They are kept here for backward compatibility only
+        // ============================================================================
+
+        /* DEPRECATED: Switch between editor tools
         switchEditorTool(tool) {
           this.state.currentEditorTool = tool;
 
@@ -6119,8 +6239,9 @@
             this.disableCropInteraction();
           }
         },
+        */
 
-        // Enable crop interaction
+        /* DEPRECATED: Enable crop interaction
         enableCropInteraction() {
           const canvas = document.getElementById('imageEditorCanvas');
           const overlay = document.getElementById('cropOverlay');
@@ -6183,8 +6304,9 @@
           overlay.onmouseup = handleMouseUp;
           overlay.onmouseleave = handleMouseUp;
         },
+        */
 
-        // Disable crop interaction
+        /* DEPRECATED: Disable crop interaction
         disableCropInteraction() {
           const overlay = document.getElementById('cropOverlay');
           overlay.style.pointerEvents = 'none';
@@ -6193,16 +6315,18 @@
           overlay.onmouseup = null;
           overlay.onmouseleave = null;
         },
+        */
 
-        // Reset crop
+        /* DEPRECATED: Reset crop
         resetCrop() {
           this.state.cropArea = null;
           const cropBox = document.getElementById('cropBox');
           cropBox.style.width = '0px';
           cropBox.style.height = '0px';
         },
+        */
 
-        // Apply crop
+        /* DEPRECATED: Apply crop
         async applyCrop() {
           if (
             !this.state.cropArea ||
@@ -6257,8 +6381,9 @@
             0.9
           );
         },
+        */
 
-        // Rotate image in editor
+        /* DEPRECATED: Rotate image in editor
         rotateEditorImage(degrees) {
           const index = this.state.editingImageIndex;
           const img = this.state.uploadedImages[index];
@@ -6296,6 +6421,11 @@
           };
           image.src = img.url;
         },
+        */
+
+        // ============================================================================
+        // END DEPRECATED FUNCTIONS
+        // ============================================================================
 
         // Save image edits
         saveImageEdits() {
@@ -6454,10 +6584,19 @@
 
           container.innerHTML = sourceImages
             .map((img, index) => {
-              const url = img.url || img.data || '';
+              let url = img.url || img.data || '';
+              // Use Cloudinary transformation for review images if available
+              if (img.cloudinaryUrl) {
+                // Apply transformations: 200x200 fill, auto gravity, auto quality, auto format
+                // Add AI enhancements: improve and sharpen for product photos
+                url = img.cloudinaryUrl.replace(
+                  '/upload/',
+                  '/upload/w_200,h_200,c_fill,g_auto,q_auto,f_auto,e_improve,e_sharpen:100/'
+                );
+              }
               return `
                         <div class="review-image">
-                            <img src="${url}" alt="Listing photo ${index + 1}">
+                            <img src="${url}" alt="Listing photo ${index + 1}" loading="lazy">
                             <span>${index + 1}</span>
                         </div>
                     `;
@@ -7074,21 +7213,51 @@
             const hint = document.getElementById('itemHint').value;
             const location = document.getElementById('itemLocation')?.value || '';
 
-            // Convert all images to base64 with aggressive compression for API
-            // Use smaller max width (800px) and lower quality (0.6) to stay under Vercel's 4.5MB payload limit
-            const base64Images = await Promise.all(
-              this.state.uploadedImages.map((img) => this.fileToBase64(img.file, 800, 0.6))
+            // Upload images to Cloudinary first (reduces payload size dramatically)
+            // Only upload if images don't already have cloudinary URLs
+            const imageUrls = await Promise.all(
+              this.state.uploadedImages.map(async (img) => {
+                // If already uploaded, return existing URL
+                if (img.cloudinaryUrl) {
+                  return img.cloudinaryUrl;
+                }
+
+                try {
+                  // Set uploading status and update UI
+                  img.status = 'uploading';
+                  this.renderImageGrid();
+
+                  // Upload to Cloudinary
+                  const cloudinaryData = await this.uploadImageToCloudinary(img.file);
+                  // Store the URL in the image object for future reference
+                  img.cloudinaryUrl = cloudinaryData.secure_url;
+                  img.cloudinaryPublicId = cloudinaryData.public_id;
+
+                  // Clear status
+                  img.status = 'ready';
+                  this.renderImageGrid();
+
+                  return cloudinaryData.secure_url;
+                } catch (error) {
+                  console.error('Failed to upload image to Cloudinary, falling back to base64:', error);
+                  // Clear status
+                  img.status = 'ready';
+                  this.renderImageGrid();
+                  // Fallback to base64 if Cloudinary upload fails
+                  return await this.fileToBase64(img.file, 800, 0.6);
+                }
+              })
             );
 
-            // Check if cancelled during image conversion
+            // Check if cancelled during image upload
             if (this.state.generationCancelled) {
               this.showInitialState();
               return;
             }
 
-            // Call Gemini API with all images
+            // Call Gemini API with image URLs (much smaller payload!)
             const response = await this.callGeminiAPI(
-              base64Images,
+              imageUrls,
               platform,
               hint,
               location,
@@ -7677,6 +7846,87 @@
             reader.onerror = reject;
             reader.readAsDataURL(file);
           });
+        },
+
+        // Upload image to Cloudinary
+        async uploadImageToCloudinary(file) {
+          try {
+            // First compress the image (1200px, 70% quality)
+            const base64Data = await this.fileToBase64(file, 1200, 0.7);
+
+            // Upload to Cloudinary via our API
+            const response = await this.fetchWithTimeout(
+              `${this.apiUrl}/images/upload`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${this.state.token}`,
+                },
+                body: JSON.stringify({ image: base64Data }),
+              },
+              30000 // 30 second timeout
+            );
+
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.error || 'Failed to upload image to Cloudinary');
+            }
+
+            const data = await response.json();
+            return {
+              url: data.url,
+              secure_url: data.secure_url,
+              public_id: data.publicId || data.public_id,
+
+              // AI-generated data from Cloudinary
+              tags: data.tags || [],
+              quality_analysis: data.quality_analysis || null,
+              quality_score: data.quality_score || null,
+            };
+          } catch (error) {
+            console.error('Error uploading to Cloudinary:', error);
+            throw error;
+          }
+        },
+
+        // Generate responsive image srcset from Cloudinary URL
+        // Returns srcset string for multiple sizes: 300w, 600w, 900w, 1200w
+        getResponsiveImageSrcset(cloudinaryUrl, options = {}) {
+          if (!cloudinaryUrl || !cloudinaryUrl.includes('cloudinary.com')) {
+            return ''; // Not a Cloudinary URL, return empty
+          }
+
+          const {
+            sizes = [300, 600, 900, 1200], // Default sizes
+            aspectRatio = null, // Optional: specify aspect ratio (e.g., '1:1', '16:9')
+            crop = 'fill', // Crop mode: fill, fit, scale, etc.
+            gravity = 'auto', // Auto-detect best crop area
+            quality = 'auto', // Auto quality
+            format = 'auto', // Auto format (WebP, AVIF, etc.)
+            enhancements = true, // Apply AI enhancements (improve, sharpen)
+          } = options;
+
+          const srcsetEntries = sizes.map((width) => {
+            let transformation = `w_${width},c_${crop},g_${gravity},q_${quality},f_${format}`;
+
+            // Add aspect ratio if specified
+            if (aspectRatio) {
+              const [arWidth, arHeight] = aspectRatio.split(':').map(Number);
+              const height = Math.round((width * arHeight) / arWidth);
+              transformation += `,h_${height}`;
+            }
+
+            // Add AI enhancements for product photos
+            if (enhancements) {
+              transformation += ',e_improve,e_sharpen:100';
+            }
+
+            const url = cloudinaryUrl.replace('/upload/', `/upload/${transformation}/`);
+            return `${url} ${width}w`;
+          });
+
+          return srcsetEntries.join(', ');
         },
 
         // Animate progress steps with realistic timing
@@ -8838,8 +9088,23 @@ ${this.state.currentListing?.keywords?.join(', ')}
               const img = this.state.uploadedImages[i];
               let processedFile = img.file;
 
+              // If image is from Cloudinary and we don't have the file object, fetch it
+              if (!processedFile && img.cloudinaryUrl) {
+                try {
+                  const response = await fetch(img.cloudinaryUrl);
+                  processedFile = await response.blob();
+                } catch (error) {
+                  console.warn('Failed to fetch Cloudinary image, trying base64:', error);
+                  // Fallback to base64 URL if available
+                  if (img.url && img.url.startsWith('data:')) {
+                    const response = await fetch(img.url);
+                    processedFile = await response.blob();
+                  }
+                }
+              }
+
               // Fix blur if needed
-              if (fixBlur && img.isBlurry) {
+              if (fixBlur && img.isBlurry && processedFile) {
                 try {
                   processedFile = await this.fixBlur(processedFile);
                 } catch (error) {
@@ -8848,7 +9113,7 @@ ${this.state.currentListing?.keywords?.join(', ')}
               }
 
               // Auto-enhance if enabled
-              if (autoEnhance) {
+              if (autoEnhance && processedFile) {
                 try {
                   processedFile = await this.autoEnhanceImage(processedFile);
                 } catch (error) {
@@ -8860,13 +9125,13 @@ ${this.state.currentListing?.keywords?.join(', ')}
               const processedBlob =
                 processedFile instanceof Blob
                   ? processedFile
-                  : await fetch(img.url).then((r) => r.blob());
+                  : await fetch(img.cloudinaryUrl || img.url).then((r) => r.blob());
 
               imagesFolder.file(`image-${i + 1}.jpg`, processedBlob);
 
               // Track best image for hero
               if (!bestImage && !img.isBlurry) {
-                bestImage = img.file;
+                bestImage = processedFile || img.file;
               }
             }
 
@@ -9003,10 +9268,23 @@ ${this.state.currentListing?.keywords?.join(', ')}
               sources: this.state.currentListing.sources,
               platform: this.state.currentListing.platform,
               images: await Promise.all(
-                this.state.uploadedImages.map(async (img) => ({
-                  data: await this.fileToBase64(img.file),
-                  isBlurry: img.isBlurry,
-                }))
+                this.state.uploadedImages.map(async (img) => {
+                  // Prefer Cloudinary URL if available, otherwise use base64
+                  // This provides backward compatibility during migration
+                  if (img.cloudinaryUrl) {
+                    return {
+                      url: img.cloudinaryUrl,
+                      public_id: img.cloudinaryPublicId,
+                      isBlurry: img.isBlurry,
+                    };
+                  } else {
+                    // Fallback to base64 for legacy support or if Cloudinary upload failed
+                    return {
+                      data: await this.fileToBase64(img.file),
+                      isBlurry: img.isBlurry,
+                    };
+                  }
+                })
               ),
             };
 
@@ -9040,17 +9318,52 @@ ${this.state.currentListing?.keywords?.join(', ')}
         },
 
         // Load listing
-        loadListing(id) {
+        async loadListing(id) {
           const listing = this.state.savedListings.find((l) => l.id === id);
           if (!listing) return;
 
           // Switch to new item view
           this.navigateToApp('newItem');
 
-          // Load images
-          this.state.uploadedImages = listing.images || [];
+          // Load images with thumbnails first, then fetch full images on demand
+          this.state.uploadedImages = (listing.images || []).map((img) => {
+            if (img.url) {
+              // New format: Cloudinary URL
+              return {
+                id: Date.now() + Math.random(),
+                url: img.url,
+                cloudinaryUrl: img.url,
+                cloudinaryPublicId: img.public_id,
+                isBlurry: img.isBlurry,
+                status: 'ready',
+              };
+            } else if (img.thumbnail_url || img.image_url) {
+              // Thumbnail format: show thumbnail, load full later
+              return {
+                id: img.id,
+                url: img.thumbnail_url || img.image_url,
+                thumbnail_url: img.thumbnail_url,
+                image_url: img.image_url,
+                isBlurry: img.isBlurry,
+                status: 'ready',
+                needsFullLoad: true,
+              };
+            } else if (img.data) {
+              // Legacy format: base64
+              return {
+                id: Date.now() + Math.random(),
+                url: img.data,
+                isBlurry: img.isBlurry,
+                status: 'ready',
+              };
+            }
+            return null;
+          }).filter(Boolean);
           this.renderImageGrid();
           this.updateGenerateButton();
+
+          // Fetch full image data in the background
+          this.loadFullImagesForListing(id);
 
           // Load platform
           document.getElementById('platformSelect').value = listing.platform || 'vinted';
@@ -9068,6 +9381,36 @@ ${this.state.currentListing?.keywords?.join(', ')}
           this.setWizardPhase('review');
 
           this.showToast('Listing loaded!');
+        },
+
+        // Load full images for a listing in the background
+        async loadFullImagesForListing(listingId) {
+          try {
+            const response = await this.authenticatedFetch(
+              `${this.apiUrl}/listings/${listingId}/images`
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+
+              // Update images in state with full data
+              data.images.forEach((fullImage) => {
+                const imgIndex = this.state.uploadedImages.findIndex(
+                  (img) => img.id === fullImage.id
+                );
+                if (imgIndex !== -1 && this.state.uploadedImages[imgIndex].needsFullLoad) {
+                  this.state.uploadedImages[imgIndex].url = fullImage.data;
+                  this.state.uploadedImages[imgIndex].needsFullLoad = false;
+                }
+              });
+
+              // Re-render image grid with full images
+              this.renderImageGrid();
+            }
+          } catch (error) {
+            console.error('Error loading full images:', error);
+            // Silently fail - thumbnails are already loaded
+          }
         },
 
         // Delete listing
@@ -9194,6 +9537,7 @@ ${this.state.currentListing?.keywords?.join(', ')}
           const empty = document.getElementById('savedItemsEmpty');
           const noResults = document.getElementById('savedItemsNoResults');
           const countEl = document.getElementById('savedItemsCount');
+          const loadMoreContainer = document.getElementById('loadMoreContainer');
 
           // Show loading state
           if (this.state.loadingSavedItems) {
@@ -9215,7 +9559,7 @@ ${this.state.currentListing?.keywords?.join(', ')}
 
           // Update count
           if (countEl) {
-            const total = this.state.savedListings.length;
+            const total = this.state.totalItems || this.state.savedListings.length;
             const showing = listingsToRender.length;
             if (showing < total) {
               countEl.textContent = `Showing ${showing} of ${total} items`;
@@ -9224,10 +9568,20 @@ ${this.state.currentListing?.keywords?.join(', ')}
             }
           }
 
+          // Show/hide Load More button
+          if (loadMoreContainer) {
+            if (this.state.currentPage < this.state.totalPages) {
+              loadMoreContainer.classList.remove('hidden');
+            } else {
+              loadMoreContainer.classList.add('hidden');
+            }
+          }
+
           if (this.state.savedListings.length === 0) {
             grid.classList.add('hidden');
             empty.classList.remove('hidden');
             if (noResults) noResults.classList.add('hidden');
+            if (loadMoreContainer) loadMoreContainer.classList.add('hidden');
             return;
           }
 
@@ -9235,6 +9589,7 @@ ${this.state.currentListing?.keywords?.join(', ')}
             grid.classList.add('hidden');
             empty.classList.add('hidden');
             if (noResults) noResults.classList.remove('hidden');
+            if (loadMoreContainer) loadMoreContainer.classList.add('hidden');
             return;
           }
 

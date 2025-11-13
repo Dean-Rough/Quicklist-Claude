@@ -13,6 +13,7 @@ const sanitizeHtml = require('sanitize-html');
 const helmet = require('helmet');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
+const cloudinary = require('cloudinary').v2;
 
 // Only load .env in non-production environments (Vercel provides env vars directly)
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
@@ -66,6 +67,19 @@ logger.info('Clerk authentication enabled');
 const stripe = process.env.STRIPE_SECRET_KEY
   ? require('stripe')(process.env.STRIPE_SECRET_KEY)
   : null;
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+  logger.info('Cloudinary configured successfully');
+} else {
+  logger.warn('Cloudinary not configured - image upload will not work');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1239,10 +1253,10 @@ app.get('/api/listings', authenticateToken, async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
 
-    // Get listings with pagination
+    // Get listings with pagination (without full image data for performance)
     const result = await safeQuery(
       `SELECT l.*,
-                    (SELECT json_agg(json_build_object('id', i.id, 'data', i.image_data, 'isBlurry', i.is_blurry, 'order', i.image_order) ORDER BY i.image_order)
+                    (SELECT json_agg(json_build_object('id', i.id, 'image_url', i.image_data, 'thumbnail_url', i.image_data, 'isBlurry', i.is_blurry, 'order', i.image_order) ORDER BY i.image_order)
                      FROM images i WHERE i.listing_id = l.id) as images
              FROM listings l
              WHERE l.user_id = $1
@@ -1296,6 +1310,37 @@ app.get('/api/listings/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     logger.error('Get listing error:', { error: error.message, requestId: req.id });
     res.status(500).json({ error: 'Failed to fetch listing' });
+  }
+});
+
+app.get('/api/listings/:id/images', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const listingId = req.params.id;
+
+    // First verify the listing belongs to the user
+    const listingCheck = await safeQuery(
+      'SELECT id FROM listings WHERE id = $1 AND user_id = $2',
+      [listingId, userId]
+    );
+
+    if (listingCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+
+    // Get full image data for the listing
+    const result = await safeQuery(
+      `SELECT id, image_data as data, is_blurry as "isBlurry", image_order as "order"
+       FROM images
+       WHERE listing_id = $1
+       ORDER BY image_order`,
+      [listingId]
+    );
+
+    res.json({ images: result.rows });
+  } catch (error) {
+    logger.error('Get listing images error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to fetch listing images' });
   }
 });
 
@@ -2362,6 +2407,226 @@ app.post('/api/analyze-image-quality', authenticateToken, async (req, res) => {
   } catch (error) {
     logger.error('Image quality analysis endpoint error:', error);
     res.status(500).json({ error: 'Failed to analyze image quality' });
+  }
+});
+
+// ============================================================================
+// CLOUDINARY IMAGE UPLOAD
+// ============================================================================
+
+/**
+ * Helper function to upload images to Cloudinary
+ * @param {string} base64Data - Base64 encoded image data (with data:image prefix)
+ * @param {string} userId - User ID for organizing images in folders
+ * @returns {Promise<Object>} Upload result with URLs
+ */
+async function uploadToCloudinary(base64Data, userId) {
+  try {
+    // Validate input
+    if (!base64Data || typeof base64Data !== 'string') {
+      throw new Error('Invalid image data');
+    }
+
+    if (!base64Data.startsWith('data:image')) {
+      throw new Error('Image must be in base64 format with data:image prefix');
+    }
+
+    // Validate Cloudinary is configured
+    if (!process.env.CLOUDINARY_CLOUD_NAME) {
+      throw new Error('Cloudinary is not configured');
+    }
+
+    // Upload to Cloudinary with transformations and AI features
+    const uploadResult = await cloudinary.uploader.upload(base64Data, {
+      folder: `quicklist/${userId}`,
+      transformation: [
+        {
+          width: 1200,
+          crop: 'limit', // Don't upscale, only downscale if larger
+          quality: 'auto:good',
+          fetch_format: 'auto', // Automatically serve WebP/AVIF if supported
+          effect: 'improve:outdoor:50,sharpen:100', // AI-powered enhancement for product photos
+        },
+      ],
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif'],
+
+      // AI-powered features
+      categorization: 'google_tagging', // Enable auto-tagging using Google Vision API
+      quality_analysis: true, // Enable quality analysis to get quality scores
+      auto_tagging: 0.6, // Automatic content detection with 60% confidence threshold
+      detection: 'adv_face', // Advanced face detection for better cropping
+    });
+
+    // Generate thumbnail URL using Cloudinary transformations
+    const thumbnailUrl = cloudinary.url(uploadResult.public_id, {
+      transformation: [
+        {
+          width: 300,
+          height: 300,
+          crop: 'fill',
+          gravity: 'auto',
+          quality: 'auto:good',
+          fetch_format: 'auto',
+        },
+      ],
+    });
+
+    // Extract AI-generated tags and quality analysis
+    const tags = uploadResult.tags || [];
+    const qualityAnalysis = uploadResult.quality_analysis || null;
+    const qualityScore = qualityAnalysis ? uploadResult.quality_score : null;
+
+    logger.info('Image uploaded to Cloudinary', {
+      userId,
+      publicId: uploadResult.public_id,
+      url: uploadResult.secure_url,
+      format: uploadResult.format,
+      bytes: uploadResult.bytes,
+      tags: tags.length,
+      qualityScore,
+    });
+
+    return {
+      success: true,
+      publicId: uploadResult.public_id,
+      url: uploadResult.secure_url,
+      thumbnailUrl,
+      format: uploadResult.format,
+      width: uploadResult.width,
+      height: uploadResult.height,
+      bytes: uploadResult.bytes,
+
+      // AI-powered data
+      tags, // Array of automatically detected tags from Google Vision API
+      quality_analysis: qualityAnalysis, // Quality analysis data (focus, exposure, etc.)
+      quality_score: qualityScore, // Overall quality score (0-1 or percentage)
+    };
+  } catch (error) {
+    logger.error('Cloudinary upload error:', {
+      error: error.message,
+      userId,
+    });
+    throw error;
+  }
+}
+
+/**
+ * POST /api/images/upload
+ * Upload an image to Cloudinary
+ * Body: { image: "data:image/jpeg;base64,..." }
+ * Returns: { publicId, url, thumbnailUrl, format, width, height, bytes }
+ */
+app.post('/api/images/upload', authenticateToken, async (req, res) => {
+  try {
+    const { image } = req.body;
+    const userId = req.user.id;
+
+    if (!image || typeof image !== 'string') {
+      return res.status(400).json({ error: 'Image data required' });
+    }
+
+    if (!image.startsWith('data:image')) {
+      return res.status(400).json({
+        error: 'Invalid image format. Must be base64 encoded with data:image prefix',
+      });
+    }
+
+    // Validate image size (max 10MB for base64)
+    const maxImageSize = 10 * 1024 * 1024;
+    const base64Size = (image.length * 3) / 4; // Approximate decoded size
+    if (base64Size > maxImageSize) {
+      return res.status(400).json({
+        error: 'Image too large. Maximum size is 10MB',
+      });
+    }
+
+    // Upload to Cloudinary
+    const result = await uploadToCloudinary(image, userId);
+
+    logger.info('Image upload successful', {
+      userId,
+      publicId: result.publicId,
+      requestId: req.id,
+    });
+
+    res.json(result);
+  } catch (error) {
+    logger.error('Image upload endpoint error:', {
+      error: error.message,
+      userId: req.user.id,
+      requestId: req.id,
+    });
+
+    if (error.message.includes('not configured')) {
+      return res.status(503).json({
+        error: 'Image upload service is not available',
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to upload image',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * DELETE /api/images/:publicId
+ * Delete an image from Cloudinary
+ * URL format: /api/images/quicklist%2F123%2Fabc123def456
+ * (publicId should be URL-encoded, e.g., quicklist/123/abc123def456 -> quicklist%2F123%2Fabc123def456)
+ * Returns: { success: true, message: "Image deleted successfully" }
+ */
+app.delete('/api/images/:publicId(*)', authenticateToken, async (req, res) => {
+  try {
+    const publicId = req.params.publicId;
+    const userId = req.user.id;
+
+    if (!publicId) {
+      return res.status(400).json({ error: 'Public ID required' });
+    }
+
+    // Verify the image belongs to this user (check folder path)
+    const expectedPrefix = `quicklist/${userId}/`;
+    if (!publicId.startsWith(expectedPrefix)) {
+      return res.status(403).json({
+        error: 'You do not have permission to delete this image',
+      });
+    }
+
+    // Delete from Cloudinary
+    const deleteResult = await cloudinary.uploader.destroy(publicId);
+
+    if (deleteResult.result === 'ok') {
+      logger.info('Image deleted from Cloudinary', {
+        userId,
+        publicId,
+        requestId: req.id,
+      });
+
+      res.json({
+        success: true,
+        message: 'Image deleted successfully',
+      });
+    } else if (deleteResult.result === 'not found') {
+      return res.status(404).json({
+        error: 'Image not found',
+      });
+    } else {
+      throw new Error(`Unexpected delete result: ${deleteResult.result}`);
+    }
+  } catch (error) {
+    logger.error('Image delete endpoint error:', {
+      error: error.message,
+      userId: req.user.id,
+      publicId: req.params.publicId,
+      requestId: req.id,
+    });
+
+    res.status(500).json({
+      error: 'Failed to delete image',
+      details: error.message,
+    });
   }
 });
 
