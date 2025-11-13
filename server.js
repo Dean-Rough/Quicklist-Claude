@@ -337,27 +337,33 @@ app.use(
 );
 
 // Serve JavaScript files from components/ and utils/ with correct MIME type
-app.use('/components', express.static(path.join(__dirname, 'components'), {
-  maxAge: isProduction ? '1d' : '0',
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
-    }
-  }
-}));
+app.use(
+  '/components',
+  express.static(path.join(__dirname, 'components'), {
+    maxAge: isProduction ? '1d' : '0',
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+      }
+    },
+  })
+);
 
-app.use('/utils', express.static(path.join(__dirname, 'utils'), {
-  maxAge: isProduction ? '1d' : '0',
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
-    }
-  }
-}));
+app.use(
+  '/utils',
+  express.static(path.join(__dirname, 'utils'), {
+    maxAge: isProduction ? '1d' : '0',
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+      }
+    },
+  })
+);
 
 // Serve SPA entry point
 app.get('/', (req, res) => {
@@ -467,13 +473,13 @@ const authenticateToken = async (req, res, next) => {
       logger.info('Database user lookup result', {
         userId,
         found: dbUser.rows.length > 0,
-        requestId: req.id
+        requestId: req.id,
       });
     } catch (dbError) {
       logger.error('Database user lookup failed', {
         error: dbError.message,
         userId,
-        requestId: req.id
+        requestId: req.id,
       });
       throw dbError;
     }
@@ -493,14 +499,14 @@ const authenticateToken = async (req, res, next) => {
         logger.info('User created successfully', {
           dbUserId: dbUser.rows[0].id,
           email,
-          requestId: req.id
+          requestId: req.id,
         });
       } catch (createError) {
         logger.error('Failed to create user in database', {
           error: createError.message,
           email,
           userId,
-          requestId: req.id
+          requestId: req.id,
         });
         throw createError;
       }
@@ -1372,10 +1378,10 @@ app.get('/api/listings/:id/images', authenticateToken, async (req, res) => {
     const listingId = req.params.id;
 
     // First verify the listing belongs to the user
-    const listingCheck = await safeQuery(
-      'SELECT id FROM listings WHERE id = $1 AND user_id = $2',
-      [listingId, userId]
-    );
+    const listingCheck = await safeQuery('SELECT id FROM listings WHERE id = $1 AND user_id = $2', [
+      listingId,
+      userId,
+    ]);
 
     if (listingCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Listing not found' });
@@ -2489,25 +2495,18 @@ async function uploadToCloudinary(base64Data, userId) {
       throw new Error('Cloudinary is not configured');
     }
 
-    // Upload to Cloudinary with transformations and AI features
+    // Upload to Cloudinary with basic transformations (free tier compatible)
     const uploadResult = await cloudinary.uploader.upload(base64Data, {
       folder: `quicklist/${userId}`,
       transformation: [
         {
           width: 1200,
           crop: 'limit', // Don't upscale, only downscale if larger
-          quality: 'auto:good',
-          fetch_format: 'auto', // Automatically serve WebP/AVIF if supported
-          effect: 'improve:outdoor:50,sharpen:100', // AI-powered enhancement for product photos
+          quality: 'auto',
+          fetch_format: 'auto', // Automatically serve WebP if supported
         },
       ],
-      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif'],
-
-      // AI-powered features
-      categorization: 'google_tagging', // Enable auto-tagging using Google Vision API
-      quality_analysis: true, // Enable quality analysis to get quality scores
-      auto_tagging: 0.6, // Automatic content detection with 60% confidence threshold
-      detection: 'adv_face', // Advanced face detection for better cropping
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
     });
 
     // Generate thumbnail URL using Cloudinary transformations
@@ -2524,19 +2523,12 @@ async function uploadToCloudinary(base64Data, userId) {
       ],
     });
 
-    // Extract AI-generated tags and quality analysis
-    const tags = uploadResult.tags || [];
-    const qualityAnalysis = uploadResult.quality_analysis || null;
-    const qualityScore = qualityAnalysis ? uploadResult.quality_score : null;
-
     logger.info('Image uploaded to Cloudinary', {
       userId,
       publicId: uploadResult.public_id,
       url: uploadResult.secure_url,
       format: uploadResult.format,
       bytes: uploadResult.bytes,
-      tags: tags.length,
-      qualityScore,
     });
 
     return {
@@ -2548,11 +2540,6 @@ async function uploadToCloudinary(base64Data, userId) {
       width: uploadResult.width,
       height: uploadResult.height,
       bytes: uploadResult.bytes,
-
-      // AI-powered data
-      tags, // Array of automatically detected tags from Google Vision API
-      quality_analysis: qualityAnalysis, // Quality analysis data (focus, exposure, etc.)
-      quality_score: qualityScore, // Overall quality score (0-1 or percentage)
     };
   } catch (error) {
     logger.error('Cloudinary upload error:', {
@@ -4218,17 +4205,18 @@ app.get('/api/listings/:id/platform-variations', authenticateToken, async (req, 
 
     // Generate missing optimizations
     const variations = {
-      ebay: cachedEbay || await platformOptimizers.optimizeForEbay(listing),
-      vinted: cachedVinted || await platformOptimizers.optimizeForVinted(listing),
-      depop: cachedDepop || await platformOptimizers.optimizeForDepop(listing),
-      facebook: cachedFacebook || await platformOptimizers.optimizeForFacebook(listing)
+      ebay: cachedEbay || (await platformOptimizers.optimizeForEbay(listing)),
+      vinted: cachedVinted || (await platformOptimizers.optimizeForVinted(listing)),
+      depop: cachedDepop || (await platformOptimizers.optimizeForDepop(listing)),
+      facebook: cachedFacebook || (await platformOptimizers.optimizeForFacebook(listing)),
     };
 
     // Cache any newly generated optimizations
     if (!cachedEbay) await platformOptimizers.cacheOptimization(id, 'ebay', variations.ebay);
     if (!cachedVinted) await platformOptimizers.cacheOptimization(id, 'vinted', variations.vinted);
     if (!cachedDepop) await platformOptimizers.cacheOptimization(id, 'depop', variations.depop);
-    if (!cachedFacebook) await platformOptimizers.cacheOptimization(id, 'facebook', variations.facebook);
+    if (!cachedFacebook)
+      await platformOptimizers.cacheOptimization(id, 'facebook', variations.facebook);
 
     res.json(variations);
   } catch (error) {
@@ -4577,13 +4565,13 @@ app.post('/api/ebay/post-listing', authenticateToken, async (req, res) => {
       url: published.url,
       listingId: published.listingId,
       offerId: published.offerId,
-      sku: published.sku
+      sku: published.sku,
     });
   } catch (error) {
     logger.error('eBay posting error:', { error: error.message, listingId });
     res.status(500).json({
       error: 'Failed to post to eBay',
-      message: error.message
+      message: error.message,
     });
   }
 });
