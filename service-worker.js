@@ -4,16 +4,21 @@
  */
 
 // Cache configuration
-const CACHE_VERSION = 'v1';
-const STATIC_CACHE = 'quicklist-static-v1';
-const DYNAMIC_CACHE = 'quicklist-dynamic-v1';
-const IMAGE_CACHE = 'quicklist-images-v1';
+const CACHE_VERSION = 'v2'; // Bumped for Phase 1 multi-platform release
+const STATIC_CACHE = 'quicklist-static-v2';
+const DYNAMIC_CACHE = 'quicklist-dynamic-v2';
+const IMAGE_CACHE = 'quicklist-images-v2';
 
 // Cache these files on install
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/offline.html',
+  '/manifest.json',
+  '/utils/clipboard.js',
+  '/components/PlatformSelector.js',
+  '/components/ListingCard.js',
+  '/components/BottomNav.js',
   'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
 ];
