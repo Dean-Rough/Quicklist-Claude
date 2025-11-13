@@ -8,6 +8,7 @@ const logger = require('console-log-level')({ level: process.env.LOG_LEVEL || 'i
 const { clerkClient, clerkMiddleware, getAuth, requireAuth } = require('@clerk/express');
 const path = require('path');
 const fs = require('fs');
+const { Buffer } = require('buffer');
 const packageJson = require('./package.json');
 const { v4: uuidv4 } = require('uuid');
 const sanitizeHtml = require('sanitize-html');
@@ -477,17 +478,12 @@ function extractListingFromGeminiText(text) {
     return null;
   }
 
-  const tryParse = (candidate) => {
-    if (!candidate || candidate.trim().length === 0) {
-      return null;
-    }
+  const quickParse = tryParseJson(text.trim());
+  if (quickParse) {
+    return quickParse;
+  }
 
-    try {
-      return JSON.parse(repairGeminiJsonString(candidate.trim()));
-    } catch (error) {
-      return null;
-    }
-  };
+  const tryParse = (candidate) => tryParseJson(candidate?.trim());
 
   const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)```/gi;
   let blockMatch;
@@ -511,6 +507,18 @@ function extractListingFromGeminiText(text) {
   }
 
   return null;
+}
+
+function tryParseJson(payload) {
+  if (!payload) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(repairGeminiJsonString(payload));
+  } catch (error) {
+    return null;
+  }
 }
 
 async function ensureCoreSchema() {
@@ -3756,6 +3764,7 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
             parts: parts,
           },
         ],
+        responseMimeType: 'application/json',
         tools: [
           {
             google_search: {},
@@ -3799,11 +3808,29 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
     }
 
     const candidate = data.candidates[0];
-    const combinedText = candidate.content.parts
-      .map((part) => (part.text ? part.text.trim() : ''))
-      .filter(Boolean)
-      .join('\n')
-      .trim();
+    const textParts = [];
+    candidate.content.parts.forEach((part) => {
+      if (typeof part.text === 'string' && part.text.trim().length > 0) {
+        textParts.push(part.text.trim());
+      } else if (
+        part.inlineData?.mimeType === 'application/json' &&
+        typeof part.inlineData.data === 'string'
+      ) {
+        try {
+          const decoded = Buffer.from(part.inlineData.data, 'base64').toString('utf-8').trim();
+          if (decoded.length > 0) {
+            textParts.push(decoded);
+          }
+        } catch (decodeError) {
+          logger.warn('Failed to decode inlineData from Gemini response', {
+            error: decodeError.message,
+            userId,
+          });
+        }
+      }
+    });
+
+    const combinedText = textParts.join('\n').trim();
 
     if (!combinedText) {
       logger.error('Gemini response contains no text parts', {
