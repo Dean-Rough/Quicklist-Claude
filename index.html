@@ -5440,6 +5440,93 @@
               </div>
             </div>
           </div>
+
+          <!-- Connected Platforms -->
+          <div class="card" style="max-width: 600px; margin: 2rem auto 0">
+            <h2 style="margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600">
+              Connected Platforms
+            </h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem">
+              Connect your marketplace accounts to post listings directly from QuickList
+            </p>
+
+            <!-- eBay Connection -->
+            <div style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 1rem;
+              background: var(--bg-primary);
+              border-radius: 12px;
+              margin-bottom: 1rem;
+            ">
+              <div style="display: flex; align-items: center; gap: 1rem">
+                <div style="
+                  width: 48px;
+                  height: 48px;
+                  background: #e53238;
+                  border-radius: 8px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-weight: 700;
+                  color: white;
+                  font-size: 1.25rem;
+                ">
+                  e
+                </div>
+                <div>
+                  <div style="font-weight: 600; margin-bottom: 0.25rem">eBay</div>
+                  <div id="ebayStatus" style="font-size: 0.875rem; color: var(--text-muted)">
+                    Not connected
+                  </div>
+                </div>
+              </div>
+              <button
+                id="ebayConnectBtn"
+                class="btn btn-primary"
+                onclick="app.connectEbay()"
+                style="min-width: 120px"
+              >
+                Connect
+              </button>
+            </div>
+
+            <!-- Other Platforms (Coming Soon) -->
+            <div style="
+              padding: 1rem;
+              background: var(--bg-primary);
+              border-radius: 12px;
+              opacity: 0.6;
+            ">
+              <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem">
+                <div style="
+                  width: 48px;
+                  height: 48px;
+                  background: var(--text-muted);
+                  border-radius: 8px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: white;
+                  font-size: 1.5rem;
+                ">
+                  📱
+                </div>
+                <div>
+                  <div style="font-weight: 600; margin-bottom: 0.25rem">
+                    Vinted, Depop, Facebook
+                  </div>
+                  <div style="font-size: 0.875rem; color: var(--text-muted)">
+                    Smart Clipboard - No connection needed
+                  </div>
+                </div>
+              </div>
+              <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0">
+                These platforms use our Smart Clipboard feature. Just copy your listing and paste it directly into the marketplace app or website.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -6083,12 +6170,46 @@
           this.updateAuthButtons();
           this.updateMobileMenu();
 
+          // Check for eBay OAuth callback
+          this.checkEbayCallback();
+
           // Remove loading state
           document.body.classList.remove('loading');
 
           // Initialize mobile features
           this.initMobileFeatures();
           this.setWizardPhase('photos');
+        },
+
+        /**
+         * Check for eBay OAuth callback
+         */
+        checkEbayCallback() {
+          const params = new URLSearchParams(window.location.search);
+          const ebayStatus = params.get('ebay');
+
+          if (ebayStatus === 'connected') {
+            this.showToast('eBay account connected successfully! You can now post listings directly to eBay.', 'success');
+            // Navigate to profile to show connection
+            setTimeout(() => {
+              this.navigateToApp('profile');
+            }, 1500);
+            // Clean URL
+            window.history.replaceState({}, '', window.location.pathname);
+          } else if (ebayStatus === 'error') {
+            const reason = params.get('reason');
+            let message = 'Failed to connect eBay account. ';
+            if (reason === 'invalid_state') {
+              message += 'Security check failed. Please try again.';
+            } else if (reason === 'user_cancelled') {
+              message += 'You cancelled the authorization.';
+            } else {
+              message += 'Please try again.';
+            }
+            this.showToast(message, 'error');
+            // Clean URL
+            window.history.replaceState({}, '', window.location.pathname);
+          }
         },
 
         // Load token from localStorage
@@ -11175,6 +11296,87 @@ ${this.state.currentListing?.keywords?.join(', ')}
             }
           } else if (profilePlan) {
             profilePlan.textContent = 'Free';
+          }
+
+          // Load eBay connection status
+          await this.loadEbayStatus();
+        },
+
+        /**
+         * Load eBay connection status
+         */
+        async loadEbayStatus() {
+          try {
+            const response = await fetch(`${this.apiUrl}/api/ebay/status`, {
+              headers: {
+                Authorization: `Bearer ${this.state.token}`,
+              },
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              const statusEl = document.getElementById('ebayStatus');
+              const btnEl = document.getElementById('ebayConnectBtn');
+
+              if (data.connected && data.ebayUserId) {
+                // Connected
+                statusEl.innerHTML = `<span style="color: var(--success-color)">✓ Connected as ${data.ebayUserId}</span>`;
+                btnEl.textContent = 'Disconnect';
+                btnEl.classList.remove('btn-primary');
+                btnEl.classList.add('btn-secondary');
+                btnEl.onclick = () => this.disconnectEbay();
+              } else {
+                // Not connected
+                statusEl.textContent = 'Not connected';
+                btnEl.textContent = 'Connect';
+                btnEl.classList.remove('btn-secondary');
+                btnEl.classList.add('btn-primary');
+                btnEl.onclick = () => this.connectEbay();
+              }
+            }
+          } catch (error) {
+            console.error('Error loading eBay status:', error);
+          }
+        },
+
+        /**
+         * Connect eBay account
+         */
+        async connectEbay() {
+          try {
+            // Open eBay OAuth flow
+            window.location.href = `${this.apiUrl}/auth/ebay/authorize`;
+          } catch (error) {
+            console.error('Error connecting eBay:', error);
+            this.showToast('Failed to connect eBay. Please try again.', 'error');
+          }
+        },
+
+        /**
+         * Disconnect eBay account
+         */
+        async disconnectEbay() {
+          if (!confirm('Are you sure you want to disconnect your eBay account? You will no longer be able to post listings directly to eBay.')) {
+            return;
+          }
+
+          try {
+            const response = await fetch(`${this.apiUrl}/api/ebay/disconnect`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${this.state.token}`,
+              },
+            });
+
+            if (response.ok) {
+              this.showToast('eBay account disconnected successfully', 'success');
+              await this.loadEbayStatus();
+            } else {
+              throw new Error('Failed to disconnect');
+            }
+          } catch (error) {
+            console.error('Error disconnecting eBay:', error);
+            this.showToast('Failed to disconnect eBay. Please try again.', 'error');
           }
         },
 
