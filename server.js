@@ -3798,8 +3798,22 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
       throw new Error('No response from AI model');
     }
 
-    const text = data.candidates[0].content.parts[0].text;
-    logger.info('Received response from Gemini:', { length: text.length, userId });
+    const candidate = data.candidates[0];
+    const combinedText = candidate.content.parts
+      .map((part) => (part.text ? part.text.trim() : ''))
+      .filter(Boolean)
+      .join('\n')
+      .trim();
+
+    if (!combinedText) {
+      logger.error('Gemini response contains no text parts', {
+        parts: candidate.content.parts.length,
+        userId,
+      });
+      throw new Error('No text returned from AI model');
+    }
+
+    logger.info('Received response from Gemini:', { length: combinedText.length, userId });
 
     // Extract grounding metadata (Google Search sources)
     const groundingMetadata = data.candidates[0]?.groundingMetadata;
@@ -3824,7 +3838,7 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
       logger.info('Found research sources:', { count: searchSources.length, userId });
     }
 
-    const listing = extractListingFromGeminiText(text);
+    const listing = extractListingFromGeminiText(combinedText);
     if (listing) {
       // Merge AI-generated sources with grounding sources
       if (searchSources.length > 0) {
@@ -3924,7 +3938,7 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
       });
     } else {
       logger.error('Failed to extract JSON from Gemini response:', {
-        textPreview: text.substring(0, 500),
+        textPreview: combinedText.substring(0, 500),
         userId,
       });
       throw new Error('AI response JSON parsing failed');
