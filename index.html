@@ -8716,38 +8716,57 @@
         // Upload image to Cloudinary
         async uploadImageToCloudinary(file) {
           try {
-            // First compress the image (1200px, 70% quality)
+            // DIRECT UPLOAD TO CLOUDINARY (bypasses Vercel 4.5MB limit)
+            // Using unsigned upload preset for client-side uploads
+
+            const CLOUDINARY_CLOUD_NAME = 'dqmxmwfiv';
+            const CLOUDINARY_UPLOAD_PRESET = 'quicklist_unsigned'; // You need to create this preset
+
+            // First compress the image client-side (1200px, 70% quality)
             const base64Data = await this.fileToBase64(file, 1200, 0.7);
 
-            // Upload to Cloudinary via our API
+            // Convert base64 to blob for direct upload
+            const blob = await (await fetch(base64Data)).blob();
+
+            // Create form data for Cloudinary upload
+            const formData = new FormData();
+            formData.append('file', blob);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            formData.append('folder', `quicklist/${this.state.user?.id || 'anonymous'}`);
+            // Note: Incoming transformation is set in the upload preset
+            // Additional tags can be added here if needed
+
+            // Upload directly to Cloudinary (no server involved)
             const response = await this.fetchWithTimeout(
-              `${this.apiUrl}/images/upload`,
+              `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
               {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${this.state.token}`,
-                },
-                body: JSON.stringify({ image: base64Data }),
+                body: formData,
               },
               30000 // 30 second timeout
             );
 
             if (!response.ok) {
-              const error = await response.json();
-              throw new Error(error.error || 'Failed to upload image to Cloudinary');
+              const error = await response.json().catch(() => ({ error: 'Upload failed' }));
+              throw new Error(error.error?.message || 'Failed to upload image to Cloudinary');
             }
 
             const data = await response.json();
+
+            console.log('Cloudinary direct upload successful:', {
+              url: data.secure_url,
+              size: data.bytes,
+              format: data.format,
+            });
+
             return {
               url: data.url,
               secure_url: data.secure_url,
-              public_id: data.publicId || data.public_id,
-
-              // AI-generated data from Cloudinary
-              tags: data.tags || [],
-              quality_analysis: data.quality_analysis || null,
-              quality_score: data.quality_score || null,
+              public_id: data.public_id,
+              format: data.format,
+              width: data.width,
+              height: data.height,
+              bytes: data.bytes,
             };
           } catch (error) {
             console.error('Error uploading to Cloudinary:', error);
