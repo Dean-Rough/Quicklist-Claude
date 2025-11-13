@@ -336,6 +336,29 @@ app.use(
   })
 );
 
+// Serve JavaScript files from components/ and utils/ with correct MIME type
+app.use('/components', express.static(path.join(__dirname, 'components'), {
+  maxAge: isProduction ? '1d' : '0',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+    }
+  }
+}));
+
+app.use('/utils', express.static(path.join(__dirname, 'utils'), {
+  maxAge: isProduction ? '1d' : '0',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+    }
+  }
+}));
+
 // Serve SPA entry point
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
