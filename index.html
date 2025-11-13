@@ -9339,7 +9339,9 @@
 
           // Show Post to eBay button if platform is eBay
           const postBtn = document.getElementById('postToEbayBtn');
-          if (platform === 'ebay') {
+          const platformValue =
+            this.state.currentListing?.platform || listing.platform || 'universal';
+          if (platformValue === 'ebay') {
             postBtn.style.display = 'block';
           } else {
             postBtn.style.display = 'none';
