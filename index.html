@@ -4255,59 +4255,20 @@
               </div>
               <div class="form-group">
                 <label class="form-label"
-                  >Condition Info <small style="color: var(--text-muted)">(Optional)</small></label
+                  >Further Info <small style="color: var(--text-muted)">(Optional)</small></label
                 >
                 <div class="input-with-icon">
                   <input
                     type="text"
                     class="form-input"
                     id="conditionInfo"
-                    placeholder="e.g., 'Missing box', 'Small hole on sleeve', 'Brand new with tags'"
+                    placeholder="E.g., missing box, small hole, brand new, no cable"
                   />
                   <button
                     class="voice-input-button"
                     type="button"
                     aria-pressed="false"
                     onclick="app.toggleVoiceInput('conditionInfo', this)"
-                  >
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                      <path d="M19 10v2a7 7 0 0 1 -14 0v-2"></path>
-                      <line x1="12" y1="19" x2="12" y2="23"></line>
-                      <line x1="8" y1="23" x2="16" y2="23"></line>
-                    </svg>
-                  </button>
-                </div>
-                <small style="color: var(--text-muted); font-size: 0.85rem"
-                  >E.g., missing box, small hole, brand new</small
-                >
-              </div>
-              <div class="form-group">
-                <label class="form-label"
-                  >Additional Item Info
-                  <small style="color: var(--text-muted)">(Optional)</small></label
-                >
-                <div class="input-with-icon">
-                  <input
-                    type="text"
-                    class="form-input"
-                    id="itemHint"
-                    placeholder="e.g., 'Has original box', 'Minor scuff on heel', 'Bought in 2023'"
-                  />
-                  <button
-                    class="voice-input-button"
-                    type="button"
-                    aria-pressed="false"
-                    onclick="app.toggleVoiceInput('itemHint', this)"
                   >
                     <svg
                       width="20"
@@ -8102,7 +8063,7 @@
             const platform = 'universal';
             const itemModel = document.getElementById('itemModel')?.value || '';
             const conditionInfo = document.getElementById('conditionInfo')?.value || '';
-            const hint = document.getElementById('itemHint').value;
+            const hint = ''; // Merged with conditionInfo
             const location = document.getElementById('itemLocation')?.value || '';
 
             // Upload images to Cloudinary first (reduces payload size dramatically)
@@ -8415,7 +8376,7 @@
           try {
             const draft = {
               platform: 'universal', // Platform-agnostic
-              hint: hint || document.getElementById('itemHint')?.value || '',
+              hint: hint || document.getElementById('conditionInfo')?.value || '',
               location: location || document.getElementById('itemLocation')?.value || '',
               imageCount: this.state.uploadedImages.length,
               timestamp: Date.now(),
@@ -8523,7 +8484,7 @@
         // Save draft from error state
         saveDraftFromError() {
           const platform = 'universal'; // Platform-agnostic
-          const hint = document.getElementById('itemHint')?.value || '';
+          const hint = document.getElementById('conditionInfo')?.value || '';
           const location = document.getElementById('itemLocation')?.value || '';
           this.saveDraft(platform, hint, location);
           this.showToast('Draft saved! Your images and settings have been saved.', 'success');
@@ -8563,11 +8524,11 @@
             }
 
             // Restore hint and location (platform is no longer user-selectable)
-            const itemHint = document.getElementById('itemHint');
+            const conditionInfo = document.getElementById('conditionInfo');
             const itemLocation = document.getElementById('itemLocation');
 
-            if (draft.hint && itemHint) {
-              itemHint.value = draft.hint;
+            if (draft.hint && conditionInfo) {
+              conditionInfo.value = draft.hint;
             }
             if (draft.location && itemLocation) {
               itemLocation.value = draft.location;
