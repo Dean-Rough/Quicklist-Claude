@@ -8724,6 +8724,40 @@
           conditionInfo = ''
         ) {
           try {
+            // Validate images before sending
+            console.log('Preparing request with', base64Images.length, 'images');
+            base64Images.forEach((img, i) => {
+              console.log(`Image ${i + 1}: ${img.substring(0, 50)}... (length: ${img.length})`);
+            });
+
+            // Prepare request body
+            const requestBody = {
+              images: base64Images,
+              platform,
+              hint,
+              location,
+              itemModel,
+              conditionInfo,
+            };
+
+            // Try to stringify and catch JSON errors
+            let bodyString;
+            try {
+              bodyString = JSON.stringify(requestBody);
+              console.log('Request body prepared, size:', bodyString.length);
+            } catch (jsonError) {
+              console.error('JSON stringify error:', jsonError);
+              console.error('Request body object:', {
+                imageCount: base64Images.length,
+                platform,
+                hint: hint?.substring(0, 100),
+                location: location?.substring(0, 100),
+                itemModel: itemModel?.substring(0, 100),
+                conditionInfo: conditionInfo?.substring(0, 100),
+              });
+              throw new Error(`Failed to prepare request: ${jsonError.message}`);
+            }
+
             // Use fetchWithTimeout for critical generate API (60 second timeout for AI generation)
             const response = await this.fetchWithTimeout(
               `${this.apiUrl}/generate`,
@@ -8733,14 +8767,7 @@
                   'Content-Type': 'application/json',
                   Authorization: `Bearer ${this.state.token}`,
                 },
-                body: JSON.stringify({
-                  images: base64Images, // Send all images
-                  platform,
-                  hint,
-                  location,
-                  itemModel,
-                  conditionInfo,
-                }),
+                body: bodyString,
                 signal: this.state.generationAbortController?.signal,
               },
               60000
