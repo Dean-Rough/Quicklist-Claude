@@ -1932,7 +1932,7 @@ ${listing.modelCodes && listing.modelCodes.length > 0 ? `Model Code: ${listing.m
         ],
         tools: [
           {
-            googleSearch: {},
+            google_search: {},
           },
         ],
         generationConfig: {
@@ -3458,7 +3458,7 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
         ],
         tools: [
           {
-            googleSearch: {},
+            google_search: {},
           },
         ],
         generationConfig: {
@@ -3471,9 +3471,23 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      logger.error('Gemini API error:', { status: response.status, error: errorData, userId });
-      throw new Error(`Gemini API request failed: ${response.status}`);
+      const errorText = await response.text().catch(() => '');
+      let errorData = {};
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { rawError: errorText };
+      }
+      logger.error('Gemini API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData,
+        userId,
+        requestId: req.id,
+      });
+      throw new Error(
+        `Gemini API request failed: ${response.status} - ${errorData.error?.message || errorText.substring(0, 200) || response.statusText}`
+      );
     }
 
     const data = await response.json();
