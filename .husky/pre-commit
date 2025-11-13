@@ -1,0 +1,155 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint-staged for ESLint and Prettier
+npx lint-staged
+
+# Secret scanning - check for common secret patterns in staged files
+echo "Scanning for secrets..."
+
+# Get list of staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -z "$STAGED_FILES" ]; then
+  echo "No staged files to scan"
+  exit 0
+fi
+
+# Patterns to search for (case-insensitive)
+SECRET_PATTERNS=(
+  # API Keys and Tokens
+  "sk_live_[a-zA-Z0-9]{24,}"
+  "sk_test_[a-zA-Z0-9]{24,}"
+  "pk_live_[a-zA-Z0-9]{24,}"
+  "pk_test_[a-zA-Z0-9]{24,}"
+  "api[_-]?key['\"]?\s*[:=]\s*['\"][a-zA-Z0-9_\-]{20,}"
+  "apikey['\"]?\s*[:=]\s*['\"][a-zA-Z0-9_\-]{20,}"
+  "api[_-]?secret['\"]?\s*[:=]\s*['\"][a-zA-Z0-9_\-]{20,}"
+  "access[_-]?token['\"]?\s*[:=]\s*['\"][a-zA-Z0-9_\-]{20,}"
+  "auth[_-]?token['\"]?\s*[:=]\s*['\"][a-zA-Z0-9_\-]{20,}"
+
+  # AWS Credentials
+  "AKIA[0-9A-Z]{16}"
+  "aws[_-]?access[_-]?key[_-]?id['\"]?\s*[:=]\s*['\"][A-Z0-9]{20}"
+  "aws[_-]?secret[_-]?access[_-]?key['\"]?\s*[:=]\s*['\"][a-zA-Z0-9/+=]{40}"
+
+  # Private Keys
+  "-----BEGIN (RSA |DSA |EC |OPENSSH |PGP )?PRIVATE KEY"
+  "BEGIN PRIVATE KEY"
+
+  # Database URLs with passwords
+  "postgresql://[^:]+:[^@]+@"
+  "mysql://[^:]+:[^@]+@"
+  "mongodb://[^:]+:[^@]+@"
+  "postgres://[^:]+:[^@]+@"
+
+  # Generic password patterns
+  "password['\"]?\s*[:=]\s*['\"][^'\"]{8,}"
+  "passwd['\"]?\s*[:=]\s*['\"][^'\"]{8,}"
+  "db_password['\"]?\s*[:=]\s*['\"][^'\"]{8,}"
+
+  # OAuth and Client Secrets
+  "client[_-]?secret['\"]?\s*[:=]\s*['\"][a-zA-Z0-9_\-]{20,}"
+  "client[_-]?id['\"]?\s*[:=]\s*['\"][a-zA-Z0-9_\-]{20,}"
+
+  # Stripe Keys
+  "sk_live_"
+  "rk_live_"
+
+  # Google/Firebase
+  "AIza[0-9A-Za-z_\-]{35}"
+
+  # GitHub Tokens
+  "gh[pousr]_[0-9a-zA-Z]{36}"
+  "github_pat_[0-9a-zA-Z_]{82}"
+
+  # JWT Tokens (very long base64 strings)
+  "eyJ[a-zA-Z0-9_\-]{100,}\.[a-zA-Z0-9_\-]{100,}"
+
+  # Generic high-entropy strings (potential secrets)
+  "['\"][a-zA-Z0-9_\-]{64,}['\"]"
+)
+
+# Exceptions - patterns to ignore (e.g., in documentation or test files)
+EXCEPTION_PATTERNS=(
+  "example"
+  "sample"
+  "fake"
+  "test"
+  "mock"
+  "placeholder"
+  "your_api_key"
+  "your-api-key"
+  "xxxxxxxx"
+  "REPLACE_WITH"
+  "documentation"
+  "Pattern:"
+  "Format:"
+  "\.md:"
+  "CLAUDE\.md"
+  "PRE-COMMIT"
+  "TEST-RESULTS"
+  "PHASE1"
+  "\.env\.example"
+  "\.husky/pre-commit"
+)
+
+SECRETS_FOUND=0
+
+# Scan each staged file
+for FILE in $STAGED_FILES; do
+  # Skip binary files and node_modules
+  if echo "$FILE" | grep -qE '\.(png|jpg|jpeg|gif|ico|pdf|zip|tar|gz)$' || echo "$FILE" | grep -q "node_modules"; then
+    continue
+  fi
+
+  # Skip if file doesn't exist (might be deleted)
+  if [ ! -f "$FILE" ]; then
+    continue
+  fi
+
+  # Check each pattern
+  for PATTERN in "${SECRET_PATTERNS[@]}"; do
+    # Search for pattern in file (case-insensitive)
+    MATCHES=$(grep -inE "$PATTERN" "$FILE" 2>/dev/null || true)
+
+    if [ -n "$MATCHES" ]; then
+      # Check if any exception patterns match
+      SKIP=0
+      for EXCEPTION in "${EXCEPTION_PATTERNS[@]}"; do
+        if echo "$MATCHES" | grep -iq "$EXCEPTION"; then
+          SKIP=1
+          break
+        fi
+      done
+
+      if [ $SKIP -eq 0 ]; then
+        echo "  POTENTIAL SECRET FOUND in $FILE:"
+        echo "$MATCHES" | while IFS= read -r line; do
+          echo "    $line"
+        done
+        echo ""
+        SECRETS_FOUND=1
+      fi
+    fi
+  done
+done
+
+if [ $SECRETS_FOUND -eq 1 ]; then
+  echo "ERROR: Potential secrets detected in staged files!"
+  echo ""
+  echo "If these are false positives (e.g., examples, documentation):"
+  echo "  - Add 'example', 'sample', 'fake', or 'test' to the pattern"
+  echo "  - Or add the exception to EXCEPTION_PATTERNS in .husky/pre-commit"
+  echo ""
+  echo "If these are real secrets:"
+  echo "  - Remove them from the files"
+  echo "  - Move secrets to .env files (which are gitignored)"
+  echo "  - Use environment variables instead"
+  echo ""
+  echo "Commit blocked to prevent secret exposure."
+  exit 1
+fi
+
+echo "No secrets detected - commit allowed"
+exit 0

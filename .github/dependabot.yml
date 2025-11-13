@@ -1,0 +1,94 @@
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'UTC'
+
+    # Group minor and patch updates together to reduce PR noise
+    groups:
+      dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+
+    # Pull request settings
+    open-pull-requests-limit: 10
+    reviewers:
+      - 'deannewton'
+
+    # Commit message prefix
+    commit-message:
+      prefix: 'deps'
+      prefix-development: 'deps-dev'
+      include: 'scope'
+
+    # Labels for PRs
+    labels:
+      - 'dependencies'
+      - 'automated'
+
+    # Allow both direct and indirect dependency updates
+    allow:
+      - dependency-type: 'all'
+
+    # Ignore specific packages (if needed)
+    # ignore:
+    #   - dependency-name: "package-name"
+    #     versions: ["1.x", "2.x"]
+
+  # Security updates - handle separately with higher priority
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'daily'
+
+    # Only security updates in this configuration
+    open-pull-requests-limit: 5
+
+    # Labels for security PRs
+    labels:
+      - 'security'
+      - 'dependencies'
+      - 'priority-high'
+
+    # Commit message prefix
+    commit-message:
+      prefix: 'security'
+      include: 'scope'
+
+    # Only allow security updates
+    allow:
+      - dependency-type: 'all'
+
+    reviewers:
+      - 'deannewton'
+
+  # GitHub Actions updates
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+
+    # Group all GitHub Actions updates together
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+
+    open-pull-requests-limit: 5
+
+    labels:
+      - 'github-actions'
+      - 'dependencies'
+
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'

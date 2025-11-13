@@ -16,68 +16,97 @@ const cookieParser = require('cookie-parser');
 
 // Only load .env in non-production environments (Vercel provides env vars directly)
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
-    require('dotenv').config();
+  require('dotenv').config();
+}
+
+// Initialize Sentry error tracking (optional - only if DSN is configured)
+const Sentry = require('@sentry/node');
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'development',
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0, // 10% sampling in prod, 100% in dev
+    integrations: [
+      // Automatically instrument Node.js libraries and frameworks
+      ...Sentry.autoDiscoverNodePerformanceMonitoringIntegrations(),
+    ],
+    beforeSend(event, hint) {
+      // Don't send errors in development unless explicitly configured
+      if (process.env.NODE_ENV !== 'production' && !process.env.SENTRY_FORCE_SEND) {
+        return null;
+      }
+      return event;
+    },
+  });
+  logger.info('Sentry error tracking initialized');
+} else {
+  logger.info('Sentry DSN not configured - error tracking disabled');
 }
 
 // Validate required environment variables
 const requiredEnvVars = [
-    'DATABASE_URL',
-    'GEMINI_API_KEY',
-    'CLERK_SECRET_KEY',
-    'CLERK_PUBLISHABLE_KEY'
+  'DATABASE_URL',
+  'GEMINI_API_KEY',
+  'CLERK_SECRET_KEY',
+  'CLERK_PUBLISHABLE_KEY',
 ];
-const missing = requiredEnvVars.filter(v => !process.env[v]);
+const missing = requiredEnvVars.filter((v) => !process.env[v]);
 if (missing.length > 0) {
-    logger.error('Missing required environment variables:', missing.join(', '));
-    logger.error('Required: DATABASE_URL, GEMINI_API_KEY, CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY');
-    // Don't exit in serverless - log error and continue
-    if (!process.env.VERCEL) {
-        process.exit(1);
-    }
+  logger.error('Missing required environment variables:', missing.join(', '));
+  logger.error('Required: DATABASE_URL, GEMINI_API_KEY, CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY');
+  // Don't exit in serverless - log error and continue
+  if (!process.env.VERCEL) {
+    process.exit(1);
+  }
 }
 
 logger.info('Clerk authentication enabled');
 
 // Conditional Stripe initialization
-const stripe = process.env.STRIPE_SECRET_KEY 
-    ? require('stripe')(process.env.STRIPE_SECRET_KEY)
-    : null;
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+  : null;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
-const frontendUrl = process.env.FRONTEND_URL || (isProduction ? 'https://quicklist.it.com' : 'http://localhost:4577');
+const frontendUrl =
+  process.env.FRONTEND_URL || (isProduction ? 'https://quicklist.it.com' : 'http://localhost:4577');
 
 // Database connection with proper configuration
 let pool;
-if (process.env.DATABASE_URL && process.env.DATABASE_URL !== 'postgresql://placeholder:placeholder@placeholder.neon.tech/quicklist?sslmode=require') {
-    pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: {
-            rejectUnauthorized: false
-        },
-        max: 20, // Maximum pool size
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
-    });
+if (
+  process.env.DATABASE_URL &&
+  process.env.DATABASE_URL !==
+    'postgresql://placeholder:placeholder@placeholder.neon.tech/quicklist?sslmode=require'
+) {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+    max: 20, // Maximum pool size
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  });
 
-    // Test database connection (only in non-serverless environments)
-    if (!process.env.VERCEL) {
-        pool.query('SELECT NOW()', (err, res) => {
-            if (err) {
-                logger.error('Database connection error:', err);
-                process.exit(1);
-            } else {
-                logger.info('Database connected successfully');
-            }
-        });
-    }
-} else {
-    logger.error('No valid DATABASE_URL found. Database connection required.');
-    // Don't exit in serverless - let requests fail gracefully
-    if (!process.env.VERCEL) {
+  // Test database connection (only in non-serverless environments)
+  if (!process.env.VERCEL) {
+    pool.query('SELECT NOW()', (err, res) => {
+      if (err) {
+        logger.error('Database connection error:', err);
         process.exit(1);
-    }
+      } else {
+        logger.info('Database connected successfully');
+      }
+    });
+  }
+} else {
+  logger.error('No valid DATABASE_URL found. Database connection required.');
+  // Don't exit in serverless - let requests fail gracefully
+  if (!process.env.VERCEL) {
+    process.exit(1);
+  }
 }
 
 // Clerk is now the only authentication method
@@ -85,73 +114,67 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL !== 'postgresql://place
 
 // Rate limiting
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // 5 requests per window
-    message: 'Too many authentication attempts, please try again later',
-    standardHeaders: true,
-    legacyHeaders: false,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per window
+  message: 'Too many authentication attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 const generateLimiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    max: 10, // 10 requests per minute
-    message: 'Too many generation requests, please slow down',
-    standardHeaders: true,
-    legacyHeaders: false,
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 requests per minute
+  message: 'Too many generation requests, please slow down',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // Security headers with Helmet
-app.use(helmet({
+app.use(
+  helmet({
     contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: [
-                "'self'",
-                "'unsafe-inline'",
-                "'unsafe-eval'",
-                "https://cdnjs.cloudflare.com",
-                "https://cdn.jsdelivr.net",
-                "https://unpkg.com"
-            ],
-            scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick, etc.)
-            styleSrc: [
-                "'self'",
-                "'unsafe-inline'",
-                "https://fonts.googleapis.com"
-            ],
-            fontSrc: [
-                "'self'",
-                "https://fonts.gstatic.com",
-                "data:"
-            ],
-            imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
-            connectSrc: [
-                "'self'",
-                frontendUrl,
-                'http://localhost:3000',
-                'http://localhost:4577',
-                'https://api.clerk.com',
-                'https://clerk.com',
-                'https://clerk.accounts.dev',
-                'https://*.clerk.accounts.dev',
-                'https://img.clerk.com',
-                'https://fonts.googleapis.com',
-                'https://fonts.gstatic.com',
-                'https://cdnjs.cloudflare.com',
-                'https://cdn.jsdelivr.net',
-                'https://unpkg.com'
-            ],
-            // Allow Clerk to create Web Workers for authentication
-            workerSrc: ["'self'", "blob:"],
-            childSrc: ["'self'", "blob:"],
-            frameSrc: ["'none'"],
-            objectSrc: ["'none'"],
-            upgradeInsecureRequests: isProduction ? [] : null,
-        },
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "'unsafe-eval'",
+          'https://cdnjs.cloudflare.com',
+          'https://cdn.jsdelivr.net',
+          'https://unpkg.com',
+        ],
+        scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick, etc.)
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],
+        connectSrc: [
+          "'self'",
+          frontendUrl,
+          'http://localhost:3000',
+          'http://localhost:4577',
+          'https://api.clerk.com',
+          'https://clerk.com',
+          'https://clerk.accounts.dev',
+          'https://*.clerk.accounts.dev',
+          'https://img.clerk.com',
+          'https://fonts.googleapis.com',
+          'https://fonts.gstatic.com',
+          'https://cdnjs.cloudflare.com',
+          'https://cdn.jsdelivr.net',
+          'https://unpkg.com',
+        ],
+        // Allow Clerk to create Web Workers for authentication
+        workerSrc: ["'self'", 'blob:'],
+        childSrc: ["'self'", 'blob:'],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: isProduction ? [] : null,
+      },
     },
     crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 // Compression middleware
 app.use(compression());
@@ -161,87 +184,91 @@ app.use(cookieParser());
 
 // CORS configuration
 const corsOptions = {
-    origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps, Postman, etc.)
-        if (!origin) return callback(null, true);
-        
-        const allowedOrigins = [
-            frontendUrl,
-            'http://localhost:4577',
-            'http://localhost:3000',
-            'https://quicklist.it.com',
-            'https://quicklist.ai',
-            process.env.FRONTEND_URL
-        ].filter(Boolean);
-        
-        if (allowedOrigins.indexOf(origin) !== -1 || !isProduction) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-    optionsSuccessStatus: 200,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID']
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      frontendUrl,
+      'http://localhost:4577',
+      'http://localhost:3000',
+      'https://quicklist.it.com',
+      'https://quicklist.ai',
+      process.env.FRONTEND_URL,
+    ].filter(Boolean);
+
+    if (allowedOrigins.indexOf(origin) !== -1 || !isProduction) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
 };
 app.use(cors(corsOptions));
 
 // Request ID middleware
 app.use((req, res, next) => {
-    req.id = uuidv4();
-    res.setHeader('X-Request-ID', req.id);
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    next();
+  req.id = uuidv4();
+  res.setHeader('X-Request-ID', req.id);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
 });
 
 // Stripe webhook must be registered before JSON body parsing to preserve the raw payload
 const stripeWebhookMiddleware = express.raw({ type: 'application/json' });
 app.post('/api/stripe/webhook', stripeWebhookMiddleware, async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-    let event;
+  let event;
 
-    try {
-        if (!stripe) {
-            return res.status(503).json({ error: 'Stripe not configured' });
-        }
-        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-    } catch (err) {
-        logger.error('Webhook signature verification failed:', { error: err.message, signature: sig ? sig.substring(0, 20) + '...' : 'missing', bodyLength: req.body.length });
-        return res.status(400).send(`Webhook Error: ${err.message}`);
+  try {
+    if (!stripe) {
+      return res.status(503).json({ error: 'Stripe not configured' });
+    }
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    logger.error('Webhook signature verification failed:', {
+      error: err.message,
+      signature: sig ? sig.substring(0, 20) + '...' : 'missing',
+      bodyLength: req.body.length,
+    });
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutCompleted(event.data.object);
+        break;
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdate(event.data.object);
+        break;
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(event.data.object);
+        break;
+      case 'invoice.payment_succeeded':
+        await handlePaymentSucceeded(event.data.object);
+        break;
+      case 'invoice.payment_failed':
+        await handlePaymentFailed(event.data.object);
+        break;
+      default:
+        logger.info('Unhandled webhook event type:', { eventType: event.type });
     }
 
-    try {
-        switch (event.type) {
-            case 'checkout.session.completed':
-                await handleCheckoutCompleted(event.data.object);
-                break;
-            case 'customer.subscription.created':
-            case 'customer.subscription.updated':
-                await handleSubscriptionUpdate(event.data.object);
-                break;
-            case 'customer.subscription.deleted':
-                await handleSubscriptionDeleted(event.data.object);
-                break;
-            case 'invoice.payment_succeeded':
-                await handlePaymentSucceeded(event.data.object);
-                break;
-            case 'invoice.payment_failed':
-                await handlePaymentFailed(event.data.object);
-                break;
-            default:
-                logger.info('Unhandled webhook event type:', { eventType: event.type });
-        }
-
-        res.json({ received: true });
-    } catch (error) {
-        logger.error('Webhook handler error:', { error: error.message, eventType: event.type });
-        res.status(500).json({ error: 'Webhook handler failed' });
-    }
+    res.json({ received: true });
+  } catch (error) {
+    logger.error('Webhook handler error:', { error: error.message, eventType: event.type });
+    res.status(500).json({ error: 'Webhook handler failed' });
+  }
 });
 
 // Body parsing middleware
@@ -250,207 +277,223 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Test endpoint before Clerk middleware
 app.get('/api/ping', (req, res) => {
-    res.json({ message: 'pong', timestamp: new Date().toISOString() });
+  res.json({ message: 'pong', timestamp: new Date().toISOString() });
 });
 
 // Clerk middleware - must be before routes that need auth
 // Only use Clerk middleware if properly configured
 if (process.env.CLERK_SECRET_KEY && process.env.CLERK_PUBLISHABLE_KEY) {
-    try {
-        app.use(clerkMiddleware());
-        logger.info('Clerk middleware initialized');
-    } catch (error) {
-        logger.error('Failed to initialize Clerk middleware:', error);
-    }
+  try {
+    app.use(clerkMiddleware());
+    logger.info('Clerk middleware initialized');
+  } catch (error) {
+    logger.error('Failed to initialize Clerk middleware:', error);
+  }
 } else {
-    logger.warn('Clerk not configured - skipping middleware');
+  logger.warn('Clerk not configured - skipping middleware');
 }
 
 // Auth config endpoint (for frontend)
 app.get('/api/config/auth', (req, res) => {
-    res.json({
-        clerk: {
-            enabled: true,
-            publishableKey: process.env.CLERK_PUBLISHABLE_KEY
-        },
-        authProvider: 'clerk'
-    });
+  res.json({
+    clerk: {
+      enabled: true,
+      publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
+    },
+    authProvider: 'clerk',
+  });
 });
 
 // Serve static files from ./public only
-app.use('/.well-known', express.static(path.join(__dirname, '.well-known'), {
+app.use(
+  '/.well-known',
+  express.static(path.join(__dirname, '.well-known'), {
     maxAge: isProduction ? '1y' : '0',
     etag: true,
-    lastModified: true
-}));
+    lastModified: true,
+  })
+);
 
-app.use(express.static(path.join(__dirname, 'public'), {
+app.use(
+  express.static(path.join(__dirname, 'public'), {
     maxAge: isProduction ? '1y' : '0',
     etag: true,
-    lastModified: true
-}));
+    lastModified: true,
+  })
+);
 
 // Serve SPA entry point
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Input validation helpers
 function validateEmail(email) {
-    if (!email || typeof email !== 'string') return false;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email) && email.length <= 255;
+  if (!email || typeof email !== 'string') return false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) && email.length <= 255;
 }
 
 function sanitizeInput(input) {
-    if (typeof input !== 'string') return input;
-    return sanitizeHtml(input, { allowedTags: [], allowedAttributes: {} });
+  if (typeof input !== 'string') return input;
+  return sanitizeHtml(input, { allowedTags: [], allowedAttributes: {} });
 }
 
 function priceStringToNumber(value) {
-    if (!value || typeof value !== 'string') return 0;
-    const numeric = parseFloat(value.replace(/[^0-9.]/g, ''));
-    return isNaN(numeric) ? 0 : numeric;
+  if (!value || typeof value !== 'string') return 0;
+  const numeric = parseFloat(value.replace(/[^0-9.]/g, ''));
+  return isNaN(numeric) ? 0 : numeric;
 }
 
 // Safe database query wrapper
 async function safeQuery(query, params) {
-    try {
-        return await pool.query(query, params);
-    } catch (error) {
-        logger.error('Database query error:', { error: error.message, query: query.substring(0, 100) });
-        throw new Error('Database operation failed');
-    }
+  try {
+    return await pool.query(query, params);
+  } catch (error) {
+    logger.error('Database query error:', { error: error.message, query: query.substring(0, 100) });
+    throw new Error('Database operation failed');
+  }
 }
 
 const MOBILE_TIPS = [
-    'Batch similar items to speed through photo capture',
-    'Use the voice button to dictate condition notes hands-free',
-    'Mark sold items as soon as they go to keep marketplaces in sync'
+  'Batch similar items to speed through photo capture',
+  'Use the voice button to dictate condition notes hands-free',
+  'Mark sold items as soon as they go to keep marketplaces in sync',
 ];
 
 // Get plan limits helper
 async function getPlanLimit(userId) {
-    try {
-        const result = await pool.query(
-            `SELECT plan_type FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
-            [userId]
-        );
-        const planType = result.rows[0]?.plan_type || 'free';
-        const planLimits = {
-            free: 5,
-            starter: 50,
-            pro: 200,
-            business: 1000
-        };
-        return planLimits[planType] || 5;
-    } catch (error) {
-        logger.error('Error getting plan limit:', error);
-        return 5; // Default to free tier limit
-    }
+  try {
+    const result = await pool.query(
+      `SELECT plan_type FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
+      [userId]
+    );
+    const planType = result.rows[0]?.plan_type || 'free';
+    const planLimits = {
+      free: 5,
+      starter: 50,
+      pro: 200,
+      business: 1000,
+    };
+    return planLimits[planType] || 5;
+  } catch (error) {
+    logger.error('Error getting plan limit:', error);
+    return 5; // Default to free tier limit
+  }
 }
 
 // Auth middleware - Enhanced Clerk middleware that adds user info to req.user
 const authenticateToken = async (req, res, next) => {
-    try {
-        // Try to get auth from Clerk middleware first (cookie-based)
-        let { userId } = getAuth(req);
+  try {
+    // Try to get auth from Clerk middleware first (cookie-based)
+    let { userId } = getAuth(req);
 
-        // If no userId from cookie, try to verify token from Authorization header
-        if (!userId) {
-            const authHeader = req.headers.authorization;
-            if (authHeader && authHeader.startsWith('Bearer ')) {
-                const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    // If no userId from cookie, try to verify token from Authorization header
+    if (!userId) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-                try {
-                    // Verify the token with Clerk
-                    const verifiedToken = await clerkClient.verifyToken(token, {
-                        secretKey: process.env.CLERK_SECRET_KEY
-                    });
-                    userId = verifiedToken.sub; // 'sub' contains the user ID
-                } catch (tokenError) {
-                    logger.warn('Token verification failed:', { error: tokenError.message, requestId: req.id });
-                }
-            }
+        try {
+          // Verify the token with Clerk
+          const verifiedToken = await clerkClient.verifyToken(token, {
+            secretKey: process.env.CLERK_SECRET_KEY,
+          });
+          userId = verifiedToken.sub; // 'sub' contains the user ID
+        } catch (tokenError) {
+          logger.warn('Token verification failed:', {
+            error: tokenError.message,
+            requestId: req.id,
+          });
         }
+      }
+    }
 
-        if (!userId) {
-            return res.status(401).json({ error: 'Access token required' });
-        }
+    if (!userId) {
+      return res.status(401).json({ error: 'Access token required' });
+    }
 
-        // Get full user details from Clerk
-        logger.info('Fetching user details from Clerk', { userId, requestId: req.id });
-        const user = await clerkClient.users.getUser(userId);
-        const email = user.emailAddresses[0]?.emailAddress;
-        const name = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName || user.username;
-        logger.info('Got user from Clerk', { userId, email, requestId: req.id });
+    // Get full user details from Clerk
+    logger.info('Fetching user details from Clerk', { userId, requestId: req.id });
+    const user = await clerkClient.users.getUser(userId);
+    const email = user.emailAddresses[0]?.emailAddress;
+    const name =
+      user.firstName && user.lastName
+        ? `${user.firstName} ${user.lastName}`
+        : user.firstName || user.username;
+    logger.info('Got user from Clerk', { userId, email, requestId: req.id });
 
-        // Look up or create database user record
-        let dbUser = await pool.query(
-            'SELECT id FROM users WHERE clerk_id = $1',
-            [userId]
-        );
+    // Look up or create database user record
+    let dbUser = await pool.query('SELECT id FROM users WHERE clerk_id = $1', [userId]);
 
-        // If user doesn't exist in database, create them
-        if (dbUser.rows.length === 0) {
-            logger.info('Creating new user in database', { clerkId: userId, email });
-            const newUser = await pool.query(
-                `INSERT INTO users (email, clerk_id, auth_provider, name)
+    // If user doesn't exist in database, create them
+    if (dbUser.rows.length === 0) {
+      logger.info('Creating new user in database', { clerkId: userId, email });
+      const newUser = await pool.query(
+        `INSERT INTO users (email, clerk_id, auth_provider, name)
                  VALUES ($1, $2, 'clerk', $3)
                  ON CONFLICT (email) DO UPDATE SET clerk_id = $2
                  RETURNING id`,
-                [email, userId, name]
-            );
-            dbUser = newUser;
-        }
-
-        // Attach user info to request with DATABASE user ID
-        req.user = {
-            id: dbUser.rows[0].id,  // Database ID (integer) for queries
-            clerkId: userId,         // Clerk ID for reference
-            email: email,
-            name: name
-        };
-
-        // Log auth event
-        logger.info('User authenticated', { dbUserId: req.user.id, clerkId: userId, email, requestId: req.id });
-
-        return next();
-    } catch (error) {
-        logger.error('Clerk authentication error:', {
-            error: error.message,
-            stack: error.stack,
-            requestId: req.id,
-            hasAuthHeader: !!req.headers.authorization,
-            authHeaderPrefix: req.headers.authorization?.substring(0, 20)
-        });
-        return res.status(403).json({ error: 'Invalid or expired token' });
+        [email, userId, name]
+      );
+      dbUser = newUser;
     }
+
+    // Attach user info to request with DATABASE user ID
+    req.user = {
+      id: dbUser.rows[0].id, // Database ID (integer) for queries
+      clerkId: userId, // Clerk ID for reference
+      email: email,
+      name: name,
+    };
+
+    // Log auth event
+    logger.info('User authenticated', {
+      dbUserId: req.user.id,
+      clerkId: userId,
+      email,
+      requestId: req.id,
+    });
+
+    return next();
+  } catch (error) {
+    logger.error('Clerk authentication error:', {
+      error: error.message,
+      stack: error.stack,
+      requestId: req.id,
+      hasAuthHeader: !!req.headers.authorization,
+      authHeaderPrefix: req.headers.authorization?.substring(0, 20),
+    });
+    return res.status(403).json({ error: 'Invalid or expired token' });
+  }
 };
 
 // Initialize database schema
 app.get('/api/init-db', async (req, res) => {
-    try {
-        if (process.env.ALLOW_DB_INIT !== 'true') {
-            return res.status(403).json({ error: 'Database initialization is disabled' });
-        }
-
-        const fs = require('fs');
-        const schemaFiles = ['schema.sql', 'schema_updates.sql', 'schema_clerk_migration.sql']
-            .map(file => path.join(__dirname, file))
-            .filter(fs.existsSync);
-
-        for (const filePath of schemaFiles) {
-            const sql = fs.readFileSync(filePath, 'utf8');
-            await safeQuery(sql);
-        }
-
-        logger.info('Database initialized successfully');
-        res.json({ message: 'Database initialized successfully', files: schemaFiles.map(f => path.basename(f)) });
-    } catch (error) {
-        logger.error('Database initialization error:', error);
-        res.status(500).json({ error: 'Failed to initialize database' });
+  try {
+    if (process.env.ALLOW_DB_INIT !== 'true') {
+      return res.status(403).json({ error: 'Database initialization is disabled' });
     }
+
+    const fs = require('fs');
+    const schemaFiles = ['schema.sql', 'schema_updates.sql', 'schema_clerk_migration.sql']
+      .map((file) => path.join(__dirname, file))
+      .filter(fs.existsSync);
+
+    for (const filePath of schemaFiles) {
+      const sql = fs.readFileSync(filePath, 'utf8');
+      await safeQuery(sql);
+    }
+
+    logger.info('Database initialized successfully');
+    res.json({
+      message: 'Database initialized successfully',
+      files: schemaFiles.map((f) => path.basename(f)),
+    });
+  } catch (error) {
+    logger.error('Database initialization error:', error);
+    res.status(500).json({ error: 'Failed to initialize database' });
+  }
 });
 
 // Auth endpoints - Clerk handles signup/signin via their SDK
@@ -458,168 +501,167 @@ app.get('/api/init-db', async (req, res) => {
 
 // Verify token endpoint
 app.get('/api/auth/verify', authenticateToken, async (req, res) => {
-    // authenticateToken middleware already handles user lookup/creation
-    // Just return the user info
-    res.json({ user: req.user });
+  // authenticateToken middleware already handles user lookup/creation
+  // Just return the user info
+  res.json({ user: req.user });
 });
 
 // Stripe: Create checkout session
 app.post('/api/stripe/create-checkout-session', authenticateToken, async (req, res) => {
-    try {
-        if (!stripe) {
-            return res.status(503).json({ error: 'Stripe not configured' });
-        }
-
-        const { priceId, planType } = req.body; // e.g., 'price_xxx', 'pro'
-
-        if (!priceId || !planType) {
-            return res.status(400).json({ error: 'Price ID and plan type required' });
-        }
-
-        const userId = req.user.id;
-
-        // Get or create Stripe customer
-        let customerId;
-        const existingSubscription = await pool.query(
-            'SELECT stripe_customer_id FROM subscriptions WHERE user_id = $1',
-            [userId]
-        );
-
-        if (existingSubscription.rows.length > 0 && existingSubscription.rows[0].stripe_customer_id) {
-            customerId = existingSubscription.rows[0].stripe_customer_id;
-        } else {
-            // Get user email
-            const userResult = await pool.query('SELECT email, name FROM users WHERE id = $1', [userId]);
-            if (!userResult.rows.length) {
-                return res.status(404).json({ error: 'User not found' });
-            }
-            const user = userResult.rows[0];
-
-            // Create Stripe customer
-            const customer = await stripe.customers.create({
-                email: user.email,
-                name: user.name,
-                metadata: {
-                    quicklist_user_id: userId.toString()
-                }
-            });
-            customerId = customer.id;
-
-            // Store customer ID - create subscription if it doesn't exist, otherwise update
-            const subCheck = await pool.query(
-                'SELECT id FROM subscriptions WHERE user_id = $1',
-                [userId]
-            );
-
-            if (subCheck.rows.length > 0) {
-                // Update existing subscription
-                await pool.query(
-                    'UPDATE subscriptions SET stripe_customer_id = $1 WHERE user_id = $2',
-                    [customerId, userId]
-                );
-            } else {
-                // Create new subscription record
-                await pool.query(
-                    `INSERT INTO subscriptions (user_id, stripe_customer_id, status, plan_type, current_period_start, current_period_end)
-                     VALUES ($1, $2, 'active', 'free', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '1 month')`,
-                    [userId, customerId]
-                );
-            }
-        }
-
-        // Create checkout session
-        const session = await stripe.checkout.sessions.create({
-            customer: customerId,
-            payment_method_types: ['card'],
-            line_items: [
-                {
-                    price: priceId,
-                    quantity: 1
-                }
-            ],
-            mode: 'subscription',
-            success_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/payment/cancel`,
-            metadata: {
-                user_id: userId.toString(),
-                plan_type: planType
-            }
-        });
-
-        logger.info('Stripe checkout session created:', { userId: req.user.id, sessionId: session.id });
-        res.json({ sessionId: session.id, url: session.url });
-    } catch (error) {
-        logger.error('Stripe checkout error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ error: 'Failed to create checkout session' });
+  try {
+    if (!stripe) {
+      return res.status(503).json({ error: 'Stripe not configured' });
     }
+
+    const { priceId, planType } = req.body; // e.g., 'price_xxx', 'pro'
+
+    if (!priceId || !planType) {
+      return res.status(400).json({ error: 'Price ID and plan type required' });
+    }
+
+    const userId = req.user.id;
+
+    // Get or create Stripe customer
+    let customerId;
+    const existingSubscription = await pool.query(
+      'SELECT stripe_customer_id FROM subscriptions WHERE user_id = $1',
+      [userId]
+    );
+
+    if (existingSubscription.rows.length > 0 && existingSubscription.rows[0].stripe_customer_id) {
+      customerId = existingSubscription.rows[0].stripe_customer_id;
+    } else {
+      // Get user email
+      const userResult = await pool.query('SELECT email, name FROM users WHERE id = $1', [userId]);
+      if (!userResult.rows.length) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      const user = userResult.rows[0];
+
+      // Create Stripe customer
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: user.name,
+        metadata: {
+          quicklist_user_id: userId.toString(),
+        },
+      });
+      customerId = customer.id;
+
+      // Store customer ID - create subscription if it doesn't exist, otherwise update
+      const subCheck = await pool.query('SELECT id FROM subscriptions WHERE user_id = $1', [
+        userId,
+      ]);
+
+      if (subCheck.rows.length > 0) {
+        // Update existing subscription
+        await pool.query('UPDATE subscriptions SET stripe_customer_id = $1 WHERE user_id = $2', [
+          customerId,
+          userId,
+        ]);
+      } else {
+        // Create new subscription record
+        await pool.query(
+          `INSERT INTO subscriptions (user_id, stripe_customer_id, status, plan_type, current_period_start, current_period_end)
+                     VALUES ($1, $2, 'active', 'free', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '1 month')`,
+          [userId, customerId]
+        );
+      }
+    }
+
+    // Create checkout session
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription',
+      success_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/payment/cancel`,
+      metadata: {
+        user_id: userId.toString(),
+        plan_type: planType,
+      },
+    });
+
+    logger.info('Stripe checkout session created:', { userId: req.user.id, sessionId: session.id });
+    res.json({ sessionId: session.id, url: session.url });
+  } catch (error) {
+    logger.error('Stripe checkout error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to create checkout session' });
+  }
 });
 
 // Stripe: Create portal session (manage subscription)
 app.post('/api/stripe/create-portal-session', authenticateToken, async (req, res) => {
-    try {
-        if (!stripe) {
-            return res.status(503).json({ error: 'Stripe not configured' });
-        }
-
-        const userId = req.user.id;
-
-        // Get Stripe customer ID
-        const result = await pool.query(
-            'SELECT stripe_customer_id FROM subscriptions WHERE user_id = $1',
-            [userId]
-        );
-
-        if (!result.rows.length || !result.rows[0].stripe_customer_id) {
-            return res.status(400).json({ error: 'No active subscription found' });
-        }
-
-        const customerId = result.rows[0].stripe_customer_id;
-
-        // Create portal session
-        const session = await stripe.billingPortal.sessions.create({
-            customer: customerId,
-            return_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/settings`
-        });
-
-        logger.info('Stripe portal session created:', { userId });
-        res.json({ url: session.url });
-    } catch (error) {
-        logger.error('Stripe portal error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ error: 'Failed to create portal session' });
+  try {
+    if (!stripe) {
+      return res.status(503).json({ error: 'Stripe not configured' });
     }
+
+    const userId = req.user.id;
+
+    // Get Stripe customer ID
+    const result = await pool.query(
+      'SELECT stripe_customer_id FROM subscriptions WHERE user_id = $1',
+      [userId]
+    );
+
+    if (!result.rows.length || !result.rows[0].stripe_customer_id) {
+      return res.status(400).json({ error: 'No active subscription found' });
+    }
+
+    const customerId = result.rows[0].stripe_customer_id;
+
+    // Create portal session
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/settings`,
+    });
+
+    logger.info('Stripe portal session created:', { userId });
+    res.json({ url: session.url });
+  } catch (error) {
+    logger.error('Stripe portal error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to create portal session' });
+  }
 });
 
 // Webhook handlers
 async function handleCheckoutCompleted(session) {
-    try {
-        if (!session.metadata || !session.metadata.user_id) {
-            logger.error('Missing user_id in checkout session metadata');
-            return;
-        }
+  try {
+    if (!session.metadata || !session.metadata.user_id) {
+      logger.error('Missing user_id in checkout session metadata');
+      return;
+    }
 
-        const userId = parseInt(session.metadata.user_id);
-        const planType = session.metadata.plan_type || 'free';
-        const customerId = session.customer;
-        const subscriptionId = session.subscription;
+    const userId = parseInt(session.metadata.user_id);
+    const planType = session.metadata.plan_type || 'free';
+    const customerId = session.customer;
+    const subscriptionId = session.subscription;
 
-        if (!subscriptionId) {
-            logger.error('No subscription ID in checkout session');
-            return;
-        }
+    if (!subscriptionId) {
+      logger.error('No subscription ID in checkout session');
+      return;
+    }
 
-        // Get subscription details from Stripe
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        
-        if (!subscription.items || !subscription.items.data || subscription.items.data.length === 0) {
-            logger.error('No subscription items found');
-            return;
-        }
+    // Get subscription details from Stripe
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
-        const priceId = subscription.items.data[0].price.id;
+    if (!subscription.items || !subscription.items.data || subscription.items.data.length === 0) {
+      logger.error('No subscription items found');
+      return;
+    }
 
-        // Update or create subscription in database
-        await pool.query(
-            `INSERT INTO subscriptions (user_id, stripe_customer_id, stripe_subscription_id, stripe_price_id, status, plan_type, current_period_start, current_period_end)
+    const priceId = subscription.items.data[0].price.id;
+
+    // Update or create subscription in database
+    await pool.query(
+      `INSERT INTO subscriptions (user_id, stripe_customer_id, stripe_subscription_id, stripe_price_id, status, plan_type, current_period_start, current_period_end)
              VALUES ($1, $2, $3, $4, $5, $6, to_timestamp($7), to_timestamp($8))
              ON CONFLICT (stripe_subscription_id) 
              DO UPDATE SET 
@@ -628,54 +670,54 @@ async function handleCheckoutCompleted(session) {
                  current_period_start = to_timestamp($7),
                  current_period_end = to_timestamp($8),
                  updated_at = CURRENT_TIMESTAMP`,
-            [
-                userId,
-                customerId,
-                subscriptionId,
-                priceId,
-                subscription.status,
-                planType,
-                subscription.current_period_start,
-                subscription.current_period_end
-            ]
-        );
-    } catch (error) {
-        logger.error('Error in handleCheckoutCompleted:', { error: error.message });
-        throw error; // Re-throw to be caught by webhook handler
-    }
+      [
+        userId,
+        customerId,
+        subscriptionId,
+        priceId,
+        subscription.status,
+        planType,
+        subscription.current_period_start,
+        subscription.current_period_end,
+      ]
+    );
+  } catch (error) {
+    logger.error('Error in handleCheckoutCompleted:', { error: error.message });
+    throw error; // Re-throw to be caught by webhook handler
+  }
 }
 
 async function handleSubscriptionUpdate(subscription) {
-    try {
-        if (!subscription.customer || !subscription.id) {
-            logger.error('Missing customer or subscription ID');
-            return;
-        }
+  try {
+    if (!subscription.customer || !subscription.id) {
+      logger.error('Missing customer or subscription ID');
+      return;
+    }
 
-        const customerId = subscription.customer;
-        const subscriptionId = subscription.id;
+    const customerId = subscription.customer;
+    const subscriptionId = subscription.id;
 
-        if (!subscription.items || !subscription.items.data || subscription.items.data.length === 0) {
-            logger.error('No subscription items found in update');
-            return;
-        }
+    if (!subscription.items || !subscription.items.data || subscription.items.data.length === 0) {
+      logger.error('No subscription items found in update');
+      return;
+    }
 
-        const priceId = subscription.items.data[0].price.id;
+    const priceId = subscription.items.data[0].price.id;
 
-        // Find user by customer ID
-        const result = await pool.query(
-            'SELECT user_id FROM subscriptions WHERE stripe_customer_id = $1',
-            [customerId]
-        );
+    // Find user by customer ID
+    const result = await pool.query(
+      'SELECT user_id FROM subscriptions WHERE stripe_customer_id = $1',
+      [customerId]
+    );
 
-        if (result.rows.length > 0) {
-            const userId = result.rows[0].user_id;
+    if (result.rows.length > 0) {
+      const userId = result.rows[0].user_id;
 
-            // Determine plan type from price ID
-            const planType = mapPriceIdToPlanType(priceId);
+      // Determine plan type from price ID
+      const planType = mapPriceIdToPlanType(priceId);
 
-            await pool.query(
-                `UPDATE subscriptions 
+      await pool.query(
+        `UPDATE subscriptions 
                  SET status = $1, 
                      plan_type = $2,
                      current_period_start = to_timestamp($3),
@@ -683,568 +725,617 @@ async function handleSubscriptionUpdate(subscription) {
                      cancel_at_period_end = $5,
                      updated_at = CURRENT_TIMESTAMP
                  WHERE stripe_subscription_id = $6`,
-                [
-                    subscription.status,
-                    planType,
-                    subscription.current_period_start,
-                    subscription.current_period_end,
-                    subscription.cancel_at_period_end || false,
-                    subscriptionId
-                ]
-            );
-        } else {
-            logger.warn('No subscription found for customer:', { customerId });
-        }
-    } catch (error) {
-        logger.error('Error in handleSubscriptionUpdate:', { error: error.message });
-        throw error;
+        [
+          subscription.status,
+          planType,
+          subscription.current_period_start,
+          subscription.current_period_end,
+          subscription.cancel_at_period_end || false,
+          subscriptionId,
+        ]
+      );
+    } else {
+      logger.warn('No subscription found for customer:', { customerId });
     }
+  } catch (error) {
+    logger.error('Error in handleSubscriptionUpdate:', { error: error.message });
+    throw error;
+  }
 }
 
 async function handleSubscriptionDeleted(subscription) {
-    try {
-        if (!subscription || !subscription.id) {
-            logger.error('Missing subscription ID in deletion handler');
-            return;
-        }
+  try {
+    if (!subscription || !subscription.id) {
+      logger.error('Missing subscription ID in deletion handler');
+      return;
+    }
 
-        await safeQuery(
-            `UPDATE subscriptions 
+    await safeQuery(
+      `UPDATE subscriptions 
              SET status = 'canceled', updated_at = CURRENT_TIMESTAMP
              WHERE stripe_subscription_id = $1`,
-            [subscription.id]
-        );
-    } catch (error) {
-        logger.error('Error in handleSubscriptionDeleted:', { error: error.message });
-        throw error;
-    }
+      [subscription.id]
+    );
+  } catch (error) {
+    logger.error('Error in handleSubscriptionDeleted:', { error: error.message });
+    throw error;
+  }
 }
 
 async function handlePaymentSucceeded(invoice) {
-    try {
-        const subscriptionId = invoice.subscription;
-        if (subscriptionId) {
-            await safeQuery(
-                `UPDATE subscriptions SET status = 'active', updated_at = CURRENT_TIMESTAMP
+  try {
+    const subscriptionId = invoice.subscription;
+    if (subscriptionId) {
+      await safeQuery(
+        `UPDATE subscriptions SET status = 'active', updated_at = CURRENT_TIMESTAMP
                  WHERE stripe_subscription_id = $1`,
-                [subscriptionId]
-            );
-        }
-    } catch (error) {
-        logger.error('Error in handlePaymentSucceeded:', { error: error.message });
-        throw error;
+        [subscriptionId]
+      );
     }
+  } catch (error) {
+    logger.error('Error in handlePaymentSucceeded:', { error: error.message });
+    throw error;
+  }
 }
 
 async function handlePaymentFailed(invoice) {
-    try {
-        const subscriptionId = invoice.subscription;
-        if (subscriptionId) {
-            await safeQuery(
-                `UPDATE subscriptions SET status = 'past_due', updated_at = CURRENT_TIMESTAMP
+  try {
+    const subscriptionId = invoice.subscription;
+    if (subscriptionId) {
+      await safeQuery(
+        `UPDATE subscriptions SET status = 'past_due', updated_at = CURRENT_TIMESTAMP
                  WHERE stripe_subscription_id = $1`,
-                [subscriptionId]
-            );
-        }
-    } catch (error) {
-        logger.error('Error in handlePaymentFailed:', { error: error.message });
-        throw error;
+        [subscriptionId]
+      );
     }
+  } catch (error) {
+    logger.error('Error in handlePaymentFailed:', { error: error.message });
+    throw error;
+  }
 }
 
 function mapPriceIdToPlanType(priceId) {
-    // Map your Stripe price IDs to plan types
-    // Update these with your actual Stripe price IDs
-    const priceMap = {
-        [process.env.STRIPE_PRICE_STARTER]: 'starter',
-        [process.env.STRIPE_PRICE_PRO]: 'pro',
-        [process.env.STRIPE_PRICE_BUSINESS]: 'business'
-    };
-    return priceMap[priceId] || 'free';
+  // Map your Stripe price IDs to plan types
+  // Update these with your actual Stripe price IDs
+  const priceMap = {
+    [process.env.STRIPE_PRICE_STARTER]: 'starter',
+    [process.env.STRIPE_PRICE_PRO]: 'pro',
+    [process.env.STRIPE_PRICE_BUSINESS]: 'business',
+  };
+  return priceMap[priceId] || 'free';
 }
 
 // Stripe: Get publishable key (for frontend)
 app.get('/api/stripe/publishable-key', (req, res) => {
-    try {
-        const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
-        if (!publishableKey) {
-            return res.status(500).json({ error: 'Stripe publishable key not configured' });
-        }
-        res.json({ publishableKey });
-    } catch (error) {
-        logger.error('Error getting Stripe publishable key:', { error: error.message });
-        res.status(500).json({ error: 'Failed to get Stripe publishable key' });
+  try {
+    const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
+    if (!publishableKey) {
+      return res.status(500).json({ error: 'Stripe publishable key not configured' });
     }
+    res.json({ publishableKey });
+  } catch (error) {
+    logger.error('Error getting Stripe publishable key:', { error: error.message });
+    res.status(500).json({ error: 'Failed to get Stripe publishable key' });
+  }
 });
 
 // Get user subscription status with usage
 app.get('/api/subscription/status', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
+  try {
+    const userId = req.user.id;
 
-        // Get user info
-        const userResult = await pool.query(
-            'SELECT id, email, name, avatar_url FROM users WHERE id = $1',
-            [userId]
-        );
+    // Get user info
+    const userResult = await pool.query(
+      'SELECT id, email, name, avatar_url FROM users WHERE id = $1',
+      [userId]
+    );
 
-        if (userResult.rows.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
-        const user = userResult.rows[0];
+    const user = userResult.rows[0];
 
-        // Get subscription
-        const result = await pool.query(
-            `SELECT s.*, u.email, u.name 
+    // Get subscription
+    const result = await pool.query(
+      `SELECT s.*, u.email, u.name 
              FROM subscriptions s
              JOIN users u ON s.user_id = u.id
              WHERE s.user_id = $1
              ORDER BY s.created_at DESC
              LIMIT 1`,
-            [userId]
-        );
+      [userId]
+    );
 
-        let subscription;
-        if (result.rows.length === 0) {
-            // Create free tier subscription
-            const newSub = await pool.query(
-                `INSERT INTO subscriptions (user_id, status, plan_type, current_period_start, current_period_end)
+    let subscription;
+    if (result.rows.length === 0) {
+      // Create free tier subscription
+      const newSub = await pool.query(
+        `INSERT INTO subscriptions (user_id, status, plan_type, current_period_start, current_period_end)
                  VALUES ($1, 'active', 'free', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '1 month')
                  RETURNING *`,
-                [userId]
-            );
-            subscription = newSub.rows[0];
-        } else {
-            subscription = result.rows[0];
-        }
+        [userId]
+      );
+      subscription = newSub.rows[0];
+    } else {
+      subscription = result.rows[0];
+    }
 
-        // Get usage for current period
-        const periodStart = subscription.current_period_start || new Date();
-        const periodEnd = subscription.current_period_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    // Get usage for current period
+    const periodStart = subscription.current_period_start || new Date();
+    const periodEnd =
+      subscription.current_period_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-        const usageResult = await pool.query(
-            `SELECT listings_created 
+    const usageResult = await pool.query(
+      `SELECT listings_created 
              FROM usage_tracking 
              WHERE user_id = $1 
              AND period_start >= $2 
              AND period_start < $3
              ORDER BY period_start DESC
              LIMIT 1`,
-            [userId, periodStart, periodEnd]
-        );
+      [userId, periodStart, periodEnd]
+    );
 
-        const listingsCreated = usageResult.rows.length > 0 ? usageResult.rows[0].listings_created : 0;
+    const listingsCreated = usageResult.rows.length > 0 ? usageResult.rows[0].listings_created : 0;
 
-        // Get plan limits
-        const planLimits = {
-            free: 5,
-            starter: 50,
-            pro: 200,
-            business: 1000
-        };
+    // Get plan limits
+    const planLimits = {
+      free: 5,
+      starter: 50,
+      pro: 200,
+      business: 1000,
+    };
 
-        const planType = subscription.plan_type || 'free';
-        const limit = planLimits[planType] || 5;
+    const planType = subscription.plan_type || 'free';
+    const limit = planLimits[planType] || 5;
 
-        res.json({
-            user: {
-                id: user.id,
-                email: user.email,
-                name: user.name || user.email.split('@')[0],
-                avatarUrl: user.avatar_url
-            },
-            subscription: {
-                planType: planType,
-                status: subscription.status,
-                currentPeriodStart: subscription.current_period_start,
-                currentPeriodEnd: subscription.current_period_end,
-                cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-                stripeCustomerId: subscription.stripe_customer_id
-            },
-            usage: {
-                listingsCreated: listingsCreated,
-                limit: limit,
-                percentage: Math.min((listingsCreated / limit) * 100, 100)
-            }
-        });
-    } catch (error) {
-        logger.error('Subscription status error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ error: 'Failed to get subscription status' });
-    }
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name || user.email.split('@')[0],
+        avatarUrl: user.avatar_url,
+      },
+      subscription: {
+        planType: planType,
+        status: subscription.status,
+        currentPeriodStart: subscription.current_period_start,
+        currentPeriodEnd: subscription.current_period_end,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+        stripeCustomerId: subscription.stripe_customer_id,
+      },
+      usage: {
+        listingsCreated: listingsCreated,
+        limit: limit,
+        percentage: Math.min((listingsCreated / limit) * 100, 100),
+      },
+    });
+  } catch (error) {
+    logger.error('Subscription status error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to get subscription status' });
+  }
 });
 
 // Get usage tracking
 app.get('/api/usage', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const now = new Date();
-        const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  try {
+    const userId = req.user.id;
+    const now = new Date();
+    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-        const result = await pool.query(
-            `SELECT listings_created, ai_generations, background_removals
+    const result = await pool.query(
+      `SELECT listings_created, ai_generations, background_removals
              FROM usage_tracking 
              WHERE user_id = $1 
              AND period_start >= $2 
              AND period_start < $3
              ORDER BY period_start DESC
              LIMIT 1`,
-            [userId, periodStart, periodEnd]
-        );
+      [userId, periodStart, periodEnd]
+    );
 
-        if (result.rows.length === 0) {
-            return res.json({
-                listingsCreated: 0,
-                aiGenerations: 0,
-                backgroundRemovals: 0
-            });
-        }
-
-        res.json(result.rows[0]);
-    } catch (error) {
-        logger.error('Usage tracking error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ error: 'Failed to get usage data' });
+    if (result.rows.length === 0) {
+      return res.json({
+        listingsCreated: 0,
+        aiGenerations: 0,
+        backgroundRemovals: 0,
+      });
     }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    logger.error('Usage tracking error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to get usage data' });
+  }
 });
 
 // Dashboard metrics for mobile view
 app.get('/api/dashboard/metrics', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
+  try {
+    const userId = req.user.id;
 
-        const [revenueResult, prevRevenueResult, activeResult, listingsTodayResult, draftsResult, soldWeekResult, photoQueueResult] = await Promise.all([
-            safeQuery(
-                `SELECT sold_price, price FROM listings
+    const [
+      revenueResult,
+      prevRevenueResult,
+      activeResult,
+      listingsTodayResult,
+      draftsResult,
+      soldWeekResult,
+      photoQueueResult,
+    ] = await Promise.all([
+      safeQuery(
+        `SELECT sold_price, price FROM listings
                  WHERE user_id = $1 AND status = 'sold' AND sold_at >= NOW() - INTERVAL '7 days'`,
-                [userId]
-            ),
-            safeQuery(
-                `SELECT sold_price, price FROM listings
+        [userId]
+      ),
+      safeQuery(
+        `SELECT sold_price, price FROM listings
                  WHERE user_id = $1 AND status = 'sold'
                  AND sold_at >= NOW() - INTERVAL '14 days'
                  AND sold_at < NOW() - INTERVAL '7 days'`,
-                [userId]
-            ),
-            safeQuery(
-                `SELECT COUNT(*) FROM listings
+        [userId]
+      ),
+      safeQuery(
+        `SELECT COUNT(*) FROM listings
                  WHERE user_id = $1 AND (status IS NULL OR status IN ('draft', 'active'))`,
-                [userId]
-            ),
-            safeQuery(
-                `SELECT COUNT(*) FROM listings
+        [userId]
+      ),
+      safeQuery(
+        `SELECT COUNT(*) FROM listings
                  WHERE user_id = $1 AND created_at >= DATE_TRUNC('day', NOW())`,
-                [userId]
-            ),
-            safeQuery(
-                `SELECT COUNT(*) FROM listings
+        [userId]
+      ),
+      safeQuery(
+        `SELECT COUNT(*) FROM listings
                  WHERE user_id = $1 AND status = 'draft'`,
-                [userId]
-            ),
-            safeQuery(
-                `SELECT COUNT(*) FROM listings
+        [userId]
+      ),
+      safeQuery(
+        `SELECT COUNT(*) FROM listings
                  WHERE user_id = $1 AND status = 'sold'
                  AND sold_at >= NOW() - INTERVAL '7 days'`,
-                [userId]
-            ),
-            safeQuery(
-                `SELECT COUNT(*) FROM images i
+        [userId]
+      ),
+      safeQuery(
+        `SELECT COUNT(*) FROM images i
                  INNER JOIN listings l ON l.id = i.listing_id
                  WHERE l.user_id = $1 AND (l.status IS NULL OR l.status <> 'sold')`,
-                [userId]
-            )
-        ]);
+        [userId]
+      ),
+    ]);
 
-        const revenue = revenueResult.rows.reduce((sum, row) => sum + priceStringToNumber(row.sold_price || row.price), 0);
-        const prevRevenue = prevRevenueResult.rows.reduce((sum, row) => sum + priceStringToNumber(row.sold_price || row.price), 0);
-        const revenueTrend = prevRevenue === 0
-            ? (revenue > 0 ? 100 : 0)
-            : Math.round(((revenue - prevRevenue) / prevRevenue) * 100);
+    const revenue = revenueResult.rows.reduce(
+      (sum, row) => sum + priceStringToNumber(row.sold_price || row.price),
+      0
+    );
+    const prevRevenue = prevRevenueResult.rows.reduce(
+      (sum, row) => sum + priceStringToNumber(row.sold_price || row.price),
+      0
+    );
+    const revenueTrend =
+      prevRevenue === 0
+        ? revenue > 0
+          ? 100
+          : 0
+        : Math.round(((revenue - prevRevenue) / prevRevenue) * 100);
 
-        res.json({
-            revenueLast7Days: revenue,
-            revenueTrend,
-            activeListings: parseInt(activeResult.rows[0].count, 10),
-            listingsAddedToday: parseInt(listingsTodayResult.rows[0].count, 10),
-            unreadMessages: 0, // Messages feature removed
-            activity: [
-                {
-                    id: 'photosQueued',
-                    label: 'Queued photos',
-                    icon: '📷',
-                    detail: `${parseInt(photoQueueResult.rows[0].count, 10)} images ready`
-                },
-                {
-                    id: 'draftListings',
-                    label: 'Draft listings',
-                    icon: '📝',
-                    detail: `${parseInt(draftsResult.rows[0].count, 10)} drafts waiting`
-                },
-                {
-                    id: 'soldWeek',
-                    label: 'Sold this week',
-                    icon: '✅',
-                    detail: `${parseInt(soldWeekResult.rows[0].count, 10)} items`
-                }
-            ],
-            tips: MOBILE_TIPS
-        });
-    } catch (error) {
-        logger.error('Dashboard metrics error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ error: 'Failed to load dashboard metrics' });
-    }
+    res.json({
+      revenueLast7Days: revenue,
+      revenueTrend,
+      activeListings: parseInt(activeResult.rows[0].count, 10),
+      listingsAddedToday: parseInt(listingsTodayResult.rows[0].count, 10),
+      unreadMessages: 0, // Messages feature removed
+      activity: [
+        {
+          id: 'photosQueued',
+          label: 'Queued photos',
+          icon: '📷',
+          detail: `${parseInt(photoQueueResult.rows[0].count, 10)} images ready`,
+        },
+        {
+          id: 'draftListings',
+          label: 'Draft listings',
+          icon: '📝',
+          detail: `${parseInt(draftsResult.rows[0].count, 10)} drafts waiting`,
+        },
+        {
+          id: 'soldWeek',
+          label: 'Sold this week',
+          icon: '✅',
+          detail: `${parseInt(soldWeekResult.rows[0].count, 10)} items`,
+        },
+      ],
+      tips: MOBILE_TIPS,
+    });
+  } catch (error) {
+    logger.error('Dashboard metrics error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to load dashboard metrics' });
+  }
 });
 
 // Messages API
 app.get('/api/messages', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const result = await safeQuery(
-            `SELECT id, buyer_name, platform, snippet, body, unread, last_reply_text, last_reply_at, created_at
+  try {
+    const userId = req.user.id;
+    const result = await safeQuery(
+      `SELECT id, buyer_name, platform, snippet, body, unread, last_reply_text, last_reply_at, created_at
              FROM messages
              WHERE user_id = $1
              ORDER BY created_at DESC
              LIMIT 50`,
-            [userId]
-        );
-        res.json({ messages: result.rows });
-    } catch (error) {
-        logger.error('Messages fetch error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ error: 'Failed to load messages' });
-    }
+      [userId]
+    );
+    res.json({ messages: result.rows });
+  } catch (error) {
+    logger.error('Messages fetch error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to load messages' });
+  }
 });
 
 app.post('/api/messages/:id/read', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const messageId = parseInt(req.params.id, 10);
-        if (isNaN(messageId)) {
-            return res.status(400).json({ error: 'Invalid message ID' });
-        }
+  try {
+    const userId = req.user.id;
+    const messageId = parseInt(req.params.id, 10);
+    if (isNaN(messageId)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
 
-        const result = await safeQuery(
-            `UPDATE messages
+    const result = await safeQuery(
+      `UPDATE messages
              SET unread = false
              WHERE id = $1 AND user_id = $2
              RETURNING *`,
-            [messageId, userId]
-        );
+      [messageId, userId]
+    );
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Message not found' });
-        }
-
-        res.json({ message: result.rows[0] });
-    } catch (error) {
-        logger.error('Message read error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ error: 'Failed to update message' });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Message not found' });
     }
+
+    res.json({ message: result.rows[0] });
+  } catch (error) {
+    logger.error('Message read error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to update message' });
+  }
 });
 
 app.post('/api/messages/:id/reply', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const messageId = parseInt(req.params.id, 10);
-        const { reply } = req.body || {};
+  try {
+    const userId = req.user.id;
+    const messageId = parseInt(req.params.id, 10);
+    const { reply } = req.body || {};
 
-        if (isNaN(messageId)) {
-            return res.status(400).json({ error: 'Invalid message ID' });
-        }
-        if (!reply || typeof reply !== 'string') {
-            return res.status(400).json({ error: 'Reply text is required' });
-        }
+    if (isNaN(messageId)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
+    if (!reply || typeof reply !== 'string') {
+      return res.status(400).json({ error: 'Reply text is required' });
+    }
 
-        const cleanReply = sanitizeInput(reply);
+    const cleanReply = sanitizeInput(reply);
 
-        const result = await safeQuery(
-            `UPDATE messages
+    const result = await safeQuery(
+      `UPDATE messages
              SET last_reply_text = $1,
                  last_reply_at = NOW(),
                  snippet = $1,
                  unread = false
              WHERE id = $2 AND user_id = $3
              RETURNING *`,
-            [cleanReply, messageId, userId]
-        );
+      [cleanReply, messageId, userId]
+    );
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Message not found' });
-        }
-
-        res.json({ message: result.rows[0] });
-    } catch (error) {
-        logger.error('Message reply error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ error: 'Failed to send reply' });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Message not found' });
     }
+
+    res.json({ message: result.rows[0] });
+  } catch (error) {
+    logger.error('Message reply error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to send reply' });
+  }
 });
 
 // Listing endpoints
 app.post('/api/listings', authenticateToken, async (req, res) => {
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-        const { title, brand, category, description, condition, rrp, price, keywords, sources, platform, images, status, location } = req.body;
-        const userId = req.user.id;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const {
+      title,
+      brand,
+      category,
+      description,
+      condition,
+      rrp,
+      price,
+      keywords,
+      sources,
+      platform,
+      images,
+      status,
+      location,
+    } = req.body;
+    const userId = req.user.id;
 
-        const cleanStatus = sanitizeInput(status) || 'draft';
-        const cleanLocation = sanitizeInput(location);
+    const cleanStatus = sanitizeInput(status) || 'draft';
+    const cleanLocation = sanitizeInput(location);
 
-        // Insert listing
-        const listingResult = await client.query(
-            `INSERT INTO listings (user_id, title, brand, category, description, condition, rrp, price, keywords, sources, platform, status, location)
+    // Insert listing
+    const listingResult = await client.query(
+      `INSERT INTO listings (user_id, title, brand, category, description, condition, rrp, price, keywords, sources, platform, status, location)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-            [
-                userId,
-                sanitizeInput(title),
-                sanitizeInput(brand),
-                sanitizeInput(category),
-                sanitizeInput(description),
-                sanitizeInput(condition),
-                sanitizeInput(rrp),
-                sanitizeInput(price),
-                keywords || [],
-                JSON.stringify(sources || []),
-                sanitizeInput(platform),
-                cleanStatus,
-                cleanLocation
-            ]
-        );
+      [
+        userId,
+        sanitizeInput(title),
+        sanitizeInput(brand),
+        sanitizeInput(category),
+        sanitizeInput(description),
+        sanitizeInput(condition),
+        sanitizeInput(rrp),
+        sanitizeInput(price),
+        keywords || [],
+        JSON.stringify(sources || []),
+        sanitizeInput(platform),
+        cleanStatus,
+        cleanLocation,
+      ]
+    );
 
-        const listing = listingResult.rows[0];
+    const listing = listingResult.rows[0];
 
-        // Insert images in batch if provided
-        if (images && images.length > 0) {
-            const imageValues = images.map((_, idx) => {
-                const baseIndex = idx * 4;
-                return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4})`;
-            }).join(', ');
-            const imageParams = images.flatMap((img, i) => [
-                listing.id,
-                img.data,
-                i,
-                img.isBlurry || false
-            ]);
-            await client.query(
-                `INSERT INTO images (listing_id, image_data, image_order, is_blurry) VALUES ${imageValues}`,
-                imageParams
-            );
-        }
+    // Insert images in batch if provided
+    if (images && images.length > 0) {
+      const imageValues = images
+        .map((_, idx) => {
+          const baseIndex = idx * 4;
+          return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4})`;
+        })
+        .join(', ');
+      const imageParams = images.flatMap((img, i) => [
+        listing.id,
+        img.data,
+        i,
+        img.isBlurry || false,
+      ]);
+      await client.query(
+        `INSERT INTO images (listing_id, image_data, image_order, is_blurry) VALUES ${imageValues}`,
+        imageParams
+      );
+    }
 
-        await client.query('COMMIT');
-        
-        // Track usage
-        try {
-            await safeQuery(
-                `INSERT INTO usage_tracking (user_id, period_start, period_end, listings_created, ai_generations)
+    await client.query('COMMIT');
+
+    // Track usage
+    try {
+      await safeQuery(
+        `INSERT INTO usage_tracking (user_id, period_start, period_end, listings_created, ai_generations)
                  VALUES ($1, DATE_TRUNC('month', CURRENT_DATE), DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month', 1, 0)
                  ON CONFLICT (user_id, period_start) 
                  DO UPDATE SET listings_created = usage_tracking.listings_created + 1`,
-                [userId]
-            );
-        } catch (usageError) {
-            logger.warn('Usage tracking failed:', { error: usageError.message, userId });
-        }
-
-        logger.info('Listing created:', { listingId: listing.id, userId });
-        res.json({ listing });
-    } catch (error) {
-        await client.query('ROLLBACK');
-        logger.error('Create listing error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ error: 'Failed to create listing' });
-    } finally {
-        client.release();
+        [userId]
+      );
+    } catch (usageError) {
+      logger.warn('Usage tracking failed:', { error: usageError.message, userId });
     }
+
+    logger.info('Listing created:', { listingId: listing.id, userId });
+    res.json({ listing });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    logger.error('Create listing error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to create listing' });
+  } finally {
+    client.release();
+  }
 });
 
 app.get('/api/listings', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
-        const offset = (page - 1) * limit;
+  try {
+    const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
 
-        // Get listings with pagination
-        const result = await safeQuery(
-            `SELECT l.*,
+    // Get listings with pagination
+    const result = await safeQuery(
+      `SELECT l.*,
                     (SELECT json_agg(json_build_object('id', i.id, 'data', i.image_data, 'isBlurry', i.is_blurry, 'order', i.image_order) ORDER BY i.image_order)
                      FROM images i WHERE i.listing_id = l.id) as images
              FROM listings l
              WHERE l.user_id = $1
              ORDER BY l.created_at DESC
              LIMIT $2 OFFSET $3`,
-            [userId, limit, offset]
-        );
+      [userId, limit, offset]
+    );
 
-        // Get total count for pagination
-        const countResult = await safeQuery(
-            'SELECT COUNT(*) as total FROM listings WHERE user_id = $1',
-            [userId]
-        );
-        const total = parseInt(countResult.rows[0].total);
+    // Get total count for pagination
+    const countResult = await safeQuery(
+      'SELECT COUNT(*) as total FROM listings WHERE user_id = $1',
+      [userId]
+    );
+    const total = parseInt(countResult.rows[0].total);
 
-        res.json({ 
-            listings: result.rows,
-            pagination: {
-                page,
-                limit,
-                total,
-                pages: Math.ceil(total / limit)
-            }
-        });
-    } catch (error) {
-        logger.error('Get listings error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ error: 'Failed to fetch listings' });
-    }
+    res.json({
+      listings: result.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    logger.error('Get listings error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to fetch listings' });
+  }
 });
 
 app.get('/api/listings/:id', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const listingId = req.params.id;
+  try {
+    const userId = req.user.id;
+    const listingId = req.params.id;
 
-        // Get listing with images
-        const result = await pool.query(
-            `SELECT l.*,
+    // Get listing with images
+    const result = await pool.query(
+      `SELECT l.*,
                     (SELECT json_agg(json_build_object('id', i.id, 'data', i.image_data, 'isBlurry', i.is_blurry, 'order', i.image_order) ORDER BY i.image_order)
                      FROM images i WHERE i.listing_id = l.id) as images
              FROM listings l
              WHERE l.id = $1 AND l.user_id = $2`,
-            [listingId, userId]
-        );
+      [listingId, userId]
+    );
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Listing not found' });
-        }
-
-        res.json({ listing: result.rows[0] });
-    } catch (error) {
-        logger.error('Get listing error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ error: 'Failed to fetch listing' });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Listing not found' });
     }
+
+    res.json({ listing: result.rows[0] });
+  } catch (error) {
+    logger.error('Get listing error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to fetch listing' });
+  }
 });
 
 app.put('/api/listings/:id', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const listingId = req.params.id;
-        const { title, brand, category, description, condition, rrp, price, keywords, sources, platform, status, soldPrice, soldAt, location } = req.body;
+  try {
+    const userId = req.user.id;
+    const listingId = req.params.id;
+    const {
+      title,
+      brand,
+      category,
+      description,
+      condition,
+      rrp,
+      price,
+      keywords,
+      sources,
+      platform,
+      status,
+      soldPrice,
+      soldAt,
+      location,
+    } = req.body;
 
-        const cleanTitle = sanitizeInput(title);
-        const cleanBrand = sanitizeInput(brand);
-        const cleanCategory = sanitizeInput(category);
-        const cleanDescription = sanitizeInput(description);
-        const cleanCondition = sanitizeInput(condition);
-        const cleanRrp = sanitizeInput(rrp);
-        const cleanPrice = sanitizeInput(price);
-        const cleanPlatform = sanitizeInput(platform);
-        const serializedSources = JSON.stringify(sources || []);
-        const cleanStatus = status ? sanitizeInput(status) : null;
-        const cleanSoldPrice = soldPrice ? sanitizeInput(soldPrice) : null;
-        const soldAtDate = soldAt ? new Date(soldAt) : null;
-        const cleanLocation = typeof location !== 'undefined' ? sanitizeInput(location) : null;
+    const cleanTitle = sanitizeInput(title);
+    const cleanBrand = sanitizeInput(brand);
+    const cleanCategory = sanitizeInput(category);
+    const cleanDescription = sanitizeInput(description);
+    const cleanCondition = sanitizeInput(condition);
+    const cleanRrp = sanitizeInput(rrp);
+    const cleanPrice = sanitizeInput(price);
+    const cleanPlatform = sanitizeInput(platform);
+    const serializedSources = JSON.stringify(sources || []);
+    const cleanStatus = status ? sanitizeInput(status) : null;
+    const cleanSoldPrice = soldPrice ? sanitizeInput(soldPrice) : null;
+    const soldAtDate = soldAt ? new Date(soldAt) : null;
+    const cleanLocation = typeof location !== 'undefined' ? sanitizeInput(location) : null;
 
-        const result = await pool.query(
-            `UPDATE listings
+    const result = await pool.query(
+      `UPDATE listings
              SET title = $1, brand = $2, category = $3, description = $4, condition = $5,
                  rrp = $6, price = $7, keywords = $8, sources = $9, platform = $10,
                  status = COALESCE($11, status),
@@ -1253,314 +1344,327 @@ app.put('/api/listings/:id', authenticateToken, async (req, res) => {
                  location = COALESCE($14, location)
              WHERE id = $15 AND user_id = $16
              RETURNING *`,
-            [
-                cleanTitle,
-                cleanBrand,
-                cleanCategory,
-                cleanDescription,
-                cleanCondition,
-                cleanRrp,
-                cleanPrice,
-                keywords || [],
-                serializedSources,
-                cleanPlatform,
-                cleanStatus,
-                cleanSoldPrice,
-                soldAtDate,
-                cleanLocation,
-                listingId,
-                userId
-            ]
-        );
+      [
+        cleanTitle,
+        cleanBrand,
+        cleanCategory,
+        cleanDescription,
+        cleanCondition,
+        cleanRrp,
+        cleanPrice,
+        keywords || [],
+        serializedSources,
+        cleanPlatform,
+        cleanStatus,
+        cleanSoldPrice,
+        soldAtDate,
+        cleanLocation,
+        listingId,
+        userId,
+      ]
+    );
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Listing not found' });
-        }
-
-        logger.info('Listing updated:', { listingId: listingId, userId });
-        res.json({ listing: result.rows[0] });
-    } catch (error) {
-        logger.error('Update listing error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ error: 'Failed to update listing' });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Listing not found' });
     }
+
+    logger.info('Listing updated:', { listingId: listingId, userId });
+    res.json({ listing: result.rows[0] });
+  } catch (error) {
+    logger.error('Update listing error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to update listing' });
+  }
 });
 
 app.delete('/api/listings/:id', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const listingId = parseInt(req.params.id, 10);
+  try {
+    const userId = req.user.id;
+    const listingId = parseInt(req.params.id, 10);
 
-        if (isNaN(listingId)) {
-            return res.status(400).json({ error: 'Invalid listing ID' });
-        }
-
-        logger.info('Deleting listing:', { listingId, userId });
-
-        const result = await safeQuery(
-            'DELETE FROM listings WHERE id = $1 AND user_id = $2 RETURNING id',
-            [listingId, userId]
-        );
-
-        if (result.rows.length === 0) {
-            logger.warn('Listing not found for deletion:', { listingId, userId });
-            return res.status(404).json({ error: 'Listing not found or you do not have permission to delete it' });
-        }
-
-        logger.info('Successfully deleted listing:', { listingId });
-        res.json({ message: 'Listing deleted successfully' });
-    } catch (error) {
-        logger.error('Delete listing error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ 
-            error: 'Failed to delete listing',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+    if (isNaN(listingId)) {
+      return res.status(400).json({ error: 'Invalid listing ID' });
     }
+
+    logger.info('Deleting listing:', { listingId, userId });
+
+    const result = await safeQuery(
+      'DELETE FROM listings WHERE id = $1 AND user_id = $2 RETURNING id',
+      [listingId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      logger.warn('Listing not found for deletion:', { listingId, userId });
+      return res
+        .status(404)
+        .json({ error: 'Listing not found or you do not have permission to delete it' });
+    }
+
+    logger.info('Successfully deleted listing:', { listingId });
+    res.json({ message: 'Listing deleted successfully' });
+  } catch (error) {
+    logger.error('Delete listing error:', { error: error.message, requestId: req.id });
+    res.status(500).json({
+      error: 'Failed to delete listing',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
 });
 
 app.post('/api/listings/:id/mark-sold', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const listingId = parseInt(req.params.id, 10);
-        if (isNaN(listingId)) {
-            return res.status(400).json({ error: 'Invalid listing ID' });
-        }
+  try {
+    const userId = req.user.id;
+    const listingId = parseInt(req.params.id, 10);
+    if (isNaN(listingId)) {
+      return res.status(400).json({ error: 'Invalid listing ID' });
+    }
 
-        const soldPrice = req.body?.soldPrice ? sanitizeInput(req.body.soldPrice) : null;
-        const soldAt = req.body?.soldAt ? new Date(req.body.soldAt) : new Date();
+    const soldPrice = req.body?.soldPrice ? sanitizeInput(req.body.soldPrice) : null;
+    const soldAt = req.body?.soldAt ? new Date(req.body.soldAt) : new Date();
 
-        const result = await safeQuery(
-            `UPDATE listings
+    const result = await safeQuery(
+      `UPDATE listings
              SET status = 'sold',
                  sold_at = $1,
                  sold_price = COALESCE($2, price)
              WHERE id = $3 AND user_id = $4
              RETURNING *`,
-            [soldAt, soldPrice, listingId, userId]
-        );
+      [soldAt, soldPrice, listingId, userId]
+    );
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Listing not found' });
-        }
-
-        logger.info('Listing marked as sold', { listingId, userId });
-        res.json({ listing: result.rows[0] });
-    } catch (error) {
-        logger.error('Mark sold error:', { error: error.message, requestId: req.id });
-        res.status(500).json({ error: 'Failed to mark listing as sold' });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Listing not found' });
     }
+
+    logger.info('Listing marked as sold', { listingId, userId });
+    res.json({ listing: result.rows[0] });
+  } catch (error) {
+    logger.error('Mark sold error:', { error: error.message, requestId: req.id });
+    res.status(500).json({ error: 'Failed to mark listing as sold' });
+  }
 });
 
 // eBay Pricing Intelligence Service
 async function getEbayPricingIntelligence(brand, title, category) {
-    try {
-        const appId = process.env.EBAY_APP_ID;
-        const siteId = process.env.EBAY_SITE_ID || '3'; // UK
-        
-        if (!appId) {
-            logger.warn('eBay App ID not configured, skipping pricing intelligence');
-            return null;
-        }
+  try {
+    const appId = process.env.EBAY_APP_ID;
+    const siteId = process.env.EBAY_SITE_ID || '3'; // UK
 
-        // Build search query
-        const searchQuery = `${brand} ${title}`.trim();
-        
-        // eBay Finding API endpoint
-        const findingApiUrl = 'https://svcs.ebay.com/services/search/FindingService/v1';
-        
-        // Search completed listings (sold items)
-        const completedParams = new URLSearchParams({
-            'OPERATION-NAME': 'findCompletedItems',
-            'SERVICE-VERSION': '1.0.0',
-            'SECURITY-APPNAME': appId,
-            'RESPONSE-DATA-FORMAT': 'JSON',
-            'REST-PAYLOAD': '',
-            'keywords': searchQuery,
-            'itemFilter(0).name': 'SoldItemsOnly',
-            'itemFilter(0).value': 'true',
-            'itemFilter(1).name': 'ListingType',
-            'itemFilter(1).value': 'FixedPrice',
-            'sortOrder': 'EndTimeSoonest',
-            'paginationInput.entriesPerPage': '50'
-        });
-
-        const completedResponse = await axios.get(`${findingApiUrl}?${completedParams}`);
-        const completedData = completedResponse.data;
-        
-        // Search active listings (competitors)
-        const activeParams = new URLSearchParams({
-            'OPERATION-NAME': 'findItemsAdvanced',
-            'SERVICE-VERSION': '1.0.0',
-            'SECURITY-APPNAME': appId,
-            'RESPONSE-DATA-FORMAT': 'JSON',
-            'REST-PAYLOAD': '',
-            'keywords': searchQuery,
-            'itemFilter(0).name': 'ListingType',
-            'itemFilter(0).value': 'FixedPrice',
-            'sortOrder': 'PricePlusShippingLowest',
-            'paginationInput.entriesPerPage': '20'
-        });
-
-        const activeResponse = await axios.get(`${findingApiUrl}?${activeParams}`);
-        const activeData = activeResponse.data;
-
-        // Process sold listings
-        const soldItems = completedData.findCompletedItemsResponse?.[0]?.searchResult?.[0]?.item || [];
-        const soldPrices = soldItems
-            .map(item => {
-                const price = item.sellingStatus?.[0]?.currentPrice?.[0]?.['__value__'] || 
-                             item.sellingStatus?.[0]?.currentPrice?.[0] || 0;
-                return parseFloat(price);
-            })
-            .filter(price => price > 0);
-
-        // Process active listings
-        const activeItems = activeData.findItemsAdvancedResponse?.[0]?.searchResult?.[0]?.item || [];
-        const activePrices = activeItems
-            .map(item => {
-                const price = item.sellingStatus?.[0]?.currentPrice?.[0]?.['__value__'] || 
-                             item.sellingStatus?.[0]?.currentPrice?.[0] || 0;
-                return parseFloat(price);
-            })
-            .filter(price => price > 0);
-
-        if (soldPrices.length === 0) {
-            return {
-                avgSoldPrice: null,
-                priceRange: null,
-                soldCount: 0,
-                competitorCount: activePrices.length,
-                recommendations: ['No sold listings found. Use AI-generated price.']
-            };
-        }
-
-        // Calculate statistics
-        const avgSoldPrice = soldPrices.reduce((a, b) => a + b, 0) / soldPrices.length;
-        const minSoldPrice = Math.min(...soldPrices);
-        const maxSoldPrice = Math.max(...soldPrices);
-        const sortedPrices = soldPrices.sort((a, b) => a - b);
-        const medianPrice = sortedPrices[Math.floor(sortedPrices.length / 2)];
-        const top25Price = sortedPrices[Math.floor(sortedPrices.length * 0.75)];
-
-        // Generate recommendations
-        const recommendations = [];
-        recommendations.push(`Price at £${Math.round(medianPrice)} for quick sale (median sold price)`);
-        if (top25Price > medianPrice) {
-            recommendations.push(`List at £${Math.round(top25Price)} for max profit (top 25% of sales)`);
-        }
-        if (activePrices.length > 0) {
-            const avgActivePrice = activePrices.reduce((a, b) => a + b, 0) / activePrices.length;
-            if (avgActivePrice > avgSoldPrice) {
-                recommendations.push(`Competitors average £${Math.round(avgActivePrice)} - consider pricing competitively`);
-            }
-        }
-
-        return {
-            avgSoldPrice: `£${Math.round(avgSoldPrice)}`,
-            priceRange: {
-                min: `£${Math.round(minSoldPrice)}`,
-                max: `£${Math.round(maxSoldPrice)}`
-            },
-            soldCount: soldPrices.length,
-            competitorCount: activePrices.length,
-            recentSales: soldPrices.slice(0, 10).map(p => `£${Math.round(p)}`),
-            recommendations
-        };
-    } catch (error) {
-        logger.error('eBay pricing intelligence error:', { error: error.message });
-        return null;
+    if (!appId) {
+      logger.warn('eBay App ID not configured, skipping pricing intelligence');
+      return null;
     }
+
+    // Build search query
+    const searchQuery = `${brand} ${title}`.trim();
+
+    // eBay Finding API endpoint
+    const findingApiUrl = 'https://svcs.ebay.com/services/search/FindingService/v1';
+
+    // Search completed listings (sold items)
+    const completedParams = new URLSearchParams({
+      'OPERATION-NAME': 'findCompletedItems',
+      'SERVICE-VERSION': '1.0.0',
+      'SECURITY-APPNAME': appId,
+      'RESPONSE-DATA-FORMAT': 'JSON',
+      'REST-PAYLOAD': '',
+      keywords: searchQuery,
+      'itemFilter(0).name': 'SoldItemsOnly',
+      'itemFilter(0).value': 'true',
+      'itemFilter(1).name': 'ListingType',
+      'itemFilter(1).value': 'FixedPrice',
+      sortOrder: 'EndTimeSoonest',
+      'paginationInput.entriesPerPage': '50',
+    });
+
+    const completedResponse = await axios.get(`${findingApiUrl}?${completedParams}`);
+    const completedData = completedResponse.data;
+
+    // Search active listings (competitors)
+    const activeParams = new URLSearchParams({
+      'OPERATION-NAME': 'findItemsAdvanced',
+      'SERVICE-VERSION': '1.0.0',
+      'SECURITY-APPNAME': appId,
+      'RESPONSE-DATA-FORMAT': 'JSON',
+      'REST-PAYLOAD': '',
+      keywords: searchQuery,
+      'itemFilter(0).name': 'ListingType',
+      'itemFilter(0).value': 'FixedPrice',
+      sortOrder: 'PricePlusShippingLowest',
+      'paginationInput.entriesPerPage': '20',
+    });
+
+    const activeResponse = await axios.get(`${findingApiUrl}?${activeParams}`);
+    const activeData = activeResponse.data;
+
+    // Process sold listings
+    const soldItems = completedData.findCompletedItemsResponse?.[0]?.searchResult?.[0]?.item || [];
+    const soldPrices = soldItems
+      .map((item) => {
+        const price =
+          item.sellingStatus?.[0]?.currentPrice?.[0]?.['__value__'] ||
+          item.sellingStatus?.[0]?.currentPrice?.[0] ||
+          0;
+        return parseFloat(price);
+      })
+      .filter((price) => price > 0);
+
+    // Process active listings
+    const activeItems = activeData.findItemsAdvancedResponse?.[0]?.searchResult?.[0]?.item || [];
+    const activePrices = activeItems
+      .map((item) => {
+        const price =
+          item.sellingStatus?.[0]?.currentPrice?.[0]?.['__value__'] ||
+          item.sellingStatus?.[0]?.currentPrice?.[0] ||
+          0;
+        return parseFloat(price);
+      })
+      .filter((price) => price > 0);
+
+    if (soldPrices.length === 0) {
+      return {
+        avgSoldPrice: null,
+        priceRange: null,
+        soldCount: 0,
+        competitorCount: activePrices.length,
+        recommendations: ['No sold listings found. Use AI-generated price.'],
+      };
+    }
+
+    // Calculate statistics
+    const avgSoldPrice = soldPrices.reduce((a, b) => a + b, 0) / soldPrices.length;
+    const minSoldPrice = Math.min(...soldPrices);
+    const maxSoldPrice = Math.max(...soldPrices);
+    const sortedPrices = soldPrices.sort((a, b) => a - b);
+    const medianPrice = sortedPrices[Math.floor(sortedPrices.length / 2)];
+    const top25Price = sortedPrices[Math.floor(sortedPrices.length * 0.75)];
+
+    // Generate recommendations
+    const recommendations = [];
+    recommendations.push(`Price at £${Math.round(medianPrice)} for quick sale (median sold price)`);
+    if (top25Price > medianPrice) {
+      recommendations.push(`List at £${Math.round(top25Price)} for max profit (top 25% of sales)`);
+    }
+    if (activePrices.length > 0) {
+      const avgActivePrice = activePrices.reduce((a, b) => a + b, 0) / activePrices.length;
+      if (avgActivePrice > avgSoldPrice) {
+        recommendations.push(
+          `Competitors average £${Math.round(avgActivePrice)} - consider pricing competitively`
+        );
+      }
+    }
+
+    return {
+      avgSoldPrice: `£${Math.round(avgSoldPrice)}`,
+      priceRange: {
+        min: `£${Math.round(minSoldPrice)}`,
+        max: `£${Math.round(maxSoldPrice)}`,
+      },
+      soldCount: soldPrices.length,
+      competitorCount: activePrices.length,
+      recentSales: soldPrices.slice(0, 10).map((p) => `£${Math.round(p)}`),
+      recommendations,
+    };
+  } catch (error) {
+    logger.error('eBay pricing intelligence error:', { error: error.message });
+    return null;
+  }
 }
 
 // Image hosting service (using Imgur API or self-hosted)
 async function uploadImageToHosting(imageBase64) {
-    try {
-        // Option 1: Use Imgur API (free tier available)
-        const imgurClientId = process.env.IMGUR_CLIENT_ID;
-        if (imgurClientId) {
-            const response = await axios.post('https://api.imgur.com/3/image', {
-                image: imageBase64.split(',')[1],
-                type: 'base64'
-            }, {
-                headers: {
-                    'Authorization': `Client-ID ${imgurClientId}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.data.success) {
-                return response.data.data.link;
-            }
+  try {
+    // Option 1: Use Imgur API (free tier available)
+    const imgurClientId = process.env.IMGUR_CLIENT_ID;
+    if (imgurClientId) {
+      const response = await axios.post(
+        'https://api.imgur.com/3/image',
+        {
+          image: imageBase64.split(',')[1],
+          type: 'base64',
+        },
+        {
+          headers: {
+            Authorization: `Client-ID ${imgurClientId}`,
+            'Content-Type': 'application/json',
+          },
         }
-        
-        // Option 2: For now, return data URL (eBay may accept base64, but typically needs hosted URL)
-        // In production, implement proper image hosting
-        logger.warn('Imgur not configured, using base64 fallback');
-        return imageBase64; // Fallback - eBay may not accept this
-        
-    } catch (error) {
-        logger.error('Image upload error:', { error: error.message });
-        // Fallback to base64
-        return imageBase64;
+      );
+
+      if (response.data.success) {
+        return response.data.data.link;
+      }
     }
+
+    // Option 2: For now, return data URL (eBay may accept base64, but typically needs hosted URL)
+    // In production, implement proper image hosting
+    logger.warn('Imgur not configured, using base64 fallback');
+    return imageBase64; // Fallback - eBay may not accept this
+  } catch (error) {
+    logger.error('Image upload error:', { error: error.message });
+    // Fallback to base64
+    return imageBase64;
+  }
 }
 
 // eBay Posting Service
 async function postToEbay(listingData, images, userToken, ebayCategoryId = null) {
-    try {
-        const appId = process.env.EBAY_APP_ID;
-        const devId = process.env.EBAY_DEV_ID;
-        const certId = process.env.EBAY_CERT_ID;
-        const siteId = process.env.EBAY_SITE_ID || '3';
-        const sandbox = process.env.EBAY_SANDBOX === 'true';
-        
-        if (!appId || !userToken) {
-            throw new Error('eBay API credentials not configured');
-        }
+  try {
+    const appId = process.env.EBAY_APP_ID;
+    const devId = process.env.EBAY_DEV_ID;
+    const certId = process.env.EBAY_CERT_ID;
+    const siteId = process.env.EBAY_SITE_ID || '3';
+    const sandbox = process.env.EBAY_SANDBOX === 'true';
 
-        // Upload images to hosting
-        const imageUrls = [];
-        for (const image of images) {
-            const url = await uploadImageToHosting(image);
-            imageUrls.push(url);
-        }
+    if (!appId || !userToken) {
+      throw new Error('eBay API credentials not configured');
+    }
 
-        // Map condition to eBay condition ID
-        const conditionMap = {
-            'New with Tags': '1000',
-            'Like New': '2750',
-            'Excellent': '3000',
-            'Very Good': '4000',
-            'Good': '5000',
-            'Fair': '6000',
-            'Poor': '7000'
-        };
-        
-        const conditionId = conditionMap[listingData.condition] || '5000';
+    // Upload images to hosting
+    const imageUrls = [];
+    for (const image of images) {
+      const url = await uploadImageToHosting(image);
+      imageUrls.push(url);
+    }
 
-        // Map category to eBay category ID
-        // Note: This is a simplified mapping. For production, implement full eBay category API lookup
-        const categoryMap = {
-            'Clothing': '11450',
-            'Shoes': '11450',
-            'Electronics': '58058',
-            'Books': '267',
-            'Home & Garden': '11700',
-            'Toys & Games': '220',
-            'Sports': '888',
-            'Collectibles': '1'
-        };
-        
-        // Try to map category, fallback to provided categoryId or require user selection
-        let categoryId = categoryMap[listingData.category] || ebayCategoryId;
-        if (!categoryId) {
-            throw new Error('eBay category required. Please select a category or provide ebayCategoryId.');
-        }
+    // Map condition to eBay condition ID
+    const conditionMap = {
+      'New with Tags': '1000',
+      'Like New': '2750',
+      Excellent: '3000',
+      'Very Good': '4000',
+      Good: '5000',
+      Fair: '6000',
+      Poor: '7000',
+    };
 
-        // Extract price (remove £ symbol)
-        const price = listingData.price.replace(/[£,]/g, '').trim();
+    const conditionId = conditionMap[listingData.condition] || '5000';
 
-        // Build eBay XML request
-        const xml = `<?xml version="1.0" encoding="utf-8"?>
+    // Map category to eBay category ID
+    // Note: This is a simplified mapping. For production, implement full eBay category API lookup
+    const categoryMap = {
+      Clothing: '11450',
+      Shoes: '11450',
+      Electronics: '58058',
+      Books: '267',
+      'Home & Garden': '11700',
+      'Toys & Games': '220',
+      Sports: '888',
+      Collectibles: '1',
+    };
+
+    // Try to map category, fallback to provided categoryId or require user selection
+    const categoryId = categoryMap[listingData.category] || ebayCategoryId;
+    if (!categoryId) {
+      throw new Error(
+        'eBay category required. Please select a category or provide ebayCategoryId.'
+      );
+    }
+
+    // Extract price (remove £ symbol)
+    const price = listingData.price.replace(/[£,]/g, '').trim();
+
+    // Build eBay XML request
+    const xml = `<?xml version="1.0" encoding="utf-8"?>
 <AddItemRequest xmlns="urn:ebay:apis:eBLBaseComponents">
     <RequesterCredentials>
         <eBayAuthToken>${userToken}</eBayAuthToken>
@@ -1581,7 +1685,7 @@ async function postToEbay(listingData, images, userToken, ebayCategoryId = null)
         <Country>GB</Country>
         <Currency>GBP</Currency>
         <PictureDetails>
-            ${imageUrls.map(url => `<PictureURL>${url}</PictureURL>`).join('\n            ')}
+            ${imageUrls.map((url) => `<PictureURL>${url}</PictureURL>`).join('\n            ')}
         </PictureDetails>
         <ReturnPolicy>
             <ReturnsAcceptedOption>ReturnsAccepted</ReturnsAcceptedOption>
@@ -1602,59 +1706,60 @@ async function postToEbay(listingData, images, userToken, ebayCategoryId = null)
     </Item>
 </AddItemRequest>`;
 
-        // eBay Trading API endpoint
-        const endpoint = sandbox 
-            ? 'https://api.sandbox.ebay.com/ws/api.dll'
-            : 'https://api.ebay.com/ws/api.dll';
+    // eBay Trading API endpoint
+    const endpoint = sandbox
+      ? 'https://api.sandbox.ebay.com/ws/api.dll'
+      : 'https://api.ebay.com/ws/api.dll';
 
-        const response = await axios.post(endpoint, xml, {
-            headers: {
-                'X-EBAY-API-CALL-NAME': 'AddItem',
-                'X-EBAY-API-APP-NAME': appId,
-                'X-EBAY-API-DEV-NAME': devId,
-                'X-EBAY-API-CERT-NAME': certId,
-                'X-EBAY-API-SITEID': siteId,
-                'X-EBAY-API-COMPATIBILITY-LEVEL': '967',
-                'Content-Type': 'text/xml'
-            }
-        });
+    const response = await axios.post(endpoint, xml, {
+      headers: {
+        'X-EBAY-API-CALL-NAME': 'AddItem',
+        'X-EBAY-API-APP-NAME': appId,
+        'X-EBAY-API-DEV-NAME': devId,
+        'X-EBAY-API-CERT-NAME': certId,
+        'X-EBAY-API-SITEID': siteId,
+        'X-EBAY-API-COMPATIBILITY-LEVEL': '967',
+        'Content-Type': 'text/xml',
+      },
+    });
 
-        const responseText = response.data;
-        
-        // Parse XML response
-        const parser = new xml2js.Parser();
-        const result = await parser.parseStringPromise(responseText);
-        
-        const itemId = result.AddItemResponse?.[0]?.ItemID?.[0];
-        const errors = result.AddItemResponse?.[0]?.Errors;
-        
-        if (itemId) {
-            return {
-                success: true,
-                itemId: itemId,
-                url: `https://www.ebay.co.uk/itm/${itemId}`
-            };
-        } else if (errors && errors.length > 0) {
-            const errorMsg = errors[0].LongMessage?.[0] || errors[0].ShortMessage?.[0] || 'eBay posting failed';
-            throw new Error(errorMsg);
-        } else {
-            throw new Error('eBay posting failed - no item ID returned');
-        }
-    } catch (error) {
-        logger.error('eBay posting error:', { error: error.message });
-        throw error;
+    const responseText = response.data;
+
+    // Parse XML response
+    const parser = new xml2js.Parser();
+    const result = await parser.parseStringPromise(responseText);
+
+    const itemId = result.AddItemResponse?.[0]?.ItemID?.[0];
+    const errors = result.AddItemResponse?.[0]?.Errors;
+
+    if (itemId) {
+      return {
+        success: true,
+        itemId: itemId,
+        url: `https://www.ebay.co.uk/itm/${itemId}`,
+      };
+    } else if (errors && errors.length > 0) {
+      const errorMsg =
+        errors[0].LongMessage?.[0] || errors[0].ShortMessage?.[0] || 'eBay posting failed';
+      throw new Error(errorMsg);
+    } else {
+      throw new Error('eBay posting failed - no item ID returned');
     }
+  } catch (error) {
+    logger.error('eBay posting error:', { error: error.message });
+    throw error;
+  }
 }
 
 // Phase 4: Stock Image Finder - Find official manufacturer product images
 async function findStockImage(listing, apiKey) {
-    try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-        
-        // Build search query from identified product
-        const searchQuery = `${listing.brand} ${listing.title}`.trim();
-        
-        const stockImagePrompt = `Using Google Search, find a direct URL to an official manufacturer stock product image.
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    // Build search query from identified product
+    const searchQuery = `${listing.brand} ${listing.title}`.trim();
+
+    const stockImagePrompt = `Using Google Search, find a direct URL to an official manufacturer stock product image.
 
 **Search Query:**
 Product: '${listing.title}'
@@ -1708,102 +1813,109 @@ ${listing.modelCodes && listing.modelCodes.length > 0 ? `Model Code: ${listing.m
 - Include up to 2 alternative URLs if primary not found
 - Confidence HIGH if from official brand site, MEDIUM if from retailer, LOW if from third party`;
 
-        logger.info('Phase 4: Finding stock image:', { searchQuery });
+    logger.info('Phase 4: Finding stock image:', { searchQuery });
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: stockImagePrompt }]
-                }],
-                tools: [{
-                    googleSearch: {}
-                }],
-                generationConfig: {
-                    temperature: 0.1, // Low temperature for precise URL extraction
-                    topP: 0.8,
-                    topK: 20,
-                    maxOutputTokens: 512
-                }
-            })
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: stockImagePrompt }],
+          },
+        ],
+        tools: [
+          {
+            googleSearch: {},
+          },
+        ],
+        generationConfig: {
+          temperature: 0.1, // Low temperature for precise URL extraction
+          topP: 0.8,
+          topK: 20,
+          maxOutputTokens: 512,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Stock image API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const text = data.candidates[0].content.parts[0].text;
+
+    // Extract JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const result = JSON.parse(jsonMatch[0]);
+
+      // Extract URLs from Google Search grounding if available
+      const groundingMetadata = data.candidates[0]?.groundingMetadata;
+      if (groundingMetadata?.groundingChunks) {
+        const imageUrls = [];
+        groundingMetadata.groundingChunks.forEach((chunk) => {
+          if (chunk.web?.uri) {
+            // Check if URL is a direct image link
+            const url = chunk.web.uri;
+            if (/\.(jpg|jpeg|png|webp)(\?|$)/i.test(url)) {
+              imageUrls.push(url);
+            } else if (url.includes('image') || url.includes('product')) {
+              // Could be a product page - note it but don't use directly
+              if (!result.stockImageUrl && imageUrls.length === 0) {
+                result.pageUrl = url; // Store page URL as fallback
+              }
+            }
+          }
         });
 
-        if (!response.ok) {
-            throw new Error(`Stock image API request failed: ${response.status}`);
+        // Use first image URL from grounding if we found one
+        if (imageUrls.length > 0 && !result.stockImageUrl) {
+          result.stockImageUrl = imageUrls[0];
+          result.source = 'Google Search';
+          result.confidence = 'MEDIUM';
         }
+      }
 
-        const data = await response.json();
-        const text = data.candidates[0].content.parts[0].text;
-        
-        // Extract JSON from response
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const result = JSON.parse(jsonMatch[0]);
-            
-            // Extract URLs from Google Search grounding if available
-            const groundingMetadata = data.candidates[0]?.groundingMetadata;
-            if (groundingMetadata?.groundingChunks) {
-                const imageUrls = [];
-                groundingMetadata.groundingChunks.forEach(chunk => {
-                    if (chunk.web?.uri) {
-                        // Check if URL is a direct image link
-                        const url = chunk.web.uri;
-                        if (/\.(jpg|jpeg|png|webp)(\?|$)/i.test(url)) {
-                            imageUrls.push(url);
-                        } else if (url.includes('image') || url.includes('product')) {
-                            // Could be a product page - note it but don't use directly
-                            if (!result.stockImageUrl && imageUrls.length === 0) {
-                                result.pageUrl = url; // Store page URL as fallback
-                            }
-                        }
-                    }
-                });
-                
-                // Use first image URL from grounding if we found one
-                if (imageUrls.length > 0 && !result.stockImageUrl) {
-                    result.stockImageUrl = imageUrls[0];
-                    result.source = 'Google Search';
-                    result.confidence = 'MEDIUM';
-                }
-            }
-            
-            logger.info('Stock image found:', { found: !!result.stockImageUrl, confidence: result.confidence });
-            return result;
-        } else {
-            logger.warn('No JSON found in stock image response');
-            return {
-                stockImageUrl: null,
-                source: null,
-                confidence: 'LOW',
-                alternatives: []
-            };
-        }
-    } catch (error) {
-        logger.error('Stock image search error:', { error: error.message });
-        return {
-            stockImageUrl: null,
-            source: null,
-            confidence: 'LOW',
-            alternatives: []
-        };
+      logger.info('Stock image found:', {
+        found: !!result.stockImageUrl,
+        confidence: result.confidence,
+      });
+      return result;
+    } else {
+      logger.warn('No JSON found in stock image response');
+      return {
+        stockImageUrl: null,
+        source: null,
+        confidence: 'LOW',
+        alternatives: [],
+      };
     }
+  } catch (error) {
+    logger.error('Stock image search error:', { error: error.message });
+    return {
+      stockImageUrl: null,
+      source: null,
+      confidence: 'LOW',
+      alternatives: [],
+    };
+  }
 }
 
 // Phase 3: Google Cloud Vision API - Visual product recognition
 async function recognizeProductWithVision(images, apiKey) {
-    try {
-        // Use Google Cloud Vision API for product recognition
-        // Note: This requires GOOGLE_VISION_API_KEY in .env (different from Gemini API key)
-        const visionApiKey = process.env.GOOGLE_VISION_API_KEY || apiKey; // Fallback to Gemini key if Vision key not set
-        
-        // For now, we'll use Gemini Vision with a specialized recognition prompt
-        // In production, you'd use actual Google Cloud Vision API
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-        
-        const visionPrompt = `You are a specialized product recognition system using Google Vision capabilities. Analyze the product images to identify the exact product model, product line, and visual features.
+  try {
+    // Use Google Cloud Vision API for product recognition
+    // Note: This requires GOOGLE_VISION_API_KEY in .env (different from Gemini API key)
+    const visionApiKey = process.env.GOOGLE_VISION_API_KEY || apiKey; // Fallback to Gemini key if Vision key not set
+
+    // For now, we'll use Gemini Vision with a specialized recognition prompt
+    // In production, you'd use actual Google Cloud Vision API
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    const visionPrompt = `You are a specialized product recognition system using Google Vision capabilities. Analyze the product images to identify the exact product model, product line, and visual features.
 
 **CRITICAL INSTRUCTIONS:**
 1. Identify the product from VISUAL features (design, logos, patterns, materials, construction)
@@ -1833,89 +1945,93 @@ async function recognizeProductWithVision(images, apiKey) {
 
 Return ONLY the JSON object. No markdown, no explanation, no other text.`;
 
-        // Use the first image for visual recognition (or combine multiple)
-        const parts = [
-            { text: visionPrompt },
-            ...images.slice(0, 2).map(img => ({
-                inline_data: {
-                    mime_type: 'image/jpeg',
-                    data: img.split(',')[1]
-                }
-            }))
-        ];
+    // Use the first image for visual recognition (or combine multiple)
+    const parts = [
+      { text: visionPrompt },
+      ...images.slice(0, 2).map((img) => ({
+        inline_data: {
+          mime_type: 'image/jpeg',
+          data: img.split(',')[1],
+        },
+      })),
+    ];
 
-        logger.info('Phase 3: Google Vision product recognition:', { imageCount: Math.min(images.length, 2) });
+    logger.info('Phase 3: Google Vision product recognition:', {
+      imageCount: Math.min(images.length, 2),
+    });
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: parts
-                }],
-                generationConfig: {
-                    temperature: 0.2, // Low temperature for accurate recognition
-                    topP: 0.85,
-                    topK: 30,
-                    maxOutputTokens: 1024
-                }
-            })
-        });
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: parts,
+          },
+        ],
+        generationConfig: {
+          temperature: 0.2, // Low temperature for accurate recognition
+          topP: 0.85,
+          topK: 30,
+          maxOutputTokens: 1024,
+        },
+      }),
+    });
 
-        if (!response.ok) {
-            throw new Error(`Vision API request failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const text = data.candidates[0].content.parts[0].text;
-        
-        // Extract JSON from response
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const recognized = JSON.parse(jsonMatch[0]);
-            logger.info('Vision recognition complete:', {
-                visualBrand: recognized.visualBrand,
-                productLine: recognized.productLine,
-                confidence: recognized.confidence
-            });
-            return recognized;
-        } else {
-            logger.warn('No JSON found in vision response, falling back to empty structure');
-            return {
-                visualBrand: null,
-                productLine: null,
-                modelName: null,
-                visualFeatures: [],
-                logoMatches: [],
-                designElements: [],
-                confidence: 'LOW',
-                productMatch: null
-            };
-        }
-    } catch (error) {
-        logger.error('Vision recognition error:', { error: error.message });
-        // Return empty structure on error
-        return {
-            visualBrand: null,
-            productLine: null,
-            modelName: null,
-            visualFeatures: [],
-            logoMatches: [],
-            designElements: [],
-            confidence: 'LOW',
-            productMatch: null
-        };
+    if (!response.ok) {
+      throw new Error(`Vision API request failed: ${response.status}`);
     }
+
+    const data = await response.json();
+    const text = data.candidates[0].content.parts[0].text;
+
+    // Extract JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const recognized = JSON.parse(jsonMatch[0]);
+      logger.info('Vision recognition complete:', {
+        visualBrand: recognized.visualBrand,
+        productLine: recognized.productLine,
+        confidence: recognized.confidence,
+      });
+      return recognized;
+    } else {
+      logger.warn('No JSON found in vision response, falling back to empty structure');
+      return {
+        visualBrand: null,
+        productLine: null,
+        modelName: null,
+        visualFeatures: [],
+        logoMatches: [],
+        designElements: [],
+        confidence: 'LOW',
+        productMatch: null,
+      };
+    }
+  } catch (error) {
+    logger.error('Vision recognition error:', { error: error.message });
+    // Return empty structure on error
+    return {
+      visualBrand: null,
+      productLine: null,
+      modelName: null,
+      visualFeatures: [],
+      logoMatches: [],
+      designElements: [],
+      confidence: 'LOW',
+      productMatch: null,
+    };
+  }
 }
 
 // Intensive parsing engine - Extract ALL codes and text from images FIRST
 async function parseProductCodes(images, apiKey) {
-    try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-        
-        const parsingPrompt = `You are a specialized OCR and code extraction system. Your ONLY job is to extract ALL visible text, codes, and identifiers from product tags and labels.
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    const parsingPrompt = `You are a specialized OCR and code extraction system. Your ONLY job is to extract ALL visible text, codes, and identifiers from product tags and labels.
 
 **CRITICAL INSTRUCTIONS:**
 1. Read EVERY line of text on EVERY tag/label in ALL images
@@ -1951,88 +2067,90 @@ async function parseProductCodes(images, apiKey) {
 
 Return ONLY the JSON object. No markdown, no explanation, no other text.`;
 
-        const parts = [
-            { text: parsingPrompt },
-            ...images.map(img => ({
-                inline_data: {
-                    mime_type: 'image/jpeg',
-                    data: img.split(',')[1]
-                }
-            }))
-        ];
+    const parts = [
+      { text: parsingPrompt },
+      ...images.map((img) => ({
+        inline_data: {
+          mime_type: 'image/jpeg',
+          data: img.split(',')[1],
+        },
+      })),
+    ];
 
-        logger.info('Phase 1: Intensive code parsing:', { imageCount: images.length });
+    logger.info('Phase 1: Intensive code parsing:', { imageCount: images.length });
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: parts
-                }],
-                generationConfig: {
-                    temperature: 0.1, // Low temperature for precise extraction
-                    topP: 0.8,
-                    topK: 20,
-                    maxOutputTokens: 1024
-                }
-            })
-        });
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: parts,
+          },
+        ],
+        generationConfig: {
+          temperature: 0.1, // Low temperature for precise extraction
+          topP: 0.8,
+          topK: 20,
+          maxOutputTokens: 1024,
+        },
+      }),
+    });
 
-        if (!response.ok) {
-            throw new Error(`Parsing API request failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const text = data.candidates[0].content.parts[0].text;
-        
-        // Extract JSON from response
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            logger.info('Parsed codes:', {
-                brand: parsed.brand,
-                modelCodes: parsed.modelCodes?.length || 0,
-                styleCodes: parsed.styleCodes?.length || 0,
-                skuNumbers: parsed.skuNumbers?.length || 0,
-                size: parsed.size
-            });
-            return parsed;
-        } else {
-            logger.warn('No JSON found in parsing response, falling back to empty structure');
-            return {
-                brand: null,
-                modelCodes: [],
-                styleCodes: [],
-                skuNumbers: [],
-                size: null,
-                allText: [],
-                tagLocations: []
-            };
-        }
-    } catch (error) {
-        logger.error('Code parsing error:', { error: error.message });
-        // Return empty structure on error - main AI will still work
-        return {
-            brand: null,
-            modelCodes: [],
-            styleCodes: [],
-            skuNumbers: [],
-            size: null,
-            allText: [],
-            tagLocations: []
-        };
+    if (!response.ok) {
+      throw new Error(`Parsing API request failed: ${response.status}`);
     }
+
+    const data = await response.json();
+    const text = data.candidates[0].content.parts[0].text;
+
+    // Extract JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      logger.info('Parsed codes:', {
+        brand: parsed.brand,
+        modelCodes: parsed.modelCodes?.length || 0,
+        styleCodes: parsed.styleCodes?.length || 0,
+        skuNumbers: parsed.skuNumbers?.length || 0,
+        size: parsed.size,
+      });
+      return parsed;
+    } else {
+      logger.warn('No JSON found in parsing response, falling back to empty structure');
+      return {
+        brand: null,
+        modelCodes: [],
+        styleCodes: [],
+        skuNumbers: [],
+        size: null,
+        allText: [],
+        tagLocations: [],
+      };
+    }
+  } catch (error) {
+    logger.error('Code parsing error:', { error: error.message });
+    // Return empty structure on error - main AI will still work
+    return {
+      brand: null,
+      modelCodes: [],
+      styleCodes: [],
+      skuNumbers: [],
+      size: null,
+      allText: [],
+      tagLocations: [],
+    };
+  }
 }
 
 // Feature 3: Image Quality Scoring - Analyze image quality for marketplace listings
 async function analyzeImageQuality(imageBase64, apiKey) {
-    try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-        const qualityPrompt = `Analyze this product image for marketplace listing quality AND condition/damage.
+    const qualityPrompt = `Analyze this product image for marketplace listing quality AND condition/damage.
 
 **PART 1: IMAGE QUALITY**
 Evaluate on these criteria (score 0-10 for each):
@@ -2116,131 +2234,135 @@ Return JSON:
 
 Return ONLY the JSON object. No markdown, no explanation, no other text.`;
 
-        const parts = [
-            { text: qualityPrompt },
-            {
-                inline_data: {
-                    mime_type: 'image/jpeg',
-                    data: imageBase64.split(',')[1]
-                }
-            }
-        ];
+    const parts = [
+      { text: qualityPrompt },
+      {
+        inline_data: {
+          mime_type: 'image/jpeg',
+          data: imageBase64.split(',')[1],
+        },
+      },
+    ];
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: parts
-                }],
-                generationConfig: {
-                    temperature: 0.2, // Low temperature for consistent scoring
-                    topP: 0.8,
-                    topK: 20,
-                    maxOutputTokens: 1024
-                }
-            })
-        });
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: parts,
+          },
+        ],
+        generationConfig: {
+          temperature: 0.2, // Low temperature for consistent scoring
+          topP: 0.8,
+          topK: 20,
+          maxOutputTokens: 1024,
+        },
+      }),
+    });
 
-        if (!response.ok) {
-            throw new Error(`Quality analysis API request failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const text = data.candidates[0].content.parts[0].text;
-
-        // Extract JSON from response
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const qualityData = JSON.parse(jsonMatch[0]);
-
-            // Calculate overall score if not provided
-            if (!qualityData.overallScore) {
-                const scores = [
-                    qualityData.sharpness || 0,
-                    qualityData.lighting || 0,
-                    qualityData.background || 0,
-                    qualityData.composition || 0,
-                    qualityData.angle || 0
-                ];
-                qualityData.overallScore = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10);
-            }
-
-            // Set minimum quality threshold
-            qualityData.passesMinimumQuality = qualityData.overallScore >= 60;
-
-            logger.info('Image quality analysis complete:', {
-                overallScore: qualityData.overallScore,
-                passesMinimumQuality: qualityData.passesMinimumQuality,
-                criticalIssues: qualityData.criticalIssues?.length || 0
-            });
-
-            return qualityData;
-        } else {
-            logger.warn('No JSON found in quality analysis response');
-            return {
-                overallScore: 70,
-                sharpness: 7,
-                lighting: 7,
-                background: 7,
-                composition: 7,
-                angle: 7,
-                criticalIssues: [],
-                recommendations: [],
-                passesMinimumQuality: true,
-                condition: {
-                    overall: "Good",
-                    hasDamage: false,
-                    wearLevel: "Minimal",
-                    defects: [],
-                    conditionSummary: "Unable to fully assess condition from this image."
-                }
-            };
-        }
-    } catch (error) {
-        logger.error('Image quality analysis error:', { error: error.message });
-        // Return default passing score on error - don't block listing generation
-        return {
-            overallScore: 70,
-            sharpness: 7,
-            lighting: 7,
-            background: 7,
-            composition: 7,
-            angle: 7,
-            criticalIssues: [],
-            recommendations: [],
-            passesMinimumQuality: true,
-            condition: {
-                overall: "Good",
-                hasDamage: false,
-                wearLevel: "Minimal",
-                defects: [],
-                conditionSummary: "Unable to fully assess condition from this image."
-            },
-            error: error.message
-        };
+    if (!response.ok) {
+      throw new Error(`Quality analysis API request failed: ${response.status}`);
     }
+
+    const data = await response.json();
+    const text = data.candidates[0].content.parts[0].text;
+
+    // Extract JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const qualityData = JSON.parse(jsonMatch[0]);
+
+      // Calculate overall score if not provided
+      if (!qualityData.overallScore) {
+        const scores = [
+          qualityData.sharpness || 0,
+          qualityData.lighting || 0,
+          qualityData.background || 0,
+          qualityData.composition || 0,
+          qualityData.angle || 0,
+        ];
+        qualityData.overallScore = Math.round(
+          (scores.reduce((a, b) => a + b, 0) / scores.length) * 10
+        );
+      }
+
+      // Set minimum quality threshold
+      qualityData.passesMinimumQuality = qualityData.overallScore >= 60;
+
+      logger.info('Image quality analysis complete:', {
+        overallScore: qualityData.overallScore,
+        passesMinimumQuality: qualityData.passesMinimumQuality,
+        criticalIssues: qualityData.criticalIssues?.length || 0,
+      });
+
+      return qualityData;
+    } else {
+      logger.warn('No JSON found in quality analysis response');
+      return {
+        overallScore: 70,
+        sharpness: 7,
+        lighting: 7,
+        background: 7,
+        composition: 7,
+        angle: 7,
+        criticalIssues: [],
+        recommendations: [],
+        passesMinimumQuality: true,
+        condition: {
+          overall: 'Good',
+          hasDamage: false,
+          wearLevel: 'Minimal',
+          defects: [],
+          conditionSummary: 'Unable to fully assess condition from this image.',
+        },
+      };
+    }
+  } catch (error) {
+    logger.error('Image quality analysis error:', { error: error.message });
+    // Return default passing score on error - don't block listing generation
+    return {
+      overallScore: 70,
+      sharpness: 7,
+      lighting: 7,
+      background: 7,
+      composition: 7,
+      angle: 7,
+      criticalIssues: [],
+      recommendations: [],
+      passesMinimumQuality: true,
+      condition: {
+        overall: 'Good',
+        hasDamage: false,
+        wearLevel: 'Minimal',
+        defects: [],
+        conditionSummary: 'Unable to fully assess condition from this image.',
+      },
+      error: error.message,
+    };
+  }
 }
 
 // API endpoint for image quality analysis
 app.post('/api/analyze-image-quality', authenticateToken, async (req, res) => {
-    try {
-        const { image } = req.body;
+  try {
+    const { image } = req.body;
 
-        if (!image || typeof image !== 'string' || !image.startsWith('data:image')) {
-            return res.status(400).json({ error: 'Valid image required' });
-        }
-
-        const apiKey = process.env.GEMINI_API_KEY;
-        const quality = await analyzeImageQuality(image, apiKey);
-
-        res.json(quality);
-    } catch (error) {
-        logger.error('Image quality analysis endpoint error:', error);
-        res.status(500).json({ error: 'Failed to analyze image quality' });
+    if (!image || typeof image !== 'string' || !image.startsWith('data:image')) {
+      return res.status(400).json({ error: 'Valid image required' });
     }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    const quality = await analyzeImageQuality(image, apiKey);
+
+    res.json(quality);
+  } catch (error) {
+    logger.error('Image quality analysis endpoint error:', error);
+    res.status(500).json({ error: 'Failed to analyze image quality' });
+  }
 });
 
 // Feature 4: eBay Pricing Intelligence
@@ -2250,44 +2372,44 @@ const eBayConstants = require('ebay-api');
 
 // eBay configuration object (no direct client initialization needed)
 const ebayConfig = {
-    appId: process.env.EBAY_APP_ID,
-    certId: process.env.EBAY_CERT_ID,
-    devId: process.env.EBAY_DEV_ID,
-    authToken: process.env.EBAY_AUTH_TOKEN,
-    sandbox: process.env.EBAY_SANDBOX === 'true',
-    siteId: process.env.EBAY_SITE_ID || '3'
+  appId: process.env.EBAY_APP_ID,
+  certId: process.env.EBAY_CERT_ID,
+  devId: process.env.EBAY_DEV_ID,
+  authToken: process.env.EBAY_AUTH_TOKEN,
+  sandbox: process.env.EBAY_SANDBOX === 'true',
+  siteId: process.env.EBAY_SITE_ID || '3',
 };
 
 // Helper functions for pricing calculations
 function calculateAverage(arr) {
-    return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+  return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 }
 
 function calculateMedian(arr) {
-    if (!arr.length) return 0;
-    const sorted = [...arr].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  if (!arr.length) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
 function calculatePercentile(arr, percentile) {
-    if (!arr.length) return 0;
-    const sorted = [...arr].sort((a, b) => a - b);
-    const index = Math.ceil((percentile / 100) * sorted.length) - 1;
-    return sorted[index];
+  if (!arr.length) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const index = Math.ceil((percentile / 100) * sorted.length) - 1;
+  return sorted[index];
 }
 
 function calculateDistribution(prices) {
-    const buckets = [0, 10, 20, 30, 40, 50, 75, 100, 150, 200, 300, 500, 1000];
-    const distribution = {};
+  const buckets = [0, 10, 20, 30, 40, 50, 75, 100, 150, 200, 300, 500, 1000];
+  const distribution = {};
 
-    buckets.forEach((bucket, i) => {
-        const next = buckets[i + 1] || Infinity;
-        const count = prices.filter(p => p >= bucket && p < next).length;
-        distribution[`${bucket}-${next === Infinity ? '+' : next}`] = count;
-    });
+  buckets.forEach((bucket, i) => {
+    const next = buckets[i + 1] || Infinity;
+    const count = prices.filter((p) => p >= bucket && p < next).length;
+    distribution[`${bucket}-${next === Infinity ? '+' : next}`] = count;
+  });
 
-    return distribution;
+  return distribution;
 }
 
 // Note: The duplicate getEbayPricingIntelligence function has been removed
@@ -2295,309 +2417,331 @@ function calculateDistribution(prices) {
 
 // Feature 5: Predictive Pricing Engine
 function getConditionMultiplier(condition) {
-    const multipliers = {
-        'New': 1.0,
-        'Like New': 0.90,
-        'Excellent': 0.85,
-        'Very Good': 0.75,
-        'Good': 0.65,
-        'Fair': 0.50,
-        'Poor': 0.35
-    };
-    return multipliers[condition] || 0.70;
+  const multipliers = {
+    New: 1.0,
+    'Like New': 0.9,
+    Excellent: 0.85,
+    'Very Good': 0.75,
+    Good: 0.65,
+    Fair: 0.5,
+    Poor: 0.35,
+  };
+  return multipliers[condition] || 0.7;
 }
 
 async function predictOptimalPrice(listing, ebayData, imageQuality = 70) {
-    if (!ebayData || !ebayData.soldPrices) {
-        return null;
-    }
+  if (!ebayData || !ebayData.soldPrices) {
+    return null;
+  }
 
-    // Features for prediction
-    const features = {
-        soldCount: ebayData.soldCount,
-        unsoldCount: ebayData.unsoldCount,
-        sellThroughRate: ebayData.sellThroughRate,
-        medianSoldPrice: ebayData.soldPrices.median,
-        avgSoldPrice: ebayData.soldPrices.average,
-        priceSpread: ebayData.soldPrices.max - ebayData.soldPrices.min,
+  // Features for prediction
+  const features = {
+    soldCount: ebayData.soldCount,
+    unsoldCount: ebayData.unsoldCount,
+    sellThroughRate: ebayData.sellThroughRate,
+    medianSoldPrice: ebayData.soldPrices.median,
+    avgSoldPrice: ebayData.soldPrices.average,
+    priceSpread: ebayData.soldPrices.max - ebayData.soldPrices.min,
 
-        // Listing quality factors
-        imageQuality: imageQuality,
-        descriptionLength: listing.description?.length || 0,
-        keywordCount: listing.keywords?.length || 0,
+    // Listing quality factors
+    imageQuality: imageQuality,
+    descriptionLength: listing.description?.length || 0,
+    keywordCount: listing.keywords?.length || 0,
 
-        // Condition factor
-        conditionMultiplier: getConditionMultiplier(listing.condition)
-    };
+    // Condition factor
+    conditionMultiplier: getConditionMultiplier(listing.condition),
+  };
 
-    // Simple ML-based prediction (can be replaced with trained model later)
-    let predictedPrice = features.medianSoldPrice;
+  // Simple ML-based prediction (can be replaced with trained model later)
+  let predictedPrice = features.medianSoldPrice;
 
-    // Adjust based on condition
-    predictedPrice *= features.conditionMultiplier;
+  // Adjust based on condition
+  predictedPrice *= features.conditionMultiplier;
 
-    // Adjust based on listing quality (image quality affects price)
-    const qualityFactor = 0.9 + (features.imageQuality / 100) * 0.2; // 90% to 110% based on quality
-    predictedPrice *= qualityFactor;
+  // Adjust based on listing quality (image quality affects price)
+  const qualityFactor = 0.9 + (features.imageQuality / 100) * 0.2; // 90% to 110% based on quality
+  predictedPrice *= qualityFactor;
 
-    // Market demand adjustment
-    if (features.sellThroughRate > 0.7) {
-        predictedPrice *= 1.05; // High demand, can price higher
-    } else if (features.sellThroughRate < 0.3) {
-        predictedPrice *= 0.95; // Low demand, price competitively
-    }
+  // Market demand adjustment
+  if (features.sellThroughRate > 0.7) {
+    predictedPrice *= 1.05; // High demand, can price higher
+  } else if (features.sellThroughRate < 0.3) {
+    predictedPrice *= 0.95; // Low demand, price competitively
+  }
 
-    // Calculate confidence based on data quality
-    const confidence = Math.min(
-        (features.soldCount / 20) * 100, // More sold items = more confidence
-        100
-    );
+  // Calculate confidence based on data quality
+  const confidence = Math.min(
+    (features.soldCount / 20) * 100, // More sold items = more confidence
+    100
+  );
 
-    return {
-        recommendedPrice: Math.round(predictedPrice * 100) / 100,
-        priceRange: {
-            min: Math.round(predictedPrice * 0.85 * 100) / 100,
-            max: Math.round(predictedPrice * 1.15 * 100) / 100
-        },
-        confidence: Math.round(confidence),
-        reasoning: [
-            `Based on ${features.soldCount} sold listings`,
-            `Median sold price: £${features.medianSoldPrice.toFixed(2)}`,
-            `Sell-through rate: ${(features.sellThroughRate * 100).toFixed(0)}%`,
-            features.sellThroughRate > 0.7 ? 'High demand - premium pricing possible' :
-                features.sellThroughRate < 0.3 ? 'Low demand - competitive pricing recommended' :
-                'Moderate demand - balanced pricing recommended',
-            `Adjusted for ${listing.condition} condition (${(features.conditionMultiplier * 100).toFixed(0)}% of new)`,
-            `Image quality factor: ${((qualityFactor - 1) * 100).toFixed(0) >= 0 ? '+' : ''}${((qualityFactor - 1) * 100).toFixed(0)}%`
-        ],
-        marketInsights: {
-            demand: features.sellThroughRate > 0.7 ? 'HIGH' :
-                    features.sellThroughRate > 0.4 ? 'MEDIUM' : 'LOW',
-            competition: features.unsoldCount > features.soldCount ? 'HIGH' : 'MODERATE',
-            trend: 'STABLE', // Would require time-series data
-            recommendedAction: features.sellThroughRate > 0.6 ?
-                'List now - high demand' : 'Consider waiting or improving listing'
-        }
-    };
+  return {
+    recommendedPrice: Math.round(predictedPrice * 100) / 100,
+    priceRange: {
+      min: Math.round(predictedPrice * 0.85 * 100) / 100,
+      max: Math.round(predictedPrice * 1.15 * 100) / 100,
+    },
+    confidence: Math.round(confidence),
+    reasoning: [
+      `Based on ${features.soldCount} sold listings`,
+      `Median sold price: £${features.medianSoldPrice.toFixed(2)}`,
+      `Sell-through rate: ${(features.sellThroughRate * 100).toFixed(0)}%`,
+      features.sellThroughRate > 0.7
+        ? 'High demand - premium pricing possible'
+        : features.sellThroughRate < 0.3
+          ? 'Low demand - competitive pricing recommended'
+          : 'Moderate demand - balanced pricing recommended',
+      `Adjusted for ${listing.condition} condition (${(features.conditionMultiplier * 100).toFixed(0)}% of new)`,
+      `Image quality factor: ${((qualityFactor - 1) * 100).toFixed(0) >= 0 ? '+' : ''}${((qualityFactor - 1) * 100).toFixed(0)}%`,
+    ],
+    marketInsights: {
+      demand:
+        features.sellThroughRate > 0.7 ? 'HIGH' : features.sellThroughRate > 0.4 ? 'MEDIUM' : 'LOW',
+      competition: features.unsoldCount > features.soldCount ? 'HIGH' : 'MODERATE',
+      trend: 'STABLE', // Would require time-series data
+      recommendedAction:
+        features.sellThroughRate > 0.6
+          ? 'List now - high demand'
+          : 'Consider waiting or improving listing',
+    },
+  };
 }
 
 // Image quality analysis endpoint (for pre-upload feedback)
 app.post('/api/analyze-image-quality', authenticateToken, async (req, res) => {
-    try {
-        const { image } = req.body;
+  try {
+    const { image } = req.body;
 
-        if (!image || typeof image !== 'string' || !image.startsWith('data:image')) {
-            return res.status(400).json({ error: 'Invalid image format' });
-        }
-
-        // Validate image size (max 5MB)
-        const maxImageSize = 5 * 1024 * 1024;
-        const base64Size = (image.length * 3) / 4;
-        if (base64Size > maxImageSize) {
-            return res.status(400).json({ error: 'Image too large. Max 5MB per image' });
-        }
-
-        const apiKey = process.env.GEMINI_API_KEY;
-
-        // Analyze image quality and damage/condition
-        const qualityData = await analyzeImageQuality(image, apiKey);
-
-        logger.info('Image quality analysis complete', {
-            userId: req.user?.id,
-            overallScore: qualityData.overallScore,
-            passesMinimumQuality: qualityData.passesMinimumQuality
-        });
-
-        res.json(qualityData);
-    } catch (error) {
-        logger.error('Image quality analysis error:', {
-            userId: req.user?.id,
-            error: error.message
-        });
-        res.status(500).json({
-            error: 'Failed to analyze image quality',
-            details: error.message
-        });
+    if (!image || typeof image !== 'string' || !image.startsWith('data:image')) {
+      return res.status(400).json({ error: 'Invalid image format' });
     }
+
+    // Validate image size (max 5MB)
+    const maxImageSize = 5 * 1024 * 1024;
+    const base64Size = (image.length * 3) / 4;
+    if (base64Size > maxImageSize) {
+      return res.status(400).json({ error: 'Image too large. Max 5MB per image' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    // Analyze image quality and damage/condition
+    const qualityData = await analyzeImageQuality(image, apiKey);
+
+    logger.info('Image quality analysis complete', {
+      userId: req.user?.id,
+      overallScore: qualityData.overallScore,
+      passesMinimumQuality: qualityData.passesMinimumQuality,
+    });
+
+    res.json(qualityData);
+  } catch (error) {
+    logger.error('Image quality analysis error:', {
+      userId: req.user?.id,
+      error: error.message,
+    });
+    res.status(500).json({
+      error: 'Failed to analyze image quality',
+      details: error.message,
+    });
+  }
 });
 
 // AI generation endpoint
 app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) => {
-    const userId = req.user?.id; // Define at function scope for error logging
+  const userId = req.user?.id; // Define at function scope for error logging
+  try {
+    const { images, platform, hint, itemModel, conditionInfo } = req.body;
+
+    // Validate images
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ error: 'At least one image required' });
+    }
+
+    // Validate image count
+    if (images.length > 10) {
+      return res.status(400).json({ error: 'Maximum 10 images allowed' });
+    }
+
+    // Validate image sizes (max 5MB per image)
+    const maxImageSize = 5 * 1024 * 1024; // 5MB
+    for (const img of images) {
+      if (typeof img !== 'string' || !img.startsWith('data:image')) {
+        return res.status(400).json({ error: 'Invalid image format' });
+      }
+      // Approximate base64 size: (length * 3) / 4
+      const base64Size = (img.length * 3) / 4;
+      if (base64Size > maxImageSize) {
+        return res.status(400).json({ error: 'Image too large. Max 5MB per image' });
+      }
+    }
+
+    // Check usage limits before generation
+    const limit = await getPlanLimit(userId);
+    let currentUsage = 0;
+
     try {
-        const { images, platform, hint, itemModel, conditionInfo } = req.body;
+      const periodStart = new Date();
+      periodStart.setDate(1); // First day of month
+      const periodEnd = new Date(periodStart);
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
 
-        // Validate images
-        if (!images || !Array.isArray(images) || images.length === 0) {
-            return res.status(400).json({ error: 'At least one image required' });
-        }
-
-        // Validate image count
-        if (images.length > 10) {
-            return res.status(400).json({ error: 'Maximum 10 images allowed' });
-        }
-
-        // Validate image sizes (max 5MB per image)
-        const maxImageSize = 5 * 1024 * 1024; // 5MB
-        for (const img of images) {
-            if (typeof img !== 'string' || !img.startsWith('data:image')) {
-                return res.status(400).json({ error: 'Invalid image format' });
-            }
-            // Approximate base64 size: (length * 3) / 4
-            const base64Size = (img.length * 3) / 4;
-            if (base64Size > maxImageSize) {
-                return res.status(400).json({ error: 'Image too large. Max 5MB per image' });
-            }
-        }
-
-        // Check usage limits before generation
-        const limit = await getPlanLimit(userId);
-        let currentUsage = 0;
-
-        try {
-            const periodStart = new Date();
-            periodStart.setDate(1); // First day of month
-            const periodEnd = new Date(periodStart);
-            periodEnd.setMonth(periodEnd.getMonth() + 1);
-
-            const usageResult = await pool.query(
-                `SELECT ai_generations FROM usage_tracking
+      const usageResult = await pool.query(
+        `SELECT ai_generations FROM usage_tracking
                  WHERE user_id = $1 AND period_start >= $2 AND period_start < $3
                  ORDER BY period_start DESC LIMIT 1`,
-                [userId, periodStart, periodEnd]
-            );
-            currentUsage = usageResult.rows[0]?.ai_generations || 0;
+        [userId, periodStart, periodEnd]
+      );
+      currentUsage = usageResult.rows[0]?.ai_generations || 0;
 
-            if (currentUsage >= limit) {
-                return res.status(403).json({
-                    error: 'Plan limit exceeded',
-                    limit,
-                    currentUsage
-                });
-            }
-        } catch (error) {
-            // If usage_tracking table doesn't exist or column is missing, allow generation (treat as no usage)
-            if (error.code !== '42P01' && error.code !== '42703') { // 42P01 = relation does not exist, 42703 = column does not exist
-                logger.error('Usage check error:', { error: error.message, code: error.code, userId });
-                // Don't block generation on usage tracking errors
-            } else {
-                logger.warn('usage_tracking table or column not found, skipping usage check', { userId, errorCode: error.code });
-            }
-        }
-
-        const apiKey = process.env.GEMINI_API_KEY;
-        // Using Gemini 2.0 Flash (stable) - Best for OCR/label reading as of Nov 2025
-        // Research shows 2.0 Flash excels at text extraction from product labels
-        // Gemini 2.5 models have worse OCR quality vs 2.0 Flash for straightforward text extraction
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-        // PHASE 1, 3 & Quality: Run code parsing, vision recognition, and quality analysis IN PARALLEL for speed
-        logger.info('Starting parallel processing:', { userId, imageCount: images.length, platform });
-
-        // Analyze quality of all images in parallel
-        const qualityPromises = images.map(img => analyzeImageQuality(img, apiKey));
-
-        const [parsedCodes, visionRecognition, qualityAnalysis] = await Promise.all([
-            parseProductCodes(images, apiKey),
-            recognizeProductWithVision(images, apiKey),
-            Promise.all(qualityPromises)
-        ]);
-        logger.info('Parallel processing complete');
-
-        // Calculate overall quality score across all images
-        const avgQualityScore = qualityAnalysis.reduce((sum, q) => sum + (q.overallScore || 0), 0) / qualityAnalysis.length;
-        const criticalIssues = qualityAnalysis.flatMap(q => q.criticalIssues || []);
-        const allRecommendations = qualityAnalysis.flatMap(q => q.recommendations || []);
-
-        logger.info('Image quality summary:', {
-            avgScore: avgQualityScore,
-            criticalIssues: criticalIssues.length,
-            recommendations: allRecommendations.length
+      if (currentUsage >= limit) {
+        return res.status(403).json({
+          error: 'Plan limit exceeded',
+          limit,
+          currentUsage,
         });
-        
-        // Build structured code information for the main prompt
-        const codeInfo = [];
-        if (parsedCodes.modelCodes && parsedCodes.modelCodes.length > 0) {
-            codeInfo.push(`MODEL CODES (PRIMARY): ${parsedCodes.modelCodes.join(', ')}`);
-        }
-        if (parsedCodes.styleCodes && parsedCodes.styleCodes.length > 0) {
-            codeInfo.push(`STYLE CODES (SECONDARY): ${parsedCodes.styleCodes.join(', ')}`);
-        }
-        if (parsedCodes.skuNumbers && parsedCodes.skuNumbers.length > 0) {
-            codeInfo.push(`SKU NUMBERS: ${parsedCodes.skuNumbers.join(', ')}`);
-        }
-        if (parsedCodes.size) {
-            codeInfo.push(`SIZE: ${parsedCodes.size}`);
-        }
-        if (parsedCodes.allText && parsedCodes.allText.length > 0) {
-            codeInfo.push(`ALL TEXT FROM TAGS: ${parsedCodes.allText.join(' | ')}`);
-        }
-        
-        // Build vision recognition information
-        const visionInfo = [];
-        if (visionRecognition.visualBrand) {
-            visionInfo.push(`VISUAL BRAND: ${visionRecognition.visualBrand}`);
-        }
-        if (visionRecognition.productLine) {
-            visionInfo.push(`PRODUCT LINE (VISUAL): ${visionRecognition.productLine}`);
-        }
-        if (visionRecognition.modelName) {
-            visionInfo.push(`MODEL NAME (VISUAL): ${visionRecognition.modelName}`);
-        }
-        if (visionRecognition.visualFeatures && visionRecognition.visualFeatures.length > 0) {
-            visionInfo.push(`VISUAL FEATURES: ${visionRecognition.visualFeatures.join(', ')}`);
-        }
-        if (visionRecognition.logoMatches && visionRecognition.logoMatches.length > 0) {
-            visionInfo.push(`LOGOS VISIBLE: ${visionRecognition.logoMatches.join(', ')}`);
-        }
-        if (visionRecognition.designElements && visionRecognition.designElements.length > 0) {
-            visionInfo.push(`DESIGN ELEMENTS: ${visionRecognition.designElements.join(', ')}`);
-        }
-        if (visionRecognition.productMatch) {
-            visionInfo.push(`VISUAL PRODUCT MATCH: ${visionRecognition.productMatch}`);
-        }
-        visionInfo.push(`CONFIDENCE: ${visionRecognition.confidence}`);
-        
-        const extractedCodesSection = codeInfo.length > 0 
-            ? `\n**EXTRACTED CODES AND TEXT (FROM PHASE 1 - INTENSIVE PARSING):**\n${codeInfo.join('\n')}\n\n**CRITICAL**: The above codes were extracted from the tags. You MUST use these codes to identify the exact product:\n- Use MODEL CODES (CK0697-010 format) as PRIMARY identifier in Google Search\n- Use STYLE CODES (SP200710EAG format) as SECONDARY if model code doesn't work\n- Verify ALL codes match the product you identify\n- If codes are provided, you MUST identify the specific product line (e.g., Tech Fleece, not just "Jacket")\n`
-            : '\n**NOTE**: No codes were extracted in parsing phase. Read tags carefully and extract all codes yourself.\n';
-        
-        const visionSection = visionInfo.length > 0
-            ? `\n**VISUAL PRODUCT RECOGNITION (FROM PHASE 3 - GOOGLE VISION):**\n${visionInfo.join('\n')}\n\n**CRITICAL**: The above visual recognition was performed by Google Vision API:\n- Use VISUAL BRAND and PRODUCT LINE to validate/cross-reference with codes from Phase 1\n- If vision identifies "Tech Fleece" and codes match, you have HIGH confidence\n- If vision and codes conflict, prioritize codes (tags are more reliable)\n- Use visual features to enhance product description\n- Visual recognition helps identify product lines when codes are unclear\n`
-            : '\n**NOTE**: Visual recognition did not identify product clearly. Rely on code extraction.\n';
+      }
+    } catch (error) {
+      // If usage_tracking table doesn't exist or column is missing, allow generation (treat as no usage)
+      if (error.code !== '42P01' && error.code !== '42703') {
+        // 42P01 = relation does not exist, 42703 = column does not exist
+        logger.error('Usage check error:', { error: error.message, code: error.code, userId });
+        // Don't block generation on usage tracking errors
+      } else {
+        logger.warn('usage_tracking table or column not found, skipping usage check', {
+          userId,
+          errorCode: error.code,
+        });
+      }
+    }
 
-        // Build condition analysis section from quality analysis
-        const aiConditionAnalysis = [];
-        const conditionData = qualityAnalysis.filter(q => q.condition).map(q => q.condition);
-        if (conditionData.length > 0) {
-            // Find the most damaged/worst condition across all images
-            const worstCondition = conditionData.reduce((worst, curr) => {
-                const conditionRank = { 'New': 6, 'Like New': 5, 'Excellent': 4, 'Good': 3, 'Fair': 2, 'Poor': 1 };
-                return (conditionRank[curr.overall] || 3) < (conditionRank[worst.overall] || 3) ? curr : worst;
-            }, conditionData[0]);
+    const apiKey = process.env.GEMINI_API_KEY;
+    // Using Gemini 2.0 Flash (stable) - Best for OCR/label reading as of Nov 2025
+    // Research shows 2.0 Flash excels at text extraction from product labels
+    // Gemini 2.5 models have worse OCR quality vs 2.0 Flash for straightforward text extraction
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-            aiConditionAnalysis.push(`OVERALL CONDITION: ${worstCondition.overall}`);
-            aiConditionAnalysis.push(`WEAR LEVEL: ${worstCondition.wearLevel}`);
-            if (worstCondition.hasDamage && worstCondition.defects && worstCondition.defects.length > 0) {
-                aiConditionAnalysis.push(`VISIBLE DEFECTS:\n${worstCondition.defects.map(d => `  - ${d}`).join('\n')}`);
-            }
-            if (worstCondition.conditionSummary) {
-                aiConditionAnalysis.push(`CONDITION SUMMARY: ${worstCondition.conditionSummary}`);
-            }
-        }
+    // PHASE 1, 3 & Quality: Run code parsing, vision recognition, and quality analysis IN PARALLEL for speed
+    logger.info('Starting parallel processing:', { userId, imageCount: images.length, platform });
 
-        const conditionSection = aiConditionAnalysis.length > 0
-            ? `\n**PRODUCT CONDITION ANALYSIS (FROM AI INSPECTION):**\n${aiConditionAnalysis.join('\n')}\n\n**CRITICAL**: The above condition assessment was performed by AI analysis:\n- Use this information to accurately populate the "condition" field\n- Include all defects in the listing description\n- Be honest about condition - this builds buyer trust\n- If damage is present, describe it clearly and specifically\n`
-            : '';
+    // Analyze quality of all images in parallel
+    const qualityPromises = images.map((img) => analyzeImageQuality(img, apiKey));
 
-        // Improved system prompt v3.0 - See SYSTEM-PROMPTS.md for details
-        const itemModelHint = itemModel ? `\n🔴 **CRITICAL: USER-PROVIDED ITEM NAME/MODEL** 🔴\nThe user has specified the item as: "${itemModel}"\n\n**MANDATORY**:\n- Use this as your PRIMARY guide for product identification\n- Search for this exact model/name to find specifications\n- Cross-reference with visible codes and labels to find the exact variant\n- Include this model/name prominently in the title and description\n\n` : '';
+    const [parsedCodes, visionRecognition, qualityAnalysis] = await Promise.all([
+      parseProductCodes(images, apiKey),
+      recognizeProductWithVision(images, apiKey),
+      Promise.all(qualityPromises),
+    ]);
+    logger.info('Parallel processing complete');
 
-        const conditionHint = conditionInfo ? `\n🔴 **CRITICAL: USER-PROVIDED CONDITION INFO** 🔴\nThe user has specified: "${conditionInfo}"\n\n**MANDATORY**:\n- Include this information in the condition assessment\n- Detail this prominently in the Condition section\n- Be honest and specific about these condition details\n\n` : '';
+    // Calculate overall quality score across all images
+    const avgQualityScore =
+      qualityAnalysis.reduce((sum, q) => sum + (q.overallScore || 0), 0) / qualityAnalysis.length;
+    const criticalIssues = qualityAnalysis.flatMap((q) => q.criticalIssues || []);
+    const allRecommendations = qualityAnalysis.flatMap((q) => q.recommendations || []);
 
-        const userInfoHint = hint ? `\n🔴 **USER-PROVIDED ADDITIONAL INFO** 🔴\nAdditional user notes: "${hint}"\n\n**Include this information appropriately in your listing description**\n\n` : '';
+    logger.info('Image quality summary:', {
+      avgScore: avgQualityScore,
+      criticalIssues: criticalIssues.length,
+      recommendations: allRecommendations.length,
+    });
 
-        const prompt = `${itemModelHint}${conditionHint}${userInfoHint}${extractedCodesSection}${visionSection}${conditionSection}You are an expert e-commerce listing specialist for the UK resale market. Your PRIMARY goal is to accurately identify the item by reading ALL visible text and labels in ALL the images provided.
+    // Build structured code information for the main prompt
+    const codeInfo = [];
+    if (parsedCodes.modelCodes && parsedCodes.modelCodes.length > 0) {
+      codeInfo.push(`MODEL CODES (PRIMARY): ${parsedCodes.modelCodes.join(', ')}`);
+    }
+    if (parsedCodes.styleCodes && parsedCodes.styleCodes.length > 0) {
+      codeInfo.push(`STYLE CODES (SECONDARY): ${parsedCodes.styleCodes.join(', ')}`);
+    }
+    if (parsedCodes.skuNumbers && parsedCodes.skuNumbers.length > 0) {
+      codeInfo.push(`SKU NUMBERS: ${parsedCodes.skuNumbers.join(', ')}`);
+    }
+    if (parsedCodes.size) {
+      codeInfo.push(`SIZE: ${parsedCodes.size}`);
+    }
+    if (parsedCodes.allText && parsedCodes.allText.length > 0) {
+      codeInfo.push(`ALL TEXT FROM TAGS: ${parsedCodes.allText.join(' | ')}`);
+    }
+
+    // Build vision recognition information
+    const visionInfo = [];
+    if (visionRecognition.visualBrand) {
+      visionInfo.push(`VISUAL BRAND: ${visionRecognition.visualBrand}`);
+    }
+    if (visionRecognition.productLine) {
+      visionInfo.push(`PRODUCT LINE (VISUAL): ${visionRecognition.productLine}`);
+    }
+    if (visionRecognition.modelName) {
+      visionInfo.push(`MODEL NAME (VISUAL): ${visionRecognition.modelName}`);
+    }
+    if (visionRecognition.visualFeatures && visionRecognition.visualFeatures.length > 0) {
+      visionInfo.push(`VISUAL FEATURES: ${visionRecognition.visualFeatures.join(', ')}`);
+    }
+    if (visionRecognition.logoMatches && visionRecognition.logoMatches.length > 0) {
+      visionInfo.push(`LOGOS VISIBLE: ${visionRecognition.logoMatches.join(', ')}`);
+    }
+    if (visionRecognition.designElements && visionRecognition.designElements.length > 0) {
+      visionInfo.push(`DESIGN ELEMENTS: ${visionRecognition.designElements.join(', ')}`);
+    }
+    if (visionRecognition.productMatch) {
+      visionInfo.push(`VISUAL PRODUCT MATCH: ${visionRecognition.productMatch}`);
+    }
+    visionInfo.push(`CONFIDENCE: ${visionRecognition.confidence}`);
+
+    const extractedCodesSection =
+      codeInfo.length > 0
+        ? `\n**EXTRACTED CODES AND TEXT (FROM PHASE 1 - INTENSIVE PARSING):**\n${codeInfo.join('\n')}\n\n**CRITICAL**: The above codes were extracted from the tags. You MUST use these codes to identify the exact product:\n- Use MODEL CODES (CK0697-010 format) as PRIMARY identifier in Google Search\n- Use STYLE CODES (SP200710EAG format) as SECONDARY if model code doesn't work\n- Verify ALL codes match the product you identify\n- If codes are provided, you MUST identify the specific product line (e.g., Tech Fleece, not just "Jacket")\n`
+        : '\n**NOTE**: No codes were extracted in parsing phase. Read tags carefully and extract all codes yourself.\n';
+
+    const visionSection =
+      visionInfo.length > 0
+        ? `\n**VISUAL PRODUCT RECOGNITION (FROM PHASE 3 - GOOGLE VISION):**\n${visionInfo.join('\n')}\n\n**CRITICAL**: The above visual recognition was performed by Google Vision API:\n- Use VISUAL BRAND and PRODUCT LINE to validate/cross-reference with codes from Phase 1\n- If vision identifies "Tech Fleece" and codes match, you have HIGH confidence\n- If vision and codes conflict, prioritize codes (tags are more reliable)\n- Use visual features to enhance product description\n- Visual recognition helps identify product lines when codes are unclear\n`
+        : '\n**NOTE**: Visual recognition did not identify product clearly. Rely on code extraction.\n';
+
+    // Build condition analysis section from quality analysis
+    const aiConditionAnalysis = [];
+    const conditionData = qualityAnalysis.filter((q) => q.condition).map((q) => q.condition);
+    if (conditionData.length > 0) {
+      // Find the most damaged/worst condition across all images
+      const worstCondition = conditionData.reduce((worst, curr) => {
+        const conditionRank = { New: 6, 'Like New': 5, Excellent: 4, Good: 3, Fair: 2, Poor: 1 };
+        return (conditionRank[curr.overall] || 3) < (conditionRank[worst.overall] || 3)
+          ? curr
+          : worst;
+      }, conditionData[0]);
+
+      aiConditionAnalysis.push(`OVERALL CONDITION: ${worstCondition.overall}`);
+      aiConditionAnalysis.push(`WEAR LEVEL: ${worstCondition.wearLevel}`);
+      if (worstCondition.hasDamage && worstCondition.defects && worstCondition.defects.length > 0) {
+        aiConditionAnalysis.push(
+          `VISIBLE DEFECTS:\n${worstCondition.defects.map((d) => `  - ${d}`).join('\n')}`
+        );
+      }
+      if (worstCondition.conditionSummary) {
+        aiConditionAnalysis.push(`CONDITION SUMMARY: ${worstCondition.conditionSummary}`);
+      }
+    }
+
+    const conditionSection =
+      aiConditionAnalysis.length > 0
+        ? `\n**PRODUCT CONDITION ANALYSIS (FROM AI INSPECTION):**\n${aiConditionAnalysis.join('\n')}\n\n**CRITICAL**: The above condition assessment was performed by AI analysis:\n- Use this information to accurately populate the "condition" field\n- Include all defects in the listing description\n- Be honest about condition - this builds buyer trust\n- If damage is present, describe it clearly and specifically\n`
+        : '';
+
+    // Improved system prompt v3.0 - See SYSTEM-PROMPTS.md for details
+    const itemModelHint = itemModel
+      ? `\n🔴 **CRITICAL: USER-PROVIDED ITEM NAME/MODEL** 🔴\nThe user has specified the item as: "${itemModel}"\n\n**MANDATORY**:\n- Use this as your PRIMARY guide for product identification\n- Search for this exact model/name to find specifications\n- Cross-reference with visible codes and labels to find the exact variant\n- Include this model/name prominently in the title and description\n\n`
+      : '';
+
+    const conditionHint = conditionInfo
+      ? `\n🔴 **CRITICAL: USER-PROVIDED CONDITION INFO** 🔴\nThe user has specified: "${conditionInfo}"\n\n**MANDATORY**:\n- Include this information in the condition assessment\n- Detail this prominently in the Condition section\n- Be honest and specific about these condition details\n\n`
+      : '';
+
+    const userInfoHint = hint
+      ? `\n🔴 **USER-PROVIDED ADDITIONAL INFO** 🔴\nAdditional user notes: "${hint}"\n\n**Include this information appropriately in your listing description**\n\n`
+      : '';
+
+    const prompt = `${itemModelHint}${conditionHint}${userInfoHint}${extractedCodesSection}${visionSection}${conditionSection}You are an expert e-commerce listing specialist for the UK resale market. Your PRIMARY goal is to accurately identify the item by reading ALL visible text and labels in ALL the images provided.
 
 **THREE-PHASE IDENTIFICATION SYSTEM:**
 - **Phase 1 (Code Parsing)**: Extracted codes from tags - USE THESE AS PRIMARY IDENTIFIERS
@@ -2982,388 +3126,397 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
 - **INCLUDE PRODUCT LINE FEATURES**: Mention specific features of the product line (Tech Fleece fabric, Air cushioning, etc.)
 - **MENTION MODEL CODE**: Include the model code (CK0697-010) in the description, not just style codes`;
 
-        logger.info('Calling Gemini Vision API:', { platform, imageCount: images.length, userId });
+    logger.info('Calling Gemini Vision API:', { platform, imageCount: images.length, userId });
 
-        // Build parts array: prompt text + all images
-        const parts = [
-            { text: prompt },
-            ...images.map(img => ({
-                inline_data: {
-                    mime_type: 'image/jpeg',
-                    data: img.split(',')[1]
-                }
-            }))
-        ];
+    // Build parts array: prompt text + all images
+    const parts = [
+      { text: prompt },
+      ...images.map((img) => ({
+        inline_data: {
+          mime_type: 'image/jpeg',
+          data: img.split(',')[1],
+        },
+      })),
+    ];
 
-        // Enable Google Search grounding for real-time price research
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: parts
-                }],
-                tools: [{
-                    googleSearch: {}
-                }],
-                generationConfig: {
-                    temperature: 0.7,  // Increased for more creative, engaging descriptions while maintaining accuracy
-                    topP: 0.95,
-                    topK: 40,
-                    maxOutputTokens: 3072  // Increased to allow for longer, more detailed descriptions
-                }
-            })
-        });
+    // Enable Google Search grounding for real-time price research
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: parts,
+          },
+        ],
+        tools: [
+          {
+            googleSearch: {},
+          },
+        ],
+        generationConfig: {
+          temperature: 0.7, // Increased for more creative, engaging descriptions while maintaining accuracy
+          topP: 0.95,
+          topK: 40,
+          maxOutputTokens: 3072, // Increased to allow for longer, more detailed descriptions
+        },
+      }),
+    });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            logger.error('Gemini API error:', { status: response.status, error: errorData, userId });
-            throw new Error(`Gemini API request failed: ${response.status}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      logger.error('Gemini API error:', { status: response.status, error: errorData, userId });
+      throw new Error(`Gemini API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Check for safety blocks or other issues
+    if (!data.candidates || data.candidates.length === 0) {
+      logger.error('No candidates in Gemini response:', { data, userId });
+      throw new Error('No response from AI model');
+    }
+
+    const text = data.candidates[0].content.parts[0].text;
+    logger.info('Received response from Gemini:', { length: text.length, userId });
+
+    // Extract grounding metadata (Google Search sources)
+    const groundingMetadata = data.candidates[0]?.groundingMetadata;
+    const searchSources = [];
+
+    if (groundingMetadata?.webSearchQueries) {
+      logger.info('Google Search queries used:', {
+        queries: groundingMetadata.webSearchQueries,
+        userId,
+      });
+    }
+
+    if (groundingMetadata?.groundingChunks) {
+      groundingMetadata.groundingChunks.forEach((chunk) => {
+        if (chunk.web?.uri && chunk.web?.title) {
+          searchSources.push({
+            url: chunk.web.uri,
+            title: chunk.web.title,
+          });
         }
+      });
+      logger.info('Found research sources:', { count: searchSources.length, userId });
+    }
 
-        const data = await response.json();
+    // Extract JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const listing = JSON.parse(jsonMatch[0]);
 
-        // Check for safety blocks or other issues
-        if (!data.candidates || data.candidates.length === 0) {
-            logger.error('No candidates in Gemini response:', { data, userId });
-            throw new Error('No response from AI model');
+      // Merge AI-generated sources with grounding sources
+      if (searchSources.length > 0) {
+        listing.sources = [...searchSources, ...(listing.sources || [])];
+      }
+
+      // Determine confidence level
+      const confidence =
+        listing.confidence ||
+        (listing.alternatives && listing.alternatives.length > 0 ? 'MEDIUM' : 'HIGH');
+      listing.confidence = confidence;
+
+      // PHASE 4: Find stock image (runs after product identification)
+      let stockImageData = null;
+      if (listing.brand && listing.title) {
+        // Add model codes to listing for stock image search
+        listing.modelCodes = parsedCodes.modelCodes || [];
+        stockImageData = await findStockImage(listing, apiKey);
+        if (stockImageData && stockImageData.stockImageUrl) {
+          listing.stockImageUrl = stockImageData.stockImageUrl;
+          listing.stockImageSource = stockImageData.source;
+          listing.stockImageConfidence = stockImageData.confidence;
+          listing.stockImageAlternatives = stockImageData.alternatives || [];
         }
+      }
 
-        const text = data.candidates[0].content.parts[0].text;
-        logger.info('Received response from Gemini:', { length: text.length, userId });
+      // Get eBay pricing intelligence if platform is eBay (only for primary match)
+      let pricingIntelligence = null;
+      let predictedPrice = null;
+      if ((platform === 'ebay' || platform === 'all') && listing.brand && listing.title) {
+        logger.info('Fetching eBay pricing intelligence:', { userId });
+        pricingIntelligence = await getEbayPricingIntelligence(
+          listing.brand || '',
+          listing.title,
+          listing.category
+        );
 
-        // Extract grounding metadata (Google Search sources)
-        const groundingMetadata = data.candidates[0]?.groundingMetadata;
-        const searchSources = [];
+        if (pricingIntelligence) {
+          listing.pricingData = pricingIntelligence;
+          logger.info('Pricing intelligence retrieved:', {
+            avgPrice: pricingIntelligence.soldPrices?.average,
+            soldCount: pricingIntelligence.soldCount,
+            userId,
+          });
 
-        if (groundingMetadata?.webSearchQueries) {
-            logger.info('Google Search queries used:', { queries: groundingMetadata.webSearchQueries, userId });
+          // Feature 5: Predictive pricing based on eBay data and quality
+          predictedPrice = await predictOptimalPrice(
+            listing,
+            pricingIntelligence,
+            avgQualityScore // Use the average quality score from images
+          );
+
+          if (predictedPrice) {
+            // Override AI's price with data-driven prediction
+            listing.price = `£${predictedPrice.recommendedPrice}`;
+            listing.pricingConfidence = predictedPrice.confidence;
+            listing.pricingReasoning = predictedPrice.reasoning;
+            listing.marketInsights = predictedPrice.marketInsights;
+          }
         }
+      }
 
-        if (groundingMetadata?.groundingChunks) {
-            groundingMetadata.groundingChunks.forEach(chunk => {
-                if (chunk.web?.uri && chunk.web?.title) {
-                    searchSources.push({
-                        url: chunk.web.uri,
-                        title: chunk.web.title
-                    });
-                }
-            });
-            logger.info('Found research sources:', { count: searchSources.length, userId });
-        }
-
-        // Extract JSON from response
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const listing = JSON.parse(jsonMatch[0]);
-
-            // Merge AI-generated sources with grounding sources
-            if (searchSources.length > 0) {
-                listing.sources = [...searchSources, ...(listing.sources || [])];
-            }
-
-            // Determine confidence level
-            const confidence = listing.confidence || (listing.alternatives && listing.alternatives.length > 0 ? 'MEDIUM' : 'HIGH');
-            listing.confidence = confidence;
-
-            // PHASE 4: Find stock image (runs after product identification)
-            let stockImageData = null;
-            if (listing.brand && listing.title) {
-                // Add model codes to listing for stock image search
-                listing.modelCodes = parsedCodes.modelCodes || [];
-                stockImageData = await findStockImage(listing, apiKey);
-                if (stockImageData && stockImageData.stockImageUrl) {
-                    listing.stockImageUrl = stockImageData.stockImageUrl;
-                    listing.stockImageSource = stockImageData.source;
-                    listing.stockImageConfidence = stockImageData.confidence;
-                    listing.stockImageAlternatives = stockImageData.alternatives || [];
-                }
-            }
-
-            // Get eBay pricing intelligence if platform is eBay (only for primary match)
-            let pricingIntelligence = null;
-            let predictedPrice = null;
-            if ((platform === 'ebay' || platform === 'all') && listing.brand && listing.title) {
-                logger.info('Fetching eBay pricing intelligence:', { userId });
-                pricingIntelligence = await getEbayPricingIntelligence(
-                    listing.brand || '',
-                    listing.title,
-                    listing.category
-                );
-
-                if (pricingIntelligence) {
-                    listing.pricingData = pricingIntelligence;
-                    logger.info('Pricing intelligence retrieved:', {
-                        avgPrice: pricingIntelligence.soldPrices?.average,
-                        soldCount: pricingIntelligence.soldCount,
-                        userId
-                    });
-
-                    // Feature 5: Predictive pricing based on eBay data and quality
-                    predictedPrice = await predictOptimalPrice(
-                        listing,
-                        pricingIntelligence,
-                        avgQualityScore // Use the average quality score from images
-                    );
-
-                    if (predictedPrice) {
-                        // Override AI's price with data-driven prediction
-                        listing.price = `£${predictedPrice.recommendedPrice}`;
-                        listing.pricingConfidence = predictedPrice.confidence;
-                        listing.pricingReasoning = predictedPrice.reasoning;
-                        listing.marketInsights = predictedPrice.marketInsights;
-                    }
-                }
-            }
-
-            // Track usage after successful generation
-            try {
-                await safeQuery(
-                    `INSERT INTO usage_tracking (user_id, period_start, period_end, ai_generations, listings_created)
+      // Track usage after successful generation
+      try {
+        await safeQuery(
+          `INSERT INTO usage_tracking (user_id, period_start, period_end, ai_generations, listings_created)
                      VALUES ($1, DATE_TRUNC('month', CURRENT_DATE), DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month', 1, 0)
                      ON CONFLICT (user_id, period_start) 
                      DO UPDATE SET ai_generations = usage_tracking.ai_generations + 1`,
-                    [userId]
-                );
-            } catch (usageError) {
-                logger.warn('Usage tracking failed:', { error: usageError.message, userId });
-            }
+          [userId]
+        );
+      } catch (usageError) {
+        logger.warn('Usage tracking failed:', { error: usageError.message, userId });
+      }
 
-            logger.info('Successfully generated listing:', { 
-                title: listing.title, 
-                confidence, 
-                alternatives: listing.alternatives?.length || 0,
-                userId 
-            });
+      logger.info('Successfully generated listing:', {
+        title: listing.title,
+        confidence,
+        alternatives: listing.alternatives?.length || 0,
+        userId,
+      });
 
-            res.json({
-                listing,
-                pricingIntelligence,
-                predictedPrice,
-                stockImageData,
-                imageQuality: {
-                    averageScore: avgQualityScore,
-                    individualScores: qualityAnalysis,
-                    criticalIssues,
-                    recommendations: allRecommendations,
-                    passesMinimumQuality: avgQualityScore >= 60
-                },
-                requiresUserSelection: confidence !== 'HIGH' && listing.alternatives && listing.alternatives.length > 0
-            });
-        } else {
-            logger.error('No JSON found in Gemini response:', { textPreview: text.substring(0, 500), userId });
-            throw new Error('Failed to parse API response - no JSON found');
-        }
-    } catch (error) {
-        logger.error('Generate listing error:', { error: error.message, requestId: req.id, userId });
-        res.status(500).json({
-            error: 'Failed to generate listing',
-            details: error.message
-        });
+      res.json({
+        listing,
+        pricingIntelligence,
+        predictedPrice,
+        stockImageData,
+        imageQuality: {
+          averageScore: avgQualityScore,
+          individualScores: qualityAnalysis,
+          criticalIssues,
+          recommendations: allRecommendations,
+          passesMinimumQuality: avgQualityScore >= 60,
+        },
+        requiresUserSelection:
+          confidence !== 'HIGH' && listing.alternatives && listing.alternatives.length > 0,
+      });
+    } else {
+      logger.error('No JSON found in Gemini response:', {
+        textPreview: text.substring(0, 500),
+        userId,
+      });
+      throw new Error('Failed to parse API response - no JSON found');
     }
+  } catch (error) {
+    logger.error('Generate listing error:', { error: error.message, requestId: req.id, userId });
+    res.status(500).json({
+      error: 'Failed to generate listing',
+      details: error.message,
+    });
+  }
 });
 
 // Barcode lookup endpoint
 app.post('/api/lookup-barcode', authenticateToken, async (req, res) => {
-    try {
-        const { barcode } = req.body;
-        const userId = req.user.id;
+  try {
+    const { barcode } = req.body;
+    const userId = req.user.id;
 
-        if (!barcode || typeof barcode !== 'string') {
-            return res.status(400).json({ error: 'Barcode required' });
-        }
-
-        // Validate barcode format (8-13 digits for UPC/EAN)
-        if (!/^\d{8,13}$/.test(barcode)) {
-            return res.status(400).json({ error: 'Invalid barcode format. Must be 8-13 digits' });
-        }
-
-        logger.info('Barcode lookup request:', { barcode, userId });
-
-        // Try UPC Database API (free tier - 100 requests/day)
-        let productData = await lookupUPCDatabase(barcode);
-
-        // If not found, try alternative sources
-        if (!productData.found) {
-            // Try Open Food Facts for food items (free, unlimited)
-            if (barcode.length === 13 || barcode.length === 8) {
-                productData = await lookupOpenFoodFacts(barcode);
-            }
-        }
-
-        if (productData.found) {
-            logger.info('Barcode product found:', { barcode, title: productData.title });
-        } else {
-            logger.info('Barcode product not found:', { barcode });
-        }
-
-        res.json(productData);
-
-    } catch (error) {
-        logger.error('Barcode lookup error:', { error: error.message, requestId: req.id });
-        res.status(500).json({
-            error: 'Barcode lookup failed',
-            found: false,
-            details: error.message
-        });
+    if (!barcode || typeof barcode !== 'string') {
+      return res.status(400).json({ error: 'Barcode required' });
     }
+
+    // Validate barcode format (8-13 digits for UPC/EAN)
+    if (!/^\d{8,13}$/.test(barcode)) {
+      return res.status(400).json({ error: 'Invalid barcode format. Must be 8-13 digits' });
+    }
+
+    logger.info('Barcode lookup request:', { barcode, userId });
+
+    // Try UPC Database API (free tier - 100 requests/day)
+    let productData = await lookupUPCDatabase(barcode);
+
+    // If not found, try alternative sources
+    if (!productData.found) {
+      // Try Open Food Facts for food items (free, unlimited)
+      if (barcode.length === 13 || barcode.length === 8) {
+        productData = await lookupOpenFoodFacts(barcode);
+      }
+    }
+
+    if (productData.found) {
+      logger.info('Barcode product found:', { barcode, title: productData.title });
+    } else {
+      logger.info('Barcode product not found:', { barcode });
+    }
+
+    res.json(productData);
+  } catch (error) {
+    logger.error('Barcode lookup error:', { error: error.message, requestId: req.id });
+    res.status(500).json({
+      error: 'Barcode lookup failed',
+      found: false,
+      details: error.message,
+    });
+  }
 });
 
 // Helper function: UPC Database API lookup
 async function lookupUPCDatabase(barcode) {
-    try {
-        // UPC Database API - free tier (no API key required for trial)
-        const response = await axios.get(
-            `https://api.upcitemdb.com/prod/trial/lookup`,
-            {
-                params: { upc: barcode },
-                timeout: 5000
-            }
-        );
+  try {
+    // UPC Database API - free tier (no API key required for trial)
+    const response = await axios.get(`https://api.upcitemdb.com/prod/trial/lookup`, {
+      params: { upc: barcode },
+      timeout: 5000,
+    });
 
-        if (response.data && response.data.items && response.data.items.length > 0) {
-            const item = response.data.items[0];
-            return {
-                found: true,
-                barcode: barcode,
-                title: item.title || item.description || 'Unknown Product',
-                brand: item.brand || '',
-                category: item.category || '',
-                description: item.description || '',
-                images: item.images || [],
-                msrp: item.msrp ? `$${item.msrp}` : null,
-                rrp: item.highest_recorded_price ? `$${item.highest_recorded_price}` : null,
-                specifications: {
-                    'EAN': item.ean || barcode,
-                    'UPC': item.upc || barcode,
-                    'Model': item.model || 'N/A',
-                    'Size': item.size || 'N/A',
-                    'Color': item.color || 'N/A',
-                    'Weight': item.weight || 'N/A'
-                },
-                source: 'UPC Database'
-            };
-        }
-
-        return { found: false, barcode };
-
-    } catch (error) {
-        logger.warn('UPC Database API error:', { error: error.message, barcode });
-        return { found: false, barcode };
+    if (response.data && response.data.items && response.data.items.length > 0) {
+      const item = response.data.items[0];
+      return {
+        found: true,
+        barcode: barcode,
+        title: item.title || item.description || 'Unknown Product',
+        brand: item.brand || '',
+        category: item.category || '',
+        description: item.description || '',
+        images: item.images || [],
+        msrp: item.msrp ? `$${item.msrp}` : null,
+        rrp: item.highest_recorded_price ? `$${item.highest_recorded_price}` : null,
+        specifications: {
+          EAN: item.ean || barcode,
+          UPC: item.upc || barcode,
+          Model: item.model || 'N/A',
+          Size: item.size || 'N/A',
+          Color: item.color || 'N/A',
+          Weight: item.weight || 'N/A',
+        },
+        source: 'UPC Database',
+      };
     }
+
+    return { found: false, barcode };
+  } catch (error) {
+    logger.warn('UPC Database API error:', { error: error.message, barcode });
+    return { found: false, barcode };
+  }
 }
 
 // Helper function: Open Food Facts API lookup (for food/grocery items)
 async function lookupOpenFoodFacts(barcode) {
-    try {
-        const response = await axios.get(
-            `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`,
-            { timeout: 5000 }
-        );
+  try {
+    const response = await axios.get(
+      `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`,
+      { timeout: 5000 }
+    );
 
-        if (response.data && response.data.status === 1) {
-            const product = response.data.product;
-            return {
-                found: true,
-                barcode: barcode,
-                title: product.product_name || 'Unknown Product',
-                brand: product.brands || '',
-                category: product.categories || 'Food/Grocery',
-                description: [
-                    product.product_name,
-                    product.generic_name,
-                    product.ingredients_text_en || product.ingredients_text
-                ].filter(Boolean).join('. '),
-                images: product.image_url ? [product.image_url] : [],
-                rrp: null, // Price not available in Open Food Facts
-                specifications: {
-                    'Barcode': barcode,
-                    'Quantity': product.quantity || 'N/A',
-                    'Brands': product.brands || 'N/A',
-                    'Categories': product.categories || 'N/A',
-                    'Countries': product.countries || 'N/A',
-                    'Ingredients': product.ingredients_text_en || product.ingredients_text || 'N/A'
-                },
-                source: 'Open Food Facts'
-            };
-        }
-
-        return { found: false, barcode };
-
-    } catch (error) {
-        logger.warn('Open Food Facts API error:', { error: error.message, barcode });
-        return { found: false, barcode };
+    if (response.data && response.data.status === 1) {
+      const product = response.data.product;
+      return {
+        found: true,
+        barcode: barcode,
+        title: product.product_name || 'Unknown Product',
+        brand: product.brands || '',
+        category: product.categories || 'Food/Grocery',
+        description: [
+          product.product_name,
+          product.generic_name,
+          product.ingredients_text_en || product.ingredients_text,
+        ]
+          .filter(Boolean)
+          .join('. '),
+        images: product.image_url ? [product.image_url] : [],
+        rrp: null, // Price not available in Open Food Facts
+        specifications: {
+          Barcode: barcode,
+          Quantity: product.quantity || 'N/A',
+          Brands: product.brands || 'N/A',
+          Categories: product.categories || 'N/A',
+          Countries: product.countries || 'N/A',
+          Ingredients: product.ingredients_text_en || product.ingredients_text || 'N/A',
+        },
+        source: 'Open Food Facts',
+      };
     }
+
+    return { found: false, barcode };
+  } catch (error) {
+    logger.warn('Open Food Facts API error:', { error: error.message, barcode });
+    return { found: false, barcode };
+  }
 }
 
 // Post listing to eBay
 app.post('/api/listings/:id/post-to-ebay', authenticateToken, async (req, res) => {
-    try {
-        const listingId = req.params.id;
-        const userId = req.user.id;
+  try {
+    const listingId = req.params.id;
+    const userId = req.user.id;
 
-        // Get listing from database
-        const listingResult = await pool.query(
-            `SELECT l.*, 
+    // Get listing from database
+    const listingResult = await pool.query(
+      `SELECT l.*, 
                     (SELECT json_agg(i.image_data ORDER BY i.image_order) 
                      FROM images i WHERE i.listing_id = l.id) as images 
              FROM listings l 
              WHERE l.id = $1 AND l.user_id = $2`,
-            [listingId, userId]
-        );
+      [listingId, userId]
+    );
 
-        if (listingResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Listing not found' });
-        }
-
-        const listing = listingResult.rows[0];
-        
-        // Get user's eBay token (would be stored in users table or separate table)
-        // For now, assume it's in environment or user needs to provide
-        const ebayToken = process.env.EBAY_AUTH_TOKEN; // Should come from user's stored credentials
-        
-        if (!ebayToken) {
-            return res.status(400).json({ error: 'eBay authentication token not configured' });
-        }
-
-        // Post to eBay
-        const result = await postToEbay(
-            listing,
-            listing.images || [],
-            ebayToken,
-            req.body.ebayCategoryId
-        );
-
-        // Update listing with eBay item ID
-        await pool.query(
-            'UPDATE listings SET ebay_item_id = $1, posted_to_ebay = true, ebay_posted_at = CURRENT_TIMESTAMP WHERE id = $2',
-            [result.itemId, listingId]
-        );
-
-        logger.info('Posted to eBay:', { listingId, itemId: result.itemId, userId });
-        res.json({
-            success: true,
-            itemId: result.itemId,
-            url: result.url
-        });
-    } catch (error) {
-        logger.error('Post to eBay error:', { error: error.message, requestId: req.id });
-        res.status(500).json({
-            error: 'Failed to post to eBay',
-            details: error.message
-        });
+    if (listingResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Listing not found' });
     }
+
+    const listing = listingResult.rows[0];
+
+    // Get user's eBay token (would be stored in users table or separate table)
+    // For now, assume it's in environment or user needs to provide
+    const ebayToken = process.env.EBAY_AUTH_TOKEN; // Should come from user's stored credentials
+
+    if (!ebayToken) {
+      return res.status(400).json({ error: 'eBay authentication token not configured' });
+    }
+
+    // Post to eBay
+    const result = await postToEbay(
+      listing,
+      listing.images || [],
+      ebayToken,
+      req.body.ebayCategoryId
+    );
+
+    // Update listing with eBay item ID
+    await pool.query(
+      'UPDATE listings SET ebay_item_id = $1, posted_to_ebay = true, ebay_posted_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [result.itemId, listingId]
+    );
+
+    logger.info('Posted to eBay:', { listingId, itemId: result.itemId, userId });
+    res.json({
+      success: true,
+      itemId: result.itemId,
+      url: result.url,
+    });
+  } catch (error) {
+    logger.error('Post to eBay error:', { error: error.message, requestId: req.id });
+    res.status(500).json({
+      error: 'Failed to post to eBay',
+      details: error.message,
+    });
+  }
 });
 
 // Feature 6: AI Damage Detection
 // Analyze multiple images for damage, defects, and wear
 async function analyzeLabelImage(image, apiKey) {
-    try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-        const labelPrompt = `You are a product information extraction AI analyzing a product label image.
+    const labelPrompt = `You are a product information extraction AI analyzing a product label image.
 
 EXTRACT ALL VISIBLE INFORMATION from this product label:
 
@@ -3422,63 +3575,70 @@ Return JSON:
 BE COMPREHENSIVE. Extract every piece of readable information from the label.
 If you can't read certain parts clearly, note this in the response.`;
 
-        const parts = [
-            { text: labelPrompt },
-            {
-                inline_data: {
-                    mime_type: 'image/jpeg',
-                    data: image.split(',')[1] // Remove data:image/jpeg;base64, prefix
-                }
-            }
-        ];
+    const parts = [
+      { text: labelPrompt },
+      {
+        inline_data: {
+          mime_type: 'image/jpeg',
+          data: image.split(',')[1], // Remove data:image/jpeg;base64, prefix
+        },
+      },
+    ];
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: parts
-                }],
-                generationConfig: {
-                    temperature: 0.2,  // Low temperature for accurate text extraction
-                    topP: 0.95,
-                    topK: 40,
-                    maxOutputTokens: 2048
-                }
-            })
-        });
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: parts,
+          },
+        ],
+        generationConfig: {
+          temperature: 0.2, // Low temperature for accurate text extraction
+          topP: 0.95,
+          topK: 40,
+          maxOutputTokens: 2048,
+        },
+      }),
+    });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            logger.error('Gemini API error in label analysis:', { status: response.status, error: errorData });
-            throw new Error(`Gemini API request failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error('No response from Gemini API');
-        }
-
-        const text = data.candidates[0].content.parts[0].text;
-        const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-        const labelData = JSON.parse(cleanedText);
-
-        return labelData;
-
-    } catch (error) {
-        logger.error('Label analysis error:', { error: error.message, stack: error.stack });
-        throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      logger.error('Gemini API error in label analysis:', {
+        status: response.status,
+        error: errorData,
+      });
+      throw new Error(`Gemini API request failed: ${response.status}`);
     }
+
+    const data = await response.json();
+
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error('No response from Gemini API');
+    }
+
+    const text = data.candidates[0].content.parts[0].text;
+    const cleanedText = text
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
+    const labelData = JSON.parse(cleanedText);
+
+    return labelData;
+  } catch (error) {
+    logger.error('Label analysis error:', { error: error.message, stack: error.stack });
+    throw error;
+  }
 }
 
 async function analyzeDamageInImages(images, apiKey) {
-    try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-        const damagePrompt = `You are a professional product inspector analyzing images for defects and damage.
+    const damagePrompt = `You are a professional product inspector analyzing images for defects and damage.
 
 ANALYZE ALL ${images.length} IMAGE(S) SYSTEMATICALLY:
 
@@ -3540,215 +3700,268 @@ Return JSON:
 BE THOROUGH. Better to over-report minor issues than miss major ones.
 Provide honest but not alarming language for the condition disclosure.`;
 
-        // Build parts array: prompt text + all images
-        const parts = [
-            { text: damagePrompt },
-            ...images.map(img => ({
-                inline_data: {
-                    mime_type: 'image/jpeg',
-                    data: img.split(',')[1] // Remove data:image/jpeg;base64, prefix
-                }
-            }))
-        ];
+    // Build parts array: prompt text + all images
+    const parts = [
+      { text: damagePrompt },
+      ...images.map((img) => ({
+        inline_data: {
+          mime_type: 'image/jpeg',
+          data: img.split(',')[1], // Remove data:image/jpeg;base64, prefix
+        },
+      })),
+    ];
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: parts
-                }],
-                generationConfig: {
-                    temperature: 0.3,  // Lower temperature for more factual damage assessment
-                    topP: 0.95,
-                    topK: 40,
-                    maxOutputTokens: 2048
-                }
-            })
-        });
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: parts,
+          },
+        ],
+        generationConfig: {
+          temperature: 0.3, // Lower temperature for more factual damage assessment
+          topP: 0.95,
+          topK: 40,
+          maxOutputTokens: 2048,
+        },
+      }),
+    });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            logger.error('Gemini API error in damage detection:', { status: response.status, error: errorData });
-            throw new Error(`Gemini API request failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!data.candidates || data.candidates.length === 0) {
-            logger.error('No candidates in Gemini damage detection response:', { data });
-            throw new Error('No response from AI model');
-        }
-
-        const text = data.candidates[0].content.parts[0].text;
-
-        // Extract JSON from response
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const damageData = JSON.parse(jsonMatch[0]);
-
-            // Ensure all required fields exist with defaults
-            return {
-                overallCondition: damageData.overallCondition || 'Good',
-                damageFound: damageData.damageFound !== undefined ? damageData.damageFound : (damageData.damages && damageData.damages.length > 0),
-                damages: damageData.damages || [],
-                conditionDisclosure: damageData.conditionDisclosure || 'Item is in good condition with normal signs of wear.',
-                recommendations: damageData.recommendations || [],
-                conditionJustification: damageData.conditionJustification || '',
-                honestyScore: damageData.honestyScore || 85
-            };
-        }
-
-        // Fallback if no JSON found
-        return {
-            overallCondition: 'Good',
-            damageFound: false,
-            damages: [],
-            conditionDisclosure: 'Unable to fully assess condition from images. Please inspect item carefully.',
-            recommendations: ['Provide clearer images for accurate assessment'],
-            conditionJustification: 'Assessment limited by image quality',
-            honestyScore: 50
-        };
-
-    } catch (error) {
-        logger.error('Damage detection error:', { error: error.message });
-        throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      logger.error('Gemini API error in damage detection:', {
+        status: response.status,
+        error: errorData,
+      });
+      throw new Error(`Gemini API request failed: ${response.status}`);
     }
+
+    const data = await response.json();
+
+    if (!data.candidates || data.candidates.length === 0) {
+      logger.error('No candidates in Gemini damage detection response:', { data });
+      throw new Error('No response from AI model');
+    }
+
+    const text = data.candidates[0].content.parts[0].text;
+
+    // Extract JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const damageData = JSON.parse(jsonMatch[0]);
+
+      // Ensure all required fields exist with defaults
+      return {
+        overallCondition: damageData.overallCondition || 'Good',
+        damageFound:
+          damageData.damageFound !== undefined
+            ? damageData.damageFound
+            : damageData.damages && damageData.damages.length > 0,
+        damages: damageData.damages || [],
+        conditionDisclosure:
+          damageData.conditionDisclosure || 'Item is in good condition with normal signs of wear.',
+        recommendations: damageData.recommendations || [],
+        conditionJustification: damageData.conditionJustification || '',
+        honestyScore: damageData.honestyScore || 85,
+      };
+    }
+
+    // Fallback if no JSON found
+    return {
+      overallCondition: 'Good',
+      damageFound: false,
+      damages: [],
+      conditionDisclosure:
+        'Unable to fully assess condition from images. Please inspect item carefully.',
+      recommendations: ['Provide clearer images for accurate assessment'],
+      conditionJustification: 'Assessment limited by image quality',
+      honestyScore: 50,
+    };
+  } catch (error) {
+    logger.error('Damage detection error:', { error: error.message });
+    throw error;
+  }
 }
 
 // Damage detection endpoint
 app.post('/api/analyze-damage', authenticateToken, async (req, res) => {
-    try {
-        const { images } = req.body;
-        const userId = req.user.id;
+  try {
+    const { images } = req.body;
+    const userId = req.user.id;
 
-        if (!images || !Array.isArray(images) || images.length === 0) {
-            return res.status(400).json({ error: 'Images array required' });
-        }
-
-        if (images.length > 10) {
-            return res.status(400).json({ error: 'Maximum 10 images allowed' });
-        }
-
-        logger.info('Analyzing damage in images:', { userId, imageCount: images.length });
-
-        const apiKey = process.env.GEMINI_API_KEY;
-        const damageAnalysis = await analyzeDamageInImages(images, apiKey);
-
-        // Calculate severity distribution
-        const severityCount = {
-            critical: 0,
-            major: 0,
-            minor: 0,
-            normal_wear: 0
-        };
-
-        damageAnalysis.damages.forEach(damage => {
-            if (severityCount[damage.severity] !== undefined) {
-                severityCount[damage.severity]++;
-            }
-        });
-
-        // Add severity summary to response
-        damageAnalysis.severitySummary = severityCount;
-
-        logger.info('Damage analysis complete:', {
-            userId,
-            damageFound: damageAnalysis.damageFound,
-            damageCount: damageAnalysis.damages.length,
-            condition: damageAnalysis.overallCondition
-        });
-
-        res.json(damageAnalysis);
-
-    } catch (error) {
-        logger.error('Damage detection endpoint error:', { error: error.message });
-        res.status(500).json({ error: 'Failed to analyze damage', details: error.message });
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ error: 'Images array required' });
     }
+
+    if (images.length > 10) {
+      return res.status(400).json({ error: 'Maximum 10 images allowed' });
+    }
+
+    logger.info('Analyzing damage in images:', { userId, imageCount: images.length });
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    const damageAnalysis = await analyzeDamageInImages(images, apiKey);
+
+    // Calculate severity distribution
+    const severityCount = {
+      critical: 0,
+      major: 0,
+      minor: 0,
+      normal_wear: 0,
+    };
+
+    damageAnalysis.damages.forEach((damage) => {
+      if (severityCount[damage.severity] !== undefined) {
+        severityCount[damage.severity]++;
+      }
+    });
+
+    // Add severity summary to response
+    damageAnalysis.severitySummary = severityCount;
+
+    logger.info('Damage analysis complete:', {
+      userId,
+      damageFound: damageAnalysis.damageFound,
+      damageCount: damageAnalysis.damages.length,
+      condition: damageAnalysis.overallCondition,
+    });
+
+    res.json(damageAnalysis);
+  } catch (error) {
+    logger.error('Damage detection endpoint error:', { error: error.message });
+    res.status(500).json({ error: 'Failed to analyze damage', details: error.message });
+  }
 });
 
 // Label Analysis - Extract all product information from a label image
 app.post('/api/analyze-label', authenticateToken, async (req, res) => {
-    try {
-        const { image } = req.body;
-        const userId = req.user.id;
+  try {
+    const { image } = req.body;
+    const userId = req.user.id;
 
-        if (!image) {
-            return res.status(400).json({ error: 'Image data required' });
-        }
-
-        logger.info('Analyzing product label:', { userId });
-
-        const apiKey = process.env.GEMINI_API_KEY;
-        const labelData = await analyzeLabelImage(image, apiKey);
-
-        logger.info('Label analysis complete:', {
-            userId,
-            found: labelData.found,
-            hasTitle: !!labelData.title,
-            hasBrand: !!labelData.brand,
-            hasBarcode: !!labelData.barcode
-        });
-
-        res.json(labelData);
-
-    } catch (error) {
-        logger.error('Label analysis endpoint error:', { error: error.message });
-        res.status(500).json({ error: 'Failed to analyze label', details: error.message });
+    if (!image) {
+      return res.status(400).json({ error: 'Image data required' });
     }
+
+    logger.info('Analyzing product label:', { userId });
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    const labelData = await analyzeLabelImage(image, apiKey);
+
+    logger.info('Label analysis complete:', {
+      userId,
+      found: labelData.found,
+      hasTitle: !!labelData.title,
+      hasBrand: !!labelData.brand,
+      hasBarcode: !!labelData.barcode,
+    });
+
+    res.json(labelData);
+  } catch (error) {
+    logger.error('Label analysis endpoint error:', { error: error.message });
+    res.status(500).json({ error: 'Failed to analyze label', details: error.message });
+  }
 });
 
 // Health check
 app.get('/api/health', async (req, res) => {
+  try {
+    const memoryUsage = process.memoryUsage();
+    const health = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      version: packageJson.version,
+      environment: process.env.NODE_ENV || 'development',
+      uptime: Math.round(process.uptime()),
+      memory: {
+        used: Math.round(memoryUsage.rss / 1024 / 1024),
+        total: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+      },
+      services: {
+        database: 'unknown',
+        gemini: 'configured',
+        stripe: stripe ? 'configured' : 'not configured',
+      },
+    };
+
+    // Check database
     try {
-        const memoryUsage = process.memoryUsage();
-        const health = {
-            status: 'ok',
-            timestamp: new Date().toISOString(),
-            version: packageJson.version,
-            environment: process.env.NODE_ENV || 'development',
-            uptime: Math.round(process.uptime()),
-            memory: {
-                used: Math.round(memoryUsage.rss / 1024 / 1024),
-                total: Math.round(memoryUsage.heapTotal / 1024 / 1024)
-            },
-            services: {
-                database: 'unknown',
-                gemini: 'configured',
-                stripe: stripe ? 'configured' : 'not configured'
-            }
-        };
-
-        // Check database
-        try {
-            await pool.query('SELECT NOW()');
-            health.services.database = 'ok';
-        } catch (dbError) {
-            health.services.database = 'error';
-            health.status = 'degraded';
-        }
-
-        // Check Gemini API (lightweight check)
-        if (!process.env.GEMINI_API_KEY) {
-            health.services.gemini = 'not configured';
-            health.status = 'degraded';
-        }
-
-        const allHealthy = Object.values(health.services).every(s => s === 'ok' || s === 'configured');
-        res.status(allHealthy ? 200 : 503).json(health);
-    } catch (error) {
-        logger.error('Health check error:', { error: error.message });
-        res.status(503).json({ status: 'error', timestamp: new Date().toISOString() });
+      await pool.query('SELECT NOW()');
+      health.services.database = 'ok';
+    } catch (dbError) {
+      health.services.database = 'error';
+      health.status = 'degraded';
     }
+
+    // Check Gemini API (lightweight check)
+    if (!process.env.GEMINI_API_KEY) {
+      health.services.gemini = 'not configured';
+      health.status = 'degraded';
+    }
+
+    const allHealthy = Object.values(health.services).every(
+      (s) => s === 'ok' || s === 'configured'
+    );
+    res.status(allHealthy ? 200 : 503).json(health);
+  } catch (error) {
+    logger.error('Health check error:', { error: error.message });
+    res.status(503).json({ status: 'error', timestamp: new Date().toISOString() });
+  }
+});
+
+// Sentry error handling middleware (must be after all routes but before other error handlers)
+if (process.env.SENTRY_DSN) {
+  app.use(Sentry.Handlers.requestHandler());
+  app.use(Sentry.Handlers.tracingHandler());
+  app.use(Sentry.Handlers.errorHandler());
+}
+
+// Global error handler (catches any errors not handled by routes)
+app.use((err, req, res, next) => {
+  logger.error('Unhandled error:', {
+    error: err.message,
+    stack: err.stack,
+    requestId: req.id,
+    path: req.path,
+    method: req.method,
+  });
+
+  res.status(err.status || 500).json({
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'production' ? 'An error occurred' : err.message,
+    requestId: req.id,
+  });
+});
+
+// Global unhandled rejection handler
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Promise Rejection:', { reason, promise });
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(reason);
+  }
+});
+
+// Global uncaught exception handler
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', { error: error.message, stack: error.stack });
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(error);
+  }
+  // Give Sentry time to send the error before exiting
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
 });
 
 // Start server (only in non-serverless environments)
 if (process.env.VERCEL !== '1') {
-    app.listen(PORT, () => {
-        logger.info(`QuickList AI server running on http://localhost:${PORT}`);
-    });
+  app.listen(PORT, () => {
+    logger.info(`QuickList AI server running on http://localhost:${PORT}`);
+  });
 }
 
 module.exports = app;

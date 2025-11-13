@@ -1,278 +1,232 @@
-# QuickList AI
+# Quicklist-Claude
 
-> Turn your clutter into cash without the soul-crushing effort of writing a listing.
+![CI Status](https://github.com/deannewton/Quicklist-Claude/workflows/CI/badge.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-QuickList AI is a sophisticated, AI-powered web application that helps users quickly create high-quality product listings for online marketplaces like Vinted, eBay, and Gumtree. Simply snap a photo, and let AI do the rest.
+AI-powered listing generator for online marketplaces (eBay, Vinted, Gumtree). Upload product photos and generate complete listings using Google Gemini Vision API, with automated market research, pricing intelligence, and optional eBay integration.
 
 ## Features
 
-### 🤖 AI-Powered Listing Generation
-- Analyzes product images using Google Gemini Vision API
-- Generates compelling, keyword-rich titles
-- Identifies brands and categories automatically
-- Creates detailed, honest descriptions
-- Suggests competitive pricing based on market data
-- Extracts relevant keywords and hashtags
-
-### 📸 Smart Image Processing
-- Automatic blur detection
-- Multi-image upload support
-- Camera integration for mobile devices
-- Hero image generation
-- Image enhancement capabilities
-
-### 💾 Data Persistence
-- PostgreSQL database integration
-- User authentication with JWT
-- Secure password hashing with bcryptjs
-- Save and manage multiple listings
-- Cross-device access to your data
-
-### 🎨 Modern UI/UX
-- Dark mode aesthetic with indigo accents
-- Responsive design for all devices
-- Skeleton loading states
-- Toast notifications
-- Multi-column layout for efficient workflow
+- **AI-Powered Generation**: Uses Google Gemini Vision to analyze product photos and generate comprehensive listings
+- **Multi-Platform Support**: Create listings for eBay, Vinted, and Gumtree
+- **Market Research**: Automatic online research with source citations
+- **Pricing Intelligence**: AI-powered pricing recommendations based on market data
+- **eBay Integration**: Direct posting to eBay with OAuth authentication
+- **User Authentication**: Secure auth with Clerk (OAuth, MFA) and JWT fallback
+- **Subscription Tiers**: Free and paid plans with Stripe integration
+- **PWA Support**: Progressive Web App with offline capabilities
+- **Dark Mode UI**: Modern, responsive design with indigo accents
 
 ## Tech Stack
 
-### Frontend
-- Single-page HTML application
-- Vanilla JavaScript (no frameworks)
-- CSS3 with custom properties
-- JSZip for download functionality
-- Outfit font family from Google Fonts
+- **Frontend**: Vanilla JavaScript (single-file architecture)
+- **Backend**: Express.js with Node.js
+- **Database**: PostgreSQL (Neon recommended)
+- **AI**: Google Gemini Vision API (`gemini-2.0-flash-exp`)
+- **Auth**: Clerk + JWT hybrid
+- **Payments**: Stripe
+- **Marketplace**: eBay API
+- **Deployment**: Vercel serverless
 
-### Backend
-- Node.js with Express
-- PostgreSQL (Neon Database)
-- JWT authentication
-- Google Gemini Vision API
-- bcryptjs for password hashing
-
-## Installation
+## Quick Start
 
 ### Prerequisites
-- Node.js 16+ installed
-- PostgreSQL database (Neon or local)
+
+- Node.js 18+ or 20+
+- PostgreSQL database (Neon recommended)
 - Google Gemini API key
+- Clerk account (for auth)
 
-### Setup
+### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd Quicklist-Claude
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/deannewton/Quicklist-Claude.git
+cd Quicklist-Claude
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+# Install dependencies
+npm install
 
-3. **Configure environment variables**
+# Copy environment file
+cp .env.example .env
 
-   Copy the example environment file and add your credentials:
-   ```bash
-   cp .env.example .env
-   ```
+# Edit .env with your credentials
+# Required: DATABASE_URL, GEMINI_API_KEY, JWT_SECRET, CLERK_SECRET_KEY
+nano .env
 
-   Then edit `.env` with your actual values:
-   ```env
-   DATABASE_URL=your_postgresql_connection_string
-   GEMINI_API_KEY=your_gemini_api_key
-   JWT_SECRET=your_secure_random_secret
-   PORT=3000
-   ```
+# Start development server
+npm run dev
+```
 
-4. **Initialize the database**
+### Database Setup
 
-   Start the server first, then visit:
-   ```
-   http://localhost:3000/api/init-db
-   ```
+1. Start the server: `npm run dev`
+2. Visit: `http://localhost:4577/api/init-db`
+3. Database tables will be created automatically
 
-   This will create all necessary tables and indexes.
-
-5. **Start the server**
-   ```bash
-   npm start
-   ```
-
-   For development with auto-reload:
-   ```bash
-   npm run dev
-   ```
-
-6. **Open the application**
-
-   Navigate to:
-   ```
-   http://localhost:3000
-   ```
-
-## Usage
-
-### Getting Started
-
-1. **Sign Up / Sign In**
-   - Click "Sign In / Sign Up" button
-   - Enter your email and password
-   - New users are automatically registered
-
-2. **Upload Product Photos**
-   - Click the upload area or drag & drop images
-   - Use your device camera for quick captures
-   - Upload multiple images for batch processing
-
-3. **Generate Listing**
-   - Select your target platform (Vinted, eBay, or Gumtree)
-   - Optionally add a hint about the item
-   - Click "Generate Single Listing"
-   - AI analyzes your image and creates a complete listing
-
-4. **Review & Edit**
-   - Review all generated fields
-   - Edit any information as needed
-   - Copy individual fields or all content
-   - Regenerate keywords if desired
-
-5. **Save & Download**
-   - Save listings to your account for later
-   - Download a ZIP file with all assets
-   - ZIP includes listing text, images, and optional hero image
-
-### Managing Listings
-
-- **Saved Items**: View all your saved listings
-- **Load**: Reload a saved listing to edit or update
-- **Delete**: Remove listings you no longer need
-
-### Settings
-
-- **Auto-Download ZIP**: Automatically download ZIP after generation
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/signup` - Register new user
-- `POST /api/auth/signin` - Sign in existing user
-- `GET /api/auth/verify` - Verify JWT token
-
-### Listings
-- `GET /api/listings` - Get all user's listings
-- `GET /api/listings/:id` - Get specific listing
-- `POST /api/listings` - Create new listing
-- `PUT /api/listings/:id` - Update listing
-- `DELETE /api/listings/:id` - Delete listing
-
-### AI Generation
-- `POST /api/generate` - Generate listing from image
-
-### Utilities
-- `GET /api/health` - Health check
-- `GET /api/init-db` - Initialize database schema
-
-## Database Schema
-
-### Users Table
-- `id` - Primary key
-- `email` - Unique email address
-- `password_hash` - Hashed password
-- `created_at` - Registration timestamp
-- `updated_at` - Last update timestamp
-
-### Listings Table
-- `id` - Primary key
-- `user_id` - Foreign key to users
-- `title` - Listing title
-- `brand` - Product brand
-- `category` - Product category
-- `description` - Detailed description
-- `condition` - Item condition
-- `rrp` - Retail price
-- `price` - Suggested listing price
-- `keywords` - Array of keywords
-- `sources` - JSON array of research sources
-- `platform` - Target marketplace
-- `created_at` - Creation timestamp
-- `updated_at` - Last update timestamp
-
-### Images Table
-- `id` - Primary key
-- `listing_id` - Foreign key to listings
-- `image_data` - Base64 encoded image
-- `image_order` - Display order
-- `is_blurry` - Blur detection flag
-- `created_at` - Upload timestamp
-
-## Security
-
-- ✅ Password hashing with bcryptjs (10 rounds)
-- ✅ JWT authentication with 7-day expiry
-- ✅ SQL injection prevention with parameterized queries
-- ✅ Environment variables for sensitive data
-- ✅ CORS protection
-- ⚠️ **Important**: Change `JWT_SECRET` in production!
+Note: In production, set `ALLOW_DB_INIT=true` to enable the init endpoint (use carefully).
 
 ## Development
 
-### Project Structure
+```bash
+# Start development server with auto-reload
+npm run dev
+
+# Run linting
+npm run lint
+
+# Run formatting check
+npm run format:check
+
+# Auto-fix formatting
+npm run format
+
+# Security audit
+npm audit
+```
+
+## Deployment
+
+This project is configured for Vercel deployment:
+
+```bash
+# Deploy to Vercel
+vercel
+
+# Or push to main branch for automatic deployment
+git push origin main
+```
+
+### Environment Variables
+
+Set these in your Vercel dashboard:
+
+**Required:**
+
+- `DATABASE_URL` - PostgreSQL connection string
+- `GEMINI_API_KEY` - Google Gemini API key
+- `JWT_SECRET` - 32+ character secret
+- `CLERK_SECRET_KEY` - Clerk secret key
+- `NODE_ENV` - Set to `production`
+- `FRONTEND_URL` - Your production URL
+
+**Optional:**
+
+- `STRIPE_SECRET_KEY` - For subscription payments
+- `EBAY_APP_ID`, `EBAY_DEV_ID`, `EBAY_CERT_ID` - For eBay integration
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` - For Google OAuth
+
+See `.env.example` for complete list.
+
+## Project Structure
+
 ```
 Quicklist-Claude/
-├── index.html          # Frontend application
-├── server.js           # Backend API server
-├── schema.sql          # Database schema
-├── package.json        # Dependencies
-├── .env               # Environment variables
-├── .gitignore         # Git ignore rules
-└── README.md          # This file
+├── .github/
+│   ├── workflows/
+│   │   └── ci.yml              # CI/CD pipeline
+│   └── dependabot.yml          # Dependency updates
+├── api/
+│   ├── health.js               # Health check endpoint
+│   └── server.js               # Vercel serverless wrapper
+├── public/                     # Static assets
+├── scripts/                    # Utility scripts
+├── index.html                  # Single-file frontend (~5600 lines)
+├── server.js                   # Express backend (~2800 lines)
+├── schema.sql                  # Database schema
+├── package.json                # Dependencies and scripts
+├── vercel.json                 # Vercel configuration
+├── CLAUDE.md                   # Architecture documentation
+├── CONTRIBUTING.md             # Contribution guidelines
+└── README.md                   # This file
 ```
 
-### Adding Features
+## Architecture
 
-The application is designed to be easily extensible:
+### Single-File Frontend
 
-- **Frontend**: Edit `index.html`, all JavaScript is in the `<script>` section
-- **Backend**: Edit `server.js` to add new API endpoints
-- **Database**: Modify `schema.sql` and re-run `/api/init-db`
+The entire frontend is in `index.html` for simplicity:
 
-## Troubleshooting
+- No build process required
+- Instant changes on refresh
+- Suitable for MVP/prototype
+- ~5600 lines: HTML + CSS + JavaScript
 
-### Database Connection Issues
-- Verify your `DATABASE_URL` in `.env`
-- Check if the Neon database is accessible
-- Ensure SSL is properly configured
+### Backend API
 
-### API Key Issues
-- Verify `GEMINI_API_KEY` is correct
-- Check API quota limits
-- Review Gemini API console for errors
+Express.js server with:
 
-### Authentication Issues
-- Clear browser localStorage
-- Check browser console for error messages
-- Verify JWT secret is set
+- RESTful API endpoints
+- JWT + Clerk authentication
+- PostgreSQL with connection pooling
+- Rate limiting and security headers
+- Request ID tracking
 
-## Future Enhancements
+### Database
 
-- [ ] Batch processing for multiple items
-- [ ] Advanced image editing tools
-- [ ] Price history tracking
-- [ ] Marketplace API integrations
-- [ ] Mobile app versions
-- [ ] AI-powered photo enhancement
-- [ ] Automated cross-posting
+PostgreSQL with three main tables:
+
+- `users` - User accounts and auth
+- `listings` - Generated product listings
+- `images` - Base64 encoded product photos
+
+## Contributing
+
+We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+
+- Development workflow
+- Code quality standards
+- Branch protection rules
+- CI/CD pipeline
+- Security best practices
+
+### Quality Checks
+
+All pull requests must pass:
+
+- ESLint code quality checks
+- Prettier formatting checks
+- Security audit (moderate+ vulnerabilities blocked)
+- Dependency verification
+- Build verification
+
+## Security
+
+- Passwords hashed with bcryptjs
+- Parameterized SQL queries (SQL injection protection)
+- CORS whitelist
+- Rate limiting on sensitive endpoints
+- Helmet.js security headers
+- Input sanitization
+
+**Before production:**
+
+- Generate new `JWT_SECRET` (32+ chars)
+- Restrict `/api/init-db` endpoint
+- Review CORS origins
+- Enable monitoring/alerting
+- Implement CSRF protection
+
+## Documentation
+
+- [CLAUDE.md](CLAUDE.md) - Complete architecture guide
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
+- [API_DOCUMENTATION.md](API_DOCUMENTATION.md) - API reference
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment guide
+- [QUICK_START.md](QUICK_START.md) - Getting started
 
 ## License
 
-All rights reserved © 2025 QuickList AI
+MIT License - see LICENSE file for details
 
 ## Support
 
-For issues and feature requests, please contact the development team.
+- Documentation: See `/docs` folder
+- Issues: [GitHub Issues](https://github.com/deannewton/Quicklist-Claude/issues)
+- Contact: @deannewton
 
 ---
 
-**Built with ❤️ for sellers who hate writing descriptions**
+**Status**: Active Development | Phase 1 - Production Readiness in Progress
+
+Built with Claude Code by Anthropic

@@ -8,10 +8,17 @@
     "dev": "bash scripts/dev.sh",
     "clerk:token": "node scripts/clerk-token.js",
     "build": "bash vercel-build.sh",
-    "vercel-build": "bash vercel-build.sh"
+    "vercel-build": "bash vercel-build.sh",
+    "prepare": "husky",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@clerk/express": "^1.7.48",
+    "@sentry/browser": "^10.25.0",
+    "@sentry/node": "^10.25.0",
     "axios": "^1.6.0",
     "compression": "^1.7.4",
     "console-log-level": "^1.4.1",
@@ -31,6 +38,12 @@
   },
   "devDependencies": {
     "@clerk/testing": "^1.13.14",
-    "nodemon": "^3.0.2"
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-node": "^11.1.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
+    "nodemon": "^3.0.2",
+    "prettier": "^3.6.2"
   }
 }

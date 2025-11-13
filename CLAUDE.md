@@ -1,16 +1,21 @@
 # CLAUDE.md
 
+> **Authentication note:** QuickList now uses Clerk exclusively. Any references to legacy JWT or Neon Auth flows in this guide are outdated and should not be reintroduced.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
-QuickList AI is an AI-powered listing generator for online marketplaces (Vinted, eBay, Gumtree). Users upload product photos and the app generates complete listings using Google Gemini Vision API.
+QuickList AI is an AI-powered listing generator for online marketplaces (eBay, Vinted, Gumtree). Users upload product photos and the app generates complete listings using Google Gemini Vision API, with automated market research, pricing intelligence, and optional eBay integration.
 
-**Key Architecture Decision**: Single-file frontend (`index.html` - 2382 lines) with no build process. All HTML, CSS, and JavaScript are in one file for simplicity and zero build complexity.
+**Key Architecture Decision**: Single-file frontend ([index.html](index.html) - ~5600 lines) with no build process. All HTML, CSS, and JavaScript are in one file for simplicity and zero build complexity.
 
 ## Development Commands
 
 ```bash
+# Install dependencies
+npm install
+
 # Start development server with auto-reload
 npm run dev
 
@@ -19,194 +24,428 @@ npm start
 
 # Initialize database (one-time setup, or after schema changes)
 # Start server first, then visit: http://localhost:4577/api/init-db
+# In production: requires ALLOW_DB_INIT=true environment variable
 ```
 
-**Port Configuration**: The app runs on port 4577 (configured in `.env.local`).
+**Port Configuration**: Default port is 3000, but check your `.env` or `.env.local` for `PORT` variable. The existing setup uses port 4577.
 
 ## Tech Stack
 
-- **Frontend**: Vanilla JavaScript (no framework), single HTML file, JSZip for downloads
-- **Backend**: Express.js with Node.js
-- **Database**: PostgreSQL (Neon - serverless/cloud-hosted)
-- **Authentication**: JWT tokens (7-day expiry) + bcryptjs password hashing
+- **Frontend**: Vanilla JavaScript (no framework), single HTML file with embedded CSS and JS
+- **Backend**: Express.js (~2800 lines in [server.js](server.js))
+- **Database**: PostgreSQL (Neon - serverless/cloud-hosted recommended)
+- **Authentication**:
+  - Primary: Clerk (recommended, configured via CLERK_SECRET_KEY)
+  - Fallback: JWT tokens with bcryptjs (legacy)
+  - OAuth: Google OAuth 2.0 (optional)
 - **AI**: Google Gemini Vision API (`gemini-2.0-flash-exp` model)
+- **Payments**: Stripe (optional, for subscription tiers)
+- **Marketplace Integration**: eBay API (optional)
 
 ## Architecture
 
-### Single-File Frontend Structure
+### Frontend Structure ([index.html](index.html))
 
-All code is in `index.html`:
-- **Lines 1-9**: HTML structure and meta tags
-- **Lines 10-881**: Embedded CSS (dark mode design with indigo accents)
-- **Lines 882-1479**: HTML markup (marketing pages + app views)
-- **Lines 1480-2382**: JavaScript application logic
+The entire frontend is in one file:
 
-**State Management**: Global `app` object with centralized state:
+- **Lines ~1-10**: HTML structure and meta tags
+- **Lines ~10-880**: Embedded CSS (dark mode with indigo accents)
+- **Lines ~880-1480**: Marketing pages HTML
+- **Lines ~1480-end**: JavaScript application logic in global `app` object
+
+**State Management**: Centralized in `app.state` object:
+
 ```javascript
 app.state = {
-    isAuthenticated: false,
-    user: null,
-    token: null,
-    currentView: 'home',           // Marketing navigation
-    currentAppView: 'newItem',     // App navigation
-    uploadedImages: [],
-    currentListing: null,
-    savedListings: [],
-    settings: { autoDownloadZip: false }
-}
+  isAuthenticated: false,
+  user: null,
+  token: null,
+  currentView: 'home', // Marketing page navigation
+  currentAppView: 'newItem', // App navigation
+  uploadedImages: [],
+  currentListing: null,
+  savedListings: [],
+  settings: { autoDownloadZip: false },
+};
 ```
 
-### Backend API Structure (`server.js`)
+### Backend Structure ([server.js](server.js))
 
-**Route Categories**:
-1. **Auth**: `/api/auth/signup`, `/api/auth/signin`, `/api/auth/verify`
-2. **Listings CRUD**: `/api/listings` (GET/POST), `/api/listings/:id` (GET/PUT/DELETE)
-3. **AI Generation**: `/api/generate` (receives image + platform, returns listing)
-4. **Utilities**: `/api/health`, `/api/init-db`
+**Main Components**:
 
-**Authentication Flow**: JWT tokens stored in `localStorage`, sent as `Authorization: Bearer <token>` header. Middleware `authenticateToken()` protects routes.
+1. **Authentication Routes** (~lines 200-400)
+   - `/api/auth/signup`, `/api/auth/signin`, `/api/auth/verify`
+   - `/api/auth/google/url`, `/api/auth/google/callback` (OAuth)
+   - Clerk integration for modern auth
 
-### Database Schema
+2. **Listing CRUD** (~lines 400-800)
+   - `/api/listings` (GET/POST), `/api/listings/:id` (GET/PUT/DELETE)
+   - Includes image handling with base64 storage
 
-**Three tables** (see `schema.sql`):
-1. **users**: id, email, password_hash, timestamps
-2. **listings**: user_id, title, brand, category, description, condition, rrp, price, **keywords (TEXT[])**, **sources (JSONB)**, platform, timestamps
-3. **images**: listing_id, image_data (base64), image_order, is_blurry, timestamp
+3. **AI Generation** (~lines 800-1200)
+   - `/api/generate` - Core AI listing generation
+   - Sends images to Gemini Vision with platform-specific prompts
+   - Returns title, brand, category, description, pricing, keywords, sources
 
-**Important**:
-- Keywords stored as PostgreSQL array (`TEXT[]`)
-- Sources stored as JSONB for flexible structure
-- Images stored as base64 strings (not filesystem/blob)
-- Cascade delete: deleting user deletes listings → deleting listing deletes images
+4. **Subscription/Usage** (~lines 1200-1500)
+   - `/api/subscription/status`, `/api/usage`
+   - Stripe integration for paid plans
+
+5. **eBay Integration** (~lines 1500-2000)
+   - `/api/listings/:id/post-to-ebay`
+   - OAuth authentication flow
+   - Pricing intelligence from eBay market data
+
+6. **Utilities**
+   - `/api/health` - Health check with service status
+   - `/api/init-db` - Database initialization
+
+**Middleware Stack**:
+
+- Helmet.js for security headers
+- CORS with whitelist
+- Rate limiting (auth: 5/15min, generate: 10/min)
+- Compression
+- JWT/Clerk authentication
+- Request ID tracking
+
+### Database Schema ([schema.sql](schema.sql))
+
+**Three main tables**:
+
+1. **users**
+   - `id`, `email`, `password_hash` (nullable for OAuth)
+   - `google_id`, `auth_provider` ('email' or 'google')
+   - `ebay_auth_token` (per-user eBay OAuth token)
+   - Timestamps
+
+2. **listings**
+   - `user_id` (FK to users)
+   - `title`, `brand`, `category`, `description`, `condition`
+   - `rrp`, `price` (stored as strings with currency)
+   - `keywords` (TEXT[] - PostgreSQL array)
+   - `sources` (JSONB - research source URLs)
+   - `platform` (ebay/vinted/gumtree)
+   - `ebay_item_id`, `pricing_data` (JSONB), `posted_to_ebay`
+   - Timestamps with auto-update trigger
+
+3. **images**
+   - `listing_id` (FK to listings)
+   - `image_data` (TEXT - base64 encoded)
+   - `image_order`, `is_blurry`
+   - Timestamp
+
+**Important Schema Notes**:
+
+- Cascade deletes: user → listings → images
+- Keywords use PostgreSQL array type (`TEXT[]`)
+- Sources and pricing_data use JSONB for flexible structure
+- Images stored as base64 strings (no filesystem/blob storage)
 
 ## Key Workflows
 
 ### AI Generation Flow
 
-1. User uploads images → converted to base64 → stored in `app.state.uploadedImages[]`
-2. User clicks "Generate" → `app.generateListing()` called
-3. POST to `/api/generate` with `{image, platform, hint}`
-4. Backend calls Gemini Vision API with prompt tailored to platform
-5. Response parsed and returned to frontend
-6. `app.displayListing()` populates editable form fields
+1. User uploads images → base64 encoded → stored in `app.state.uploadedImages[]`
+2. User selects platform (eBay/Vinted/Gumtree) and adds optional hint
+3. Frontend calls `app.generateListing()` → POST `/api/generate`
+4. Backend constructs Gemini prompt with:
+   - Platform-specific requirements (eBay needs category ID, pricing data)
+   - Image data (up to 10 images)
+   - User hint
+   - Instructions to research online and provide sources
+5. Gemini analyzes images and returns structured JSON:
+   ```json
+   {
+     "title": "...",
+     "brand": "...",
+     "category": "...",
+     "description": "...",
+     "condition": "...",
+     "rrp": "£120",
+     "price": "£80",
+     "keywords": ["..."],
+     "sources": [{ "url": "...", "title": "..." }]
+   }
+   ```
+6. Frontend displays in editable form fields
 7. User can edit, save to DB, or download as ZIP
 
-**Gemini Prompt Structure**: The prompt in `server.js` line ~200 instructs the AI to:
-- Analyze the image and generate title, brand, category, description, condition
-- Research similar items online and provide `rrp` (retail price) and competitive `price`
-- Extract keywords and provide `sources` (array of URLs used for research)
-- Return JSON matching the listing schema
+### eBay Integration Flow
 
-### Save Listing Flow
+1. User requests to post listing to eBay
+2. If no `ebay_auth_token`: redirect to eBay OAuth flow
+3. Backend calls eBay Finding API for pricing intelligence
+4. Backend constructs eBay listing XML
+5. Posts via eBay Trading API
+6. Stores `ebay_item_id` and marks `posted_to_ebay = true`
 
-1. `app.saveListing()` → POST `/api/listings` with listing data + images
-2. Backend inserts into `listings` table, gets `listing_id`
-3. Backend loops through images, inserting each into `images` table with `listing_id`
-4. Returns saved listing with id to frontend
+### Subscription/Usage Tracking
 
-## File Editing Guidelines
-
-### When editing `index.html`:
-
-**CSS (Lines 10-881)**:
-- Uses CSS custom properties (variables) defined in `:root` selector
-- Dark mode color scheme: `--bg-primary: #0f0f23`, `--indigo-500: #6366f1`
-- Responsive breakpoints handled with media queries
-
-**JavaScript (Lines 1480-2382)**:
-- All code is in single `app` object namespace
-- Async/await used throughout (no callbacks/promises)
-- Key methods:
-  - `init()`: Initialize app on DOMContentLoaded
-  - `generateListing()`: Main AI generation workflow
-  - `saveListing()`, `loadListing()`, `deleteListing()`: CRUD operations
-  - `updateUI()`: Toggle between marketing/app views based on auth state
-  - `displayListing()`: Populate form from listing data
-  - `downloadZip()`: Generate ZIP file with JSZip
-
-**When adding new features**:
-- Add CSS in the `<style>` block (lines 10-881)
-- Add HTML markup in appropriate section (marketing vs app)
-- Add JavaScript methods to `app` object
-- Follow existing patterns (async/await, state management in `app.state`)
-
-### When editing `server.js`:
-
-- **Database queries**: Always use parameterized queries (`$1, $2`) to prevent SQL injection
-- **Protected routes**: Add `authenticateToken` middleware before handler
-- **Error handling**: Return appropriate HTTP status codes (400, 401, 404, 500)
-- **CORS**: Already configured, no changes needed for localhost development
-
-### When editing `schema.sql`:
-
-- After changes, drop existing tables and re-run `/api/init-db` endpoint
-- **Caution**: This deletes all data. For production, write migration scripts instead
-- Remember to add indexes for foreign keys and frequently queried columns
+- Free tier: 5 AI generations/month
+- Paid tiers: 50, 200, or 1000/month
+- Usage tracked in database, enforced in `/api/generate`
+- Stripe webhooks update subscription status
 
 ## Environment Variables
 
-Required in `.env` or `.env.local`:
+**Required**:
+
 ```env
-DATABASE_URL=postgresql://... (Neon database connection string)
-GEMINI_API_KEY=... (Google AI Studio)
-JWT_SECRET=... (secure random string, change for production!)
-PORT=4577
+DATABASE_URL=postgresql://user:pass@host:5432/db?sslmode=require
+GEMINI_API_KEY=your_gemini_api_key
+JWT_SECRET=your_secure_random_secret  # 32+ chars in production
+PORT=3000  # or 4577
+NODE_ENV=development  # or production
+FRONTEND_URL=http://localhost:4577  # or production URL
 ```
+
+**Optional (Authentication)**:
+
+```env
+# Clerk (recommended)
+CLERK_SECRET_KEY=sk_...
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+
+# Google OAuth (legacy)
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=http://localhost:4577/auth/google/callback
+```
+
+**Optional (Payments)**:
+
+```env
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_STARTER=price_...
+STRIPE_PRICE_PRO=price_...
+STRIPE_PRICE_BUSINESS=price_...
+```
+
+**Optional (eBay)**:
+
+```env
+EBAY_APP_ID=...
+EBAY_DEV_ID=...
+EBAY_CERT_ID=...
+EBAY_SITE_ID=3  # UK
+EBAY_SANDBOX=false  # true for testing
+```
+
+**Optional (Other)**:
+
+```env
+IMGUR_CLIENT_ID=...  # For image hosting
+LOG_LEVEL=info  # debug, info, warn, error
+ALLOW_DB_INIT=true  # Allow /api/init-db in production (dangerous)
+```
+
+## File Editing Guidelines
+
+### Editing [index.html](index.html)
+
+**CSS Section**:
+
+- CSS custom properties defined in `:root` selector
+- Dark mode: `--bg-primary: #0f0f23`, `--indigo-500: #6366f1`
+- Responsive breakpoints: `@media (max-width: 768px)`
+
+**JavaScript Section**:
+
+- All code in global `app` object to avoid namespace pollution
+- Async/await used throughout
+- Key methods:
+  - `init()`: Initialize on DOMContentLoaded
+  - `generateListing()`: Main AI generation
+  - `saveListing()`, `loadListing()`, `deleteListing()`: CRUD
+  - `updateUI()`: Toggle marketing/app views based on auth
+  - `displayListing()`: Populate form from listing data
+  - `downloadZip()`: Generate ZIP with JSZip library
+
+**Adding Features**:
+
+- Add CSS in `<style>` block (keep dark mode theme)
+- Add HTML in appropriate section (marketing vs app)
+- Add JS methods to `app` object
+- Follow patterns: async/await, centralized state
+
+### Editing [server.js](server.js)
+
+**Database Queries**:
+
+- Always use parameterized queries: `$1, $2, ...`
+- For arrays: `$1::text[]` for keyword arrays
+- For JSONB: `$1::jsonb` for sources/pricing_data
+
+**Protected Routes**:
+
+- Add `authenticateToken` or `requireAuth` (Clerk) middleware
+- Check user ownership: `listing.user_id === req.user.id`
+
+**Error Handling**:
+
+- Return appropriate HTTP codes (400, 401, 404, 500)
+- Use `logger.error()` for server logs
+- Include `X-Request-ID` header for tracking
+
+**Rate Limiting**:
+
+- Auth endpoints: `authLimiter` (5 req/15min)
+- Generate endpoint: `generateLimiter` (10 req/min)
+
+### Editing [schema.sql](schema.sql)
+
+**Making Changes**:
+
+1. Edit [schema.sql](schema.sql)
+2. For development: visit `/api/init-db` to drop and recreate tables
+3. For production: write migration SQL in separate file
+4. Remember to update indexes for new columns
+
+**Important**: `/api/init-db` drops all tables and data. Use only in development or with `ALLOW_DB_INIT=true` in production (dangerous).
+
+## Deployment (Vercel)
+
+The app is configured for Vercel serverless deployment via [vercel.json](vercel.json):
+
+1. Static frontend served from root
+2. API routes handled by serverless functions:
+   - `/api/health` → [api/health.js](api/health.js)
+   - `/api/*` → [api/server.js](api/server.js) (wrapper around [server.js](server.js))
+
+**Deployment Steps**:
+
+```bash
+# Via CLI
+vercel
+
+# Via GitHub
+# Push to main branch, Vercel auto-deploys
+```
+
+**Environment Variables**: Set in Vercel dashboard (see "Environment Variables" section above)
+
+**Database**: Use Neon PostgreSQL or any PostgreSQL with SSL
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) and [README_PRODUCTION.md](README_PRODUCTION.md) for full deployment guide.
 
 ## Testing
 
-**No automated test suite** - manual E2E testing documented in `E2E_TEST_REPORT.md`.
+**No automated test suite** - manual testing only.
 
-**Testing approach**:
+**Manual Test Flow**:
+
 1. Start server: `npm run dev`
-2. Test endpoints with curl/Postman
-3. Manual UI testing in browser
-4. Check console for errors
+2. Test auth: sign up → verify token stored in localStorage
+3. Test generation: upload image → select platform → generate → verify all fields populated
+4. Test save: save listing → check DB → reload from saved items
+5. Test ZIP download: download → verify files included
+6. Test eBay: authorize → post listing → verify item ID returned
 
-**Common test scenarios**:
-- Sign up → generate listing → save → load from saved items → delete
-- Upload multiple images → blur detection → ZIP download
-- Copy individual fields vs copy all
-- Settings persistence in localStorage
+**E2E Test Script**: [e2e_test.sh](e2e_test.sh) - Bash script for API endpoint testing
+
+## Common Issues and Solutions
+
+### Port Mismatch
+
+**Problem**: Frontend can't reach backend
+**Solution**: Ensure `app.apiUrl` in [index.html](index.html) matches `PORT` in `.env`. Currently hardcoded to `http://localhost:3000` but should match actual port (e.g., 4577).
+
+### Database Connection
+
+**Problem**: "Database connection error"
+**Solution**:
+
+- Check `DATABASE_URL` format: `postgresql://user:pass@host:5432/db?sslmode=require`
+- Verify Neon database is accessible
+- Check SSL configuration (`ssl: { rejectUnauthorized: false }`)
+
+### JWT Issues
+
+**Problem**: "Invalid token" or "Token expired"
+**Solution**:
+
+- Clear localStorage: `localStorage.removeItem('quicklist-token')`
+- Verify `JWT_SECRET` is set and matches
+- JWT expires after 7 days - users must re-login
+
+### Image Size Limits
+
+**Problem**: "Request entity too large"
+**Solution**: Images stored as base64, which inflates size by ~33%. Server has 50MB JSON body limit. Compress images before upload or implement server-side compression.
+
+### PostgreSQL Arrays
+
+**Problem**: Error inserting keywords
+**Solution**: Use `ARRAY['keyword1', 'keyword2']` in SQL or parameterized `$1::text[]` with array parameter.
+
+### eBay Authorization
+
+**Problem**: eBay posting fails
+**Solution**:
+
+- Check `EBAY_APP_ID`, `EBAY_DEV_ID`, `EBAY_CERT_ID` are set
+- Verify eBay app is approved for production (not sandbox)
+- Check `ebay_auth_token` is stored for user
+
+## Architecture Decisions and Rationale
+
+### Single-File Frontend
+
+**Why**: Simplicity, zero build complexity, instant changes on refresh. Suitable for prototype/MVP.
+**Trade-off**: Large file size, harder to maintain as complexity grows.
+**Future**: Consider splitting into separate HTML/CSS/JS files with bundler.
+
+### Base64 Image Storage
+
+**Why**: Simple, no filesystem/blob storage needed, works with any database.
+**Trade-off**: Large database size, 33% overhead, slower queries.
+**Future**: Migrate to S3/Cloudinary with URL references.
+
+### JWT + Clerk Hybrid Auth
+
+**Why**: Clerk provides modern auth (OAuth, MFA, user management) with easy migration from JWT.
+**Trade-off**: Dual auth code paths during migration.
+**Future**: Fully migrate to Clerk, remove JWT code.
+
+### Google Gemini Vision
+
+**Why**: Strong image recognition, free tier, JSON output mode.
+**Trade-off**: Vendor lock-in, rate limits.
+**Alternative**: OpenAI GPT-4 Vision, Anthropic Claude Vision.
 
 ## Security Notes
 
-- **SECURITY_INCIDENT.md** documents a past incident where API keys were committed to git
-- **Current security measures**:
-  - All secrets in `.env` (gitignored)
-  - Password hashing with bcryptjs (10 rounds)
-  - Parameterized SQL queries
-  - JWT with 7-day expiration
-  - CORS enabled
+**Implemented**:
 
-**Before deployment**:
-- Generate new `JWT_SECRET` (use `require('crypto').randomBytes(64).toString('hex')`)
-- Ensure `.env` is never committed
-- Review CORS origins (currently allows all)
+- Password hashing with bcryptjs (10 rounds)
+- JWT with 7-day expiration
+- Parameterized SQL queries (SQL injection protection)
+- Helmet.js security headers
+- CORS whitelist
+- Rate limiting on auth and generation endpoints
+- Input sanitization with sanitize-html
 
-## Common Gotchas
+**Before Production**:
 
-1. **Single HTML file**: All frontend code is in `index.html`. Don't create separate JS/CSS files unless refactoring the architecture.
+- [ ] Generate new `JWT_SECRET` (32+ chars): `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
+- [ ] Restrict `/api/init-db` endpoint (remove or require admin auth)
+- [ ] Review CORS origins (currently allows multiple)
+- [ ] Enable Vercel DDoS protection
+- [ ] Set up monitoring/alerting (Sentry, UptimeRobot)
+- [ ] Implement CSRF protection for state-changing operations
+- [ ] Add 2FA for admin accounts
 
-2. **Base64 images**: Images are stored as base64 strings in the database. Large image uploads can hit the 50MB JSON body limit (configured in `server.js`).
+**Past Security Incidents**: See [SECURITY_INCIDENT.md](SECURITY_INCIDENT.md) - API keys were committed to git in the past. All secrets are now in `.env` (gitignored).
 
-3. **No build step**: Changes to `index.html` are reflected immediately on browser refresh. No webpack/bundler.
+## Related Documentation
 
-4. **Database initialization**: Visit `/api/init-db` after any schema changes. This drops and recreates all tables.
-
-5. **Authentication persistence**: JWT stored in `localStorage` with key `quicklist-token`. Clear localStorage to sign out.
-
-6. **Port must match**: Frontend `app.apiUrl` (line ~1483) should match backend `PORT` in `.env`. Currently hardcoded to `http://localhost:3000` but should be `http://localhost:4577`.
-
-7. **PostgreSQL arrays**: When querying/inserting keywords, use PostgreSQL array syntax: `ARRAY['keyword1', 'keyword2']` or `$1::text[]`.
-
-## Future Enhancement Ideas (from README)
-
-- Batch processing for multiple items
-- Advanced image editing tools
-- Marketplace API integrations (auto-post to Vinted/eBay)
-- Automated testing suite (Jest/Mocha)
-- Code splitting (separate HTML/CSS/JS files)
-- Image compression before storage
-- Rate limiting on API endpoints
-- Pagination for saved listings
+- [README.md](README.md) - Project overview and installation
+- [README_PRODUCTION.md](README_PRODUCTION.md) - Quick production deployment guide
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Detailed Vercel deployment
+- [API_DOCUMENTATION.md](API_DOCUMENTATION.md) - Complete API reference
+- [QUICK_START.md](QUICK_START.md) - Getting started guide
+- [E2E_TEST_REPORT.md](E2E_TEST_REPORT.md) - Manual testing results
+- Analysis docs: Various audit and planning documents for feature development

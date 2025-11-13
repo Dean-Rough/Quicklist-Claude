@@ -1,34 +1,70 @@
-# Environment variables
-.env
-.env.local
-.env.production
-
 # Dependencies
 node_modules/
-package-lock.json
-yarn.lock
-
-# Logs
-logs/
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Runtime data
-pids/
-*.pid
-*.seed
-*.pid.lock
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.env.test
 
-# Editor directories and files
+# Secret files
+*.pem
+*.key
+*.p12
+*.pfx
+*.p8
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+*.crt
+*.cer
+*.der
+*.csr
+secrets.json
+credentials.json
+service-account*.json
+google-credentials*.json
+aws-credentials*
+.aws/
+.gcloud/
+.azure/
+config.json
+auth.json
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Build outputs
+dist/
+build/
+.vercel/
+
+# Testing
+coverage/
+.nyc_output/
 
 # Temporary files
 tmp/
 temp/
+*.tmp
+.vercel
+
+stripe_backup_code.txt

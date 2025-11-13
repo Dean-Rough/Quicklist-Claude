@@ -6,43 +6,38 @@ echo "=== QuickList AI E2E Test Suite ==="
 echo "Base URL: $BASE_URL"
 echo ""
 
+if [ -z "${CLERK_TEST_TOKEN:-}" ]; then
+  echo "Generating Clerk test token via npm run clerk:token..."
+  if ! TOKEN=$(npm run -s clerk:token); then
+    echo "Failed to generate Clerk test token. Ensure CLERK_SECRET_KEY and CLERK_PUBLISHABLE_KEY (or CLERK_FRONTEND_API) are set."
+    exit 1
+  fi
+else
+  TOKEN="$CLERK_TEST_TOKEN"
+fi
+
+echo "Using Clerk test token: ${TOKEN:0:8}..."
+echo ""
+
 # Test 1: Health Check
 echo "1. Testing health endpoint..."
 curl -s "$BASE_URL/api/health" | jq . || echo "FAILED"
 echo ""
 
-# Test 2: Signup
-echo "2. Testing signup..."
-SIGNUP_RESPONSE=$(curl -s -X POST "$BASE_URL/api/auth/signup" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"e2e_test_'$(date +%s)'@example.com","password":"testpass123"}')
-echo $SIGNUP_RESPONSE | jq .
-TOKEN=$(echo $SIGNUP_RESPONSE | jq -r '.token')
-USER_ID=$(echo $SIGNUP_RESPONSE | jq -r '.user.id')
-echo "Token: ${TOKEN:0:50}..."
-echo ""
-
-# Test 3: Signin
-echo "3. Testing signin..."
-curl -s -X POST "$BASE_URL/api/auth/signin" \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"test@example.com\",\"password\":\"testpassword123\"}" | jq .
-echo ""
-
-# Test 4: Verify Token
-echo "4. Testing token verification..."
+# Test 2: Verify Token
+echo "2. Testing token verification..."
 curl -s -X GET "$BASE_URL/api/auth/verify" \
   -H "Authorization: Bearer $TOKEN" | jq .
 echo ""
 
-# Test 5: Get Listings (empty)
-echo "5. Testing get listings (should be empty)..."
+# Test 3: Get Listings (may be empty)
+echo "3. Testing get listings..."
 curl -s -X GET "$BASE_URL/api/listings" \
   -H "Authorization: Bearer $TOKEN" | jq .
 echo ""
 
-# Test 6: Create a test listing
-echo "6. Testing create listing..."
+# Test 4: Create a test listing
+echo "4. Testing create listing..."
 LISTING_RESPONSE=$(curl -s -X POST "$BASE_URL/api/listings" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -64,14 +59,14 @@ LISTING_ID=$(echo $LISTING_RESPONSE | jq -r '.listing.id')
 echo "Created listing ID: $LISTING_ID"
 echo ""
 
-# Test 7: Get specific listing
-echo "7. Testing get specific listing..."
+# Test 5: Get specific listing
+echo "5. Testing get specific listing..."
 curl -s -X GET "$BASE_URL/api/listings/$LISTING_ID" \
   -H "Authorization: Bearer $TOKEN" | jq .
 echo ""
 
-# Test 8: Update listing
-echo "8. Testing update listing..."
+# Test 6: Update listing
+echo "6. Testing update listing..."
 curl -s -X PUT "$BASE_URL/api/listings/$LISTING_ID" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -89,20 +84,20 @@ curl -s -X PUT "$BASE_URL/api/listings/$LISTING_ID" \
   }' | jq .
 echo ""
 
-# Test 9: Get all listings (should have 1)
-echo "9. Testing get all listings (should have 1)..."
+# Test 7: Get all listings (should have 1)
+echo "7. Testing get all listings (should have 1)..."
 curl -s -X GET "$BASE_URL/api/listings" \
   -H "Authorization: Bearer $TOKEN" | jq .
 echo ""
 
-# Test 10: Delete listing
-echo "10. Testing delete listing..."
+# Test 8: Delete listing
+echo "8. Testing delete listing..."
 curl -s -X DELETE "$BASE_URL/api/listings/$LISTING_ID" \
   -H "Authorization: Bearer $TOKEN" | jq .
 echo ""
 
-# Test 11: Verify listing deleted
-echo "11. Verifying listing was deleted..."
+# Test 9: Verify listing deleted
+echo "9. Verifying listing was deleted..."
 curl -s -X GET "$BASE_URL/api/listings" \
   -H "Authorization: Bearer $TOKEN" | jq .
 echo ""
