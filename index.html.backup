@@ -2550,7 +2550,7 @@
                 </svg>
             </button>
             <div class="logo" onclick="app.navigateTo('home')" style="cursor: pointer;">
-                <img src="/brand/SVG/QL3-Light.svg" alt="QuickList AI" style="height: 40px;">
+                <div id="logo-animation-1" style="height: 40px; width: 120px"></div>
             </div>
             <nav class="nav-links">
                 <a class="nav-link" onclick="app.navigateTo('photoTips')">Photo Tips</a>
@@ -2579,7 +2579,7 @@
                 </svg>
             </button>
             <div class="logo" onclick="app.navigateToApp('newItem')" style="cursor: pointer;">
-                <img src="/brand/SVG/QL3-Light.svg" alt="QuickList AI" style="height: 40px;">
+                <div id="logo-animation-2" style="height: 40px; width: 120px"></div>
             </div>
             <nav class="nav-links">
                 <a class="nav-link" onclick="app.navigateToApp('newItem')" aria-label="Create new listing">New Item</a>
@@ -9363,6 +9363,38 @@ ${this.state.currentListing?.keywords?.join(', ')}
 
         // Initialize app when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
+            // Initialize logo animations
+            const logoAnim1 = document.getElementById('logo-animation-1');
+            const logoAnim2 = document.getElementById('logo-animation-2');
+
+            if (logoAnim1 && typeof lottie !== 'undefined') {
+                try {
+                    lottie.loadAnimation({
+                        container: logoAnim1,
+                        renderer: 'svg',
+                        loop: true,
+                        autoplay: true,
+                        path: '/brand/Quicklist Anim White Trimed.json'
+                    });
+                } catch (error) {
+                    console.error('Failed to load logo animation 1:', error);
+                }
+            }
+
+            if (logoAnim2 && typeof lottie !== 'undefined') {
+                try {
+                    lottie.loadAnimation({
+                        container: logoAnim2,
+                        renderer: 'svg',
+                        loop: true,
+                        autoplay: true,
+                        path: '/brand/Quicklist Anim White Trimed.json'
+                    });
+                } catch (error) {
+                    console.error('Failed to load logo animation 2:', error);
+                }
+            }
+
             // Initialize hero animation (load immediately)
             const heroAnimContainer = document.getElementById('hero-animation');
             if (heroAnimContainer && typeof lottie !== 'undefined') {

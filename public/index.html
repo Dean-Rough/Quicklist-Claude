@@ -836,6 +836,61 @@
         box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
       }
 
+      /* Toggle Switch */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 48px;
+        height: 24px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--border-color);
+        transition: 0.3s;
+        border-radius: 24px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: '';
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+      }
+
+      input:checked + .slider {
+        background-color: var(--accent-indigo);
+      }
+
+      input:focus + .slider {
+        box-shadow: 0 0 1px var(--accent-indigo);
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(24px);
+      }
+
+      input:disabled + .slider {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
       /* Footer */
       .footer {
         background: var(--bg-secondary);
@@ -3481,7 +3536,7 @@
           </svg>
         </button>
         <div class="logo" onclick="app.navigateTo('home')" style="cursor: pointer">
-          <img src="/brand/SVG/QL3-Light.svg" alt="QuickList AI" style="height: 40px" />
+          <div id="logo-animation-1" style="height: 40px; width: 120px"></div>
         </div>
         <nav class="nav-links">
           <a class="nav-link" onclick="app.navigateTo('photoTips')">Photo Tips</a>
@@ -3553,7 +3608,7 @@
           </svg>
         </button>
         <div class="logo" onclick="app.navigateToApp('newItem')" style="cursor: pointer">
-          <img src="/brand/SVG/QL3-Light.svg" alt="QuickList AI" style="height: 40px" />
+          <div id="logo-animation-2" style="height: 40px; width: 120px"></div>
         </div>
         <nav class="nav-links">
           <a class="nav-link" onclick="app.navigateToApp('newItem')" aria-label="Create new listing"
@@ -4206,6 +4261,45 @@
                 </p>
               </div>
               <input type="file" id="imageInput" accept="image/*" multiple style="display: none" />
+
+              <!-- Image Enhancement Toggle -->
+              <div class="form-group" style="margin-top: 1rem">
+                <label
+                  class="form-label"
+                  style="display: flex; align-items: center; justify-content: space-between"
+                >
+                  <span>
+                    Image Enhancement
+                    <small
+                      style="color: var(--text-muted); font-weight: normal; margin-left: 0.5rem"
+                    >
+                      (Pro & Max only)
+                    </small>
+                  </span>
+                  <label class="switch" style="margin: 0">
+                    <input
+                      type="checkbox"
+                      id="imageEnhancement"
+                      onchange="app.toggleImageEnhancement(this.checked)"
+                      disabled
+                    />
+                    <span class="slider"></span>
+                  </label>
+                </label>
+                <small
+                  style="
+                    color: var(--text-muted);
+                    font-size: 0.85rem;
+                    display: block;
+                    margin-top: 0.5rem;
+                  "
+                >
+                  <span id="enhancementDescription">
+                    AI-powered image improvements, auto-tagging, OCR, and quality analysis
+                  </span>
+                </small>
+              </div>
+
               <div class="image-grid" id="imageGrid"></div>
             </div>
           </div>
@@ -5907,6 +6001,7 @@
           user: null,
           token: null,
           hasShownWelcomeToast: false,
+          useEnhancedUpload: false,
           settings: {
             autoDownloadZip: false,
           },
@@ -8719,8 +8814,11 @@
             // DIRECT UPLOAD TO CLOUDINARY (bypasses Vercel 4.5MB limit)
             // Using unsigned upload preset for client-side uploads
 
-            const CLOUDINARY_CLOUD_NAME = 'dqmxmwfiv';
-            const CLOUDINARY_UPLOAD_PRESET = 'quicklist_unsigned'; // You need to create this preset
+            const CLOUDINARY_CLOUD_NAME = 'quicklist';
+            // Use enhanced preset for Pro/Max users if enabled, otherwise use standard
+            const CLOUDINARY_UPLOAD_PRESET = this.state.useEnhancedUpload
+              ? 'upload-optimise'
+              : 'quicklist_unsigned';
 
             // First compress the image client-side (1200px, 70% quality)
             const base64Data = await this.fileToBase64(file, 1200, 0.7);
@@ -10804,6 +10902,30 @@ ${this.state.currentListing?.keywords?.join(', ')}
           this.signInWithClerk(mode);
         },
 
+        // Toggle image enhancement preset
+        toggleImageEnhancement(enabled) {
+          this.state.useEnhancedUpload = enabled;
+          console.log('Image enhancement:', enabled ? 'upload-optimise' : 'quicklist_unsigned');
+        },
+
+        // Enable/disable image enhancement toggle based on user tier
+        updateImageEnhancementUI() {
+          const toggle = document.getElementById('imageEnhancement');
+          if (!toggle) return;
+
+          const user = this.state.user;
+          const isPro = user?.tier === 'pro' || user?.tier === 'max';
+
+          if (isPro) {
+            toggle.disabled = false;
+            toggle.checked = this.state.useEnhancedUpload;
+          } else {
+            toggle.disabled = true;
+            toggle.checked = false;
+            this.state.useEnhancedUpload = false;
+          }
+        },
+
         // Go to dashboard - for authenticated users
         // Check Clerk authentication
         setupClerkListeners() {
@@ -10830,6 +10952,7 @@ ${this.state.currentListing?.keywords?.join(', ')}
             this.updateUI();
             this.updateAuthButtons();
             this.updateMobileMenu();
+            this.updateImageEnhancementUI();
 
             // Load user data
             await this.loadListingsFromDB();
@@ -11329,6 +11452,9 @@ ${this.state.currentListing?.keywords?.join(', ')}
 
           // Load eBay connection status
           await this.loadEbayStatus();
+
+          // Update image enhancement UI
+          this.updateImageEnhancementUI();
         },
 
         /**
@@ -12874,6 +13000,38 @@ ${this.state.currentListing?.keywords?.join(', ')}
 
       // Initialize app when DOM is loaded
       document.addEventListener('DOMContentLoaded', () => {
+        // Initialize logo animations
+        const logoAnim1 = document.getElementById('logo-animation-1');
+        const logoAnim2 = document.getElementById('logo-animation-2');
+
+        if (logoAnim1 && typeof lottie !== 'undefined') {
+          try {
+            lottie.loadAnimation({
+              container: logoAnim1,
+              renderer: 'svg',
+              loop: true,
+              autoplay: true,
+              path: '/brand/Quicklist Anim White Trimed.json',
+            });
+          } catch (error) {
+            console.error('Failed to load logo animation 1:', error);
+          }
+        }
+
+        if (logoAnim2 && typeof lottie !== 'undefined') {
+          try {
+            lottie.loadAnimation({
+              container: logoAnim2,
+              renderer: 'svg',
+              loop: true,
+              autoplay: true,
+              path: '/brand/Quicklist Anim White Trimed.json',
+            });
+          } catch (error) {
+            console.error('Failed to load logo animation 2:', error);
+          }
+        }
+
         // Initialize hero animation (load immediately)
         const heroAnimContainer = document.getElementById('hero-animation');
         if (heroAnimContainer && typeof lottie !== 'undefined') {
