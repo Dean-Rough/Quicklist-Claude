@@ -4132,6 +4132,273 @@ app.post('/api/analyze-label', authenticateToken, async (req, res) => {
   }
 });
 
+// ============================================================================
+// PLATFORM-AGNOSTIC LISTING ENDPOINTS
+// ============================================================================
+
+// Import platform optimizers
+const platformOptimizers = require('./utils/platformOptimizers');
+
+// Generate platform-specific variations for a listing
+app.get('/api/listings/:id/platform-variations', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Get listing
+    const listingResult = await pool.query(
+      'SELECT * FROM listings WHERE id = $1 AND user_id = $2',
+      [id, userId]
+    );
+
+    if (listingResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+
+    const listing = listingResult.rows[0];
+
+    // Check for cached optimizations first
+    const cachedEbay = await platformOptimizers.getCachedOptimization(id, 'ebay');
+    const cachedVinted = await platformOptimizers.getCachedOptimization(id, 'vinted');
+    const cachedDepop = await platformOptimizers.getCachedOptimization(id, 'depop');
+    const cachedFacebook = await platformOptimizers.getCachedOptimization(id, 'facebook');
+
+    // Generate missing optimizations
+    const variations = {
+      ebay: cachedEbay || await platformOptimizers.optimizeForEbay(listing),
+      vinted: cachedVinted || await platformOptimizers.optimizeForVinted(listing),
+      depop: cachedDepop || await platformOptimizers.optimizeForDepop(listing),
+      facebook: cachedFacebook || await platformOptimizers.optimizeForFacebook(listing)
+    };
+
+    // Cache any newly generated optimizations
+    if (!cachedEbay) await platformOptimizers.cacheOptimization(id, 'ebay', variations.ebay);
+    if (!cachedVinted) await platformOptimizers.cacheOptimization(id, 'vinted', variations.vinted);
+    if (!cachedDepop) await platformOptimizers.cacheOptimization(id, 'depop', variations.depop);
+    if (!cachedFacebook) await platformOptimizers.cacheOptimization(id, 'facebook', variations.facebook);
+
+    res.json(variations);
+  } catch (error) {
+    logger.error('Platform variations error:', error);
+    res.status(500).json({ error: 'Failed to generate platform variations' });
+  }
+});
+
+// Optimize listing for single platform
+app.post('/api/listings/:id/optimize-for-platform', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { platform } = req.body;
+    const userId = req.user.id;
+
+    if (!['ebay', 'vinted', 'depop', 'facebook'].includes(platform)) {
+      return res.status(400).json({ error: 'Invalid platform' });
+    }
+
+    // Get listing
+    const listingResult = await pool.query(
+      'SELECT * FROM listings WHERE id = $1 AND user_id = $2',
+      [id, userId]
+    );
+
+    if (listingResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+
+    const listing = listingResult.rows[0];
+
+    // Generate optimization
+    let optimized;
+    switch (platform) {
+      case 'ebay':
+        optimized = await platformOptimizers.optimizeForEbay(listing);
+        break;
+      case 'vinted':
+        optimized = await platformOptimizers.optimizeForVinted(listing);
+        break;
+      case 'depop':
+        optimized = await platformOptimizers.optimizeForDepop(listing);
+        break;
+      case 'facebook':
+        optimized = await platformOptimizers.optimizeForFacebook(listing);
+        break;
+    }
+
+    res.json(optimized);
+  } catch (error) {
+    logger.error('Platform optimization error:', error);
+    res.status(500).json({ error: 'Failed to optimize for platform' });
+  }
+});
+
+// Get platform statuses for a listing
+app.get('/api/listings/:id/platform-status', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Verify listing belongs to user
+    const listingCheck = await pool.query(
+      'SELECT id FROM listings WHERE id = $1 AND user_id = $2',
+      [id, userId]
+    );
+
+    if (listingCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+
+    // Get platform statuses
+    const statusResult = await pool.query(
+      `SELECT platform, status, platform_listing_id, platform_url,
+              view_count, watcher_count, posted_at, sold_at, sale_price
+       FROM listing_platform_status
+       WHERE listing_id = $1
+       ORDER BY platform`,
+      [id]
+    );
+
+    res.json(statusResult.rows);
+  } catch (error) {
+    logger.error('Get platform status error:', error);
+    res.status(500).json({ error: 'Failed to get platform status' });
+  }
+});
+
+// Update platform status for a listing
+app.post('/api/listings/:id/platform-status', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { platform, status, platformListingId, platformUrl } = req.body;
+    const userId = req.user.id;
+
+    if (!['ebay', 'vinted', 'depop', 'facebook'].includes(platform)) {
+      return res.status(400).json({ error: 'Invalid platform' });
+    }
+
+    if (!['draft', 'posted', 'sold', 'delisted'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    // Verify listing belongs to user
+    const listingCheck = await pool.query(
+      'SELECT id FROM listings WHERE id = $1 AND user_id = $2',
+      [id, userId]
+    );
+
+    if (listingCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+
+    // Update or insert platform status
+    await pool.query(
+      `INSERT INTO listing_platform_status
+         (listing_id, platform, status, platform_listing_id, platform_url, posted_at)
+       VALUES ($1, $2, $3, $4, $5,
+         CASE WHEN $3 = 'posted' THEN NOW() ELSE NULL END)
+       ON CONFLICT (listing_id, platform)
+       DO UPDATE SET
+         status = EXCLUDED.status,
+         platform_listing_id = COALESCE(EXCLUDED.platform_listing_id, listing_platform_status.platform_listing_id),
+         platform_url = COALESCE(EXCLUDED.platform_url, listing_platform_status.platform_url),
+         posted_at = CASE
+           WHEN EXCLUDED.status = 'posted' AND listing_platform_status.posted_at IS NULL
+           THEN NOW()
+           ELSE listing_platform_status.posted_at
+         END,
+         updated_at = NOW()`,
+      [id, platform, status, platformListingId, platformUrl]
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Update platform status error:', error);
+    res.status(500).json({ error: 'Failed to update platform status' });
+  }
+});
+
+// Track clipboard analytics
+app.post('/api/analytics/clipboard', authenticateToken, async (req, res) => {
+  try {
+    const { listingId, platform, action, success, errorMessage, sessionId } = req.body;
+    const userId = req.user.id;
+
+    if (!['ebay', 'vinted', 'depop', 'facebook'].includes(platform)) {
+      return res.status(400).json({ error: 'Invalid platform' });
+    }
+
+    if (!['copy', 'open_platform', 'paste_detected', 'post_confirmed', 'error'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid action' });
+    }
+
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    await pool.query(
+      `INSERT INTO clipboard_analytics
+         (user_id, listing_id, platform, action, success, error_message, user_agent, session_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [userId, listingId, platform, action, success, errorMessage, userAgent, sessionId]
+    );
+
+    res.json({ tracked: true });
+  } catch (error) {
+    logger.error('Clipboard analytics error:', error);
+    res.status(500).json({ error: 'Failed to track clipboard action' });
+  }
+});
+
+// Get listings with platform statuses (enhanced endpoint)
+app.get('/api/listings-with-platforms', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      `SELECT
+         l.id,
+         l.title,
+         l.price,
+         l.rrp,
+         l.brand,
+         l.category,
+         l.condition,
+         l.size,
+         l.color,
+         l.material,
+         l.is_platform_agnostic,
+         l.target_platforms,
+         l.created_at,
+         l.updated_at,
+         COALESCE(
+           json_agg(
+             json_build_object(
+               'platform', lps.platform,
+               'status', lps.status,
+               'url', lps.platform_url,
+               'views', lps.view_count,
+               'watchers', lps.watcher_count,
+               'posted_at', lps.posted_at
+             )
+           ) FILTER (WHERE lps.id IS NOT NULL),
+           '[]'::json
+         ) AS platform_statuses
+       FROM listings l
+       LEFT JOIN listing_platform_status lps ON l.id = lps.listing_id
+       WHERE l.user_id = $1
+       GROUP BY l.id
+       ORDER BY l.created_at DESC`,
+      [userId]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    logger.error('Get listings with platforms error:', error);
+    res.status(500).json({ error: 'Failed to get listings' });
+  }
+});
+
+// ============================================================================
+// HEALTH CHECK
+// ============================================================================
+
 // Health check
 app.get('/api/health', async (req, res) => {
   try {
