@@ -425,6 +425,94 @@ function repairGeminiJsonString(jsonString) {
   return jsonString.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
 }
 
+function sliceBalancedJson(text, startIndex) {
+  if (!text || startIndex < 0 || startIndex >= text.length) {
+    return null;
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escapeNext = false;
+
+  for (let i = startIndex; i < text.length; i++) {
+    const char = text[i];
+
+    if (inString) {
+      if (escapeNext) {
+        escapeNext = false;
+        continue;
+      }
+      if (char === '\\') {
+        escapeNext = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{') {
+      depth += 1;
+    } else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(startIndex, i + 1);
+      }
+
+      if (depth < 0) {
+        return null;
+      }
+    }
+  }
+
+  return null;
+}
+
+function extractListingFromGeminiText(text) {
+  if (typeof text !== 'string' || text.trim().length === 0) {
+    return null;
+  }
+
+  const tryParse = (candidate) => {
+    if (!candidate || candidate.trim().length === 0) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(repairGeminiJsonString(candidate.trim()));
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)```/gi;
+  let blockMatch;
+  while ((blockMatch = codeBlockRegex.exec(text)) !== null) {
+    const parsed = tryParse(blockMatch[1]);
+    if (parsed) {
+      return parsed;
+    }
+  }
+
+  let searchIndex = text.indexOf('{');
+  while (searchIndex !== -1) {
+    const candidate = sliceBalancedJson(text, searchIndex);
+    if (candidate) {
+      const parsed = tryParse(candidate);
+      if (parsed) {
+        return parsed;
+      }
+    }
+    searchIndex = text.indexOf('{', searchIndex + 1);
+  }
+
+  return null;
+}
+
 async function ensureCoreSchema() {
   const schemaFiles = [
     'schema.sql',
@@ -3736,23 +3824,8 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
       logger.info('Found research sources:', { count: searchSources.length, userId });
     }
 
-    // Extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const extractedJson = jsonMatch[0];
-      const sanitizedJson = repairGeminiJsonString(extractedJson);
-      let listing;
-      try {
-        listing = JSON.parse(sanitizedJson);
-      } catch (parseError) {
-        logger.error('Failed to parse Gemini JSON response:', {
-          error: parseError.message,
-          userId,
-          snippet: sanitizedJson.substring(0, 500),
-        });
-        throw new Error('AI response JSON parsing failed');
-      }
-
+    const listing = extractListingFromGeminiText(text);
+    if (listing) {
       // Merge AI-generated sources with grounding sources
       if (searchSources.length > 0) {
         listing.sources = [...searchSources, ...(listing.sources || [])];
@@ -3850,11 +3923,11 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
           confidence !== 'HIGH' && listing.alternatives && listing.alternatives.length > 0,
       });
     } else {
-      logger.error('No JSON found in Gemini response:', {
+      logger.error('Failed to extract JSON from Gemini response:', {
         textPreview: text.substring(0, 500),
         userId,
       });
-      throw new Error('Failed to parse API response - no JSON found');
+      throw new Error('AI response JSON parsing failed');
     }
   } catch (error) {
     logger.error('Generate listing error:', { error: error.message, requestId: req.id, userId });
