@@ -2240,24 +2240,10 @@ function prepareImageForGemini(image) {
     throw new Error('Invalid image: must be a non-empty string');
   }
 
-  // Check if it's a Cloudinary URL
-  if (
-    image.startsWith('https://res.cloudinary.com/') ||
-    image.startsWith('http://res.cloudinary.com/')
-  ) {
-    // Gemini 2.0+ supports file URIs - use file_data with URL
-    return {
-      file_data: {
-        mime_type: 'image/jpeg',
-        file_uri: image,
-      },
-    };
-  }
-
-  // Validate base64 format
+  // Validate base64 format (we only accept base64 now, not URLs)
   if (!image.startsWith('data:image')) {
     throw new Error(
-      `Invalid image format: expected base64 data URI or Cloudinary URL, got: ${image.substring(0, 50)}...`
+      `Invalid image format: expected base64 data URI, got: ${image.substring(0, 50)}...`
     );
   }
 

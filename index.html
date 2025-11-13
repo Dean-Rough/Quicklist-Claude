@@ -8161,60 +8161,38 @@
             const hint = ''; // Merged with conditionInfo
             const location = document.getElementById('itemLocation')?.value || '';
 
-            // Upload images to Cloudinary first (reduces payload size dramatically)
-            // Only upload if images don't already have cloudinary URLs
+            // Upload images to Cloudinary for storage, but use base64 for Gemini API
+            // Gemini doesn't support Cloudinary URLs via file_uri, so we need base64
             const imageUrls = await Promise.all(
               this.state.uploadedImages.map(async (img) => {
-                // If already uploaded, return existing URL
-                if (img.cloudinaryUrl) {
-                  console.log('Using cached Cloudinary URL:', img.cloudinaryUrl);
-                  return img.cloudinaryUrl;
-                }
-
                 try {
-                  // Set uploading status and update UI
-                  img.status = 'uploading';
-                  this.renderImageGrid();
+                  // Upload to Cloudinary for storage (if not already uploaded)
+                  if (!img.cloudinaryUrl) {
+                    img.status = 'uploading';
+                    this.renderImageGrid();
 
-                  // Upload to Cloudinary
-                  console.log('Uploading image to Cloudinary...');
-                  const cloudinaryData = await this.uploadImageToCloudinary(img.file);
+                    console.log('Uploading image to Cloudinary for storage...');
+                    const cloudinaryData = await this.uploadImageToCloudinary(img.file);
 
-                  // Validate response
-                  if (!cloudinaryData || !cloudinaryData.secure_url) {
-                    throw new Error('Cloudinary upload returned invalid response');
+                    // Validate response
+                    if (!cloudinaryData || !cloudinaryData.secure_url) {
+                      throw new Error('Cloudinary upload returned invalid response');
+                    }
+
+                    // Store the URL for future reference (used for display, not generation)
+                    img.cloudinaryUrl = cloudinaryData.secure_url;
+                    img.cloudinaryPublicId = cloudinaryData.public_id;
+
+                    console.log('Uploaded to Cloudinary:', cloudinaryData.secure_url);
+                  } else {
+                    console.log('Image already in Cloudinary:', img.cloudinaryUrl);
                   }
 
-                  // Validate URL format
-                  if (
-                    !cloudinaryData.secure_url.startsWith('https://res.cloudinary.com/') &&
-                    !cloudinaryData.secure_url.startsWith('http://res.cloudinary.com/')
-                  ) {
-                    throw new Error(
-                      'Cloudinary URL has invalid format: ' + cloudinaryData.secure_url
-                    );
-                  }
-
-                  // Store the URL in the image object for future reference
-                  img.cloudinaryUrl = cloudinaryData.secure_url;
-                  img.cloudinaryPublicId = cloudinaryData.public_id;
-
-                  // Clear status
-                  img.status = 'ready';
+                  // ALWAYS convert to base64 for Gemini API (Gemini doesn't support Cloudinary URLs)
+                  console.log('Converting to base64 for Gemini API...');
+                  img.status = 'processing';
                   this.renderImageGrid();
 
-                  console.log('Successfully uploaded to Cloudinary:', cloudinaryData.secure_url);
-                  return cloudinaryData.secure_url;
-                } catch (error) {
-                  console.error(
-                    'Failed to upload image to Cloudinary, falling back to base64:',
-                    error
-                  );
-                  // Clear status
-                  img.status = 'ready';
-                  this.renderImageGrid();
-                  // Fallback to base64 if Cloudinary upload fails
-                  console.log('Converting to base64 fallback...');
                   const base64 = await this.fileToBase64(img.file, 800, 0.6);
 
                   // Validate base64 format
@@ -8223,8 +8201,17 @@
                     throw new Error('Failed to convert image to valid format');
                   }
 
-                  console.log('Successfully converted to base64, length:', base64.length);
+                  // Clear status
+                  img.status = 'ready';
+                  this.renderImageGrid();
+
+                  console.log('Successfully prepared base64 for API, length:', base64.length);
                   return base64;
+                } catch (error) {
+                  console.error('Failed to prepare image:', error);
+                  img.status = 'ready';
+                  this.renderImageGrid();
+                  throw error;
                 }
               })
             );
