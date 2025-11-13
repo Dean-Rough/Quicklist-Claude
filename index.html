@@ -2683,6 +2683,642 @@
         background: linear-gradient(90deg, var(--accent-indigo), var(--accent-purple));
         transition: width 0.3s ease;
       }
+
+      /* ===================================================================== */
+      /* PHASE 1: PLATFORM-AGNOSTIC MULTI-PLATFORM COMPONENTS */
+      /* ===================================================================== */
+
+      /* Platform Selector Modal */
+      .platform-selector-modal {
+        max-width: 600px;
+        width: 90%;
+      }
+
+      .selector-hint {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+        text-align: center;
+      }
+
+      .platform-options {
+        display: grid;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .platform-option {
+        display: grid;
+        grid-template-columns: auto 1fr auto auto;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--bg-primary);
+        border: 2px solid transparent;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .platform-option:hover {
+        border-color: var(--accent-indigo);
+        transform: translateY(-2px);
+      }
+
+      .platform-option.selected {
+        border-color: var(--accent-indigo);
+        background: var(--accent-indigo-light);
+      }
+
+      .platform-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+      }
+
+      .platform-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .platform-name {
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .platform-method {
+        font-size: 0.875rem;
+        color: var(--accent-indigo);
+        font-weight: 500;
+      }
+
+      .platform-description {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+      }
+
+      .platform-preview-btn {
+        padding: 0.5rem 1rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+      }
+
+      .platform-preview-btn:hover {
+        background: var(--accent-indigo);
+        color: white;
+        border-color: var(--accent-indigo);
+      }
+
+      .platform-checkbox {
+        width: 24px;
+        height: 24px;
+      }
+
+      .platform-checkbox input[type="checkbox"] {
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        accent-color: var(--accent-indigo);
+      }
+
+      .platform-info-box {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--accent-indigo-light);
+        border-radius: 8px;
+        margin-bottom: 1rem;
+      }
+
+      .info-icon {
+        font-size: 1.5rem;
+      }
+
+      .info-text {
+        flex: 1;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+      }
+
+      /* Preview Modal */
+      .preview-modal {
+        max-width: 700px;
+        width: 90%;
+      }
+
+      .preview-content {
+        margin-bottom: 1.5rem;
+      }
+
+      .preview-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+      }
+
+      .preview-description {
+        background: var(--bg-primary);
+        padding: 1.5rem;
+        border-radius: 8px;
+        white-space: pre-wrap;
+        font-family: inherit;
+        line-height: 1.8;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .preview-specifics {
+        background: var(--bg-primary);
+        padding: 1rem;
+        border-radius: 8px;
+      }
+
+      .preview-specifics h4 {
+        margin-bottom: 0.75rem;
+        color: var(--text-primary);
+      }
+
+      .preview-specifics pre {
+        background: var(--bg-secondary);
+        padding: 1rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        overflow-x: auto;
+      }
+
+      /* Instructions Modal */
+      .instruction-modal {
+        max-width: 500px;
+        width: 90%;
+      }
+
+      .success-icon {
+        font-size: 4rem;
+        text-align: center;
+        margin: 1rem 0;
+      }
+
+      .instruction-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin: 1.5rem 0;
+      }
+
+      .instruction-step {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 1rem;
+        align-items: start;
+      }
+
+      .step-number {
+        width: 32px;
+        height: 32px;
+        background: var(--accent-indigo);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+
+      .step-text {
+        padding-top: 0.25rem;
+        line-height: 1.6;
+      }
+
+      .tip-box {
+        background: var(--accent-indigo-light);
+        padding: 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        margin-top: 1rem;
+      }
+
+      /* Listing Card */
+      .listing-card {
+        background: var(--bg-card);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+
+      .listing-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      }
+
+      .listing-card:active {
+        transform: translateY(-2px);
+      }
+
+      .card-image {
+        width: 100%;
+        height: 220px;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+      }
+
+      .platform-badges {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .badge {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: white;
+        backdrop-filter: blur(8px);
+      }
+
+      .badge-ebay {
+        background: rgba(229, 50, 56, 0.9);
+      }
+
+      .badge-vinted {
+        background: rgba(9, 177, 186, 0.9);
+      }
+
+      .badge-depop {
+        background: rgba(255, 46, 46, 0.9);
+      }
+
+      .badge-facebook {
+        background: rgba(24, 119, 242, 0.9);
+      }
+
+      .image-count-badge {
+        position: absolute;
+        bottom: 12px;
+        right: 12px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        backdrop-filter: blur(8px);
+      }
+
+      .card-content {
+        padding: 1.25rem;
+      }
+
+      .card-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .card-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 1rem;
+      }
+
+      .card-price-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .card-price {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--accent-indigo);
+      }
+
+      .card-rrp {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        text-decoration: line-through;
+      }
+
+      .card-savings {
+        display: inline-block;
+        background: var(--success-color);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+      }
+
+      .card-info {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.25rem;
+      }
+
+      .card-brand {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+
+      .card-condition {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+      }
+
+      .card-platforms {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+
+      .platform-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        background: var(--bg-primary);
+        border-radius: 8px;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+      }
+
+      .platform-status:hover {
+        background: var(--bg-secondary);
+      }
+
+      .platform-status.status-posted {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+      }
+
+      .platform-status.status-sold {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+
+      .platform-icon {
+        font-size: 1.2rem;
+      }
+
+      .platform-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+      }
+
+      .platform-name {
+        font-weight: 500;
+        font-size: 0.85rem;
+      }
+
+      .status-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+
+      .status-label-draft {
+        color: var(--text-secondary);
+      }
+
+      .status-label-posted {
+        color: var(--success-color);
+      }
+
+      .status-label-sold {
+        color: var(--error-color);
+      }
+
+      .status-label-delisted {
+        color: var(--text-secondary);
+      }
+
+      .platform-stats {
+        display: flex;
+        gap: 0.75rem;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+      }
+
+      .stat-views,
+      .stat-watchers {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+
+      .card-actions {
+        display: grid;
+        grid-template-columns: 1fr 2fr auto;
+        gap: 0.75rem;
+      }
+
+      .btn-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+
+      /* Listing Grid */
+      .listing-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+        padding: 1.5rem 0;
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+      }
+
+      .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+      }
+
+      .empty-state p {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+      }
+
+      /* Error State */
+      .error-state {
+        text-align: center;
+        padding: 4rem 2rem;
+      }
+
+      .error-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: var(--error-color);
+      }
+
+      .error-state p {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+      }
+
+      /* Context Menu */
+      .context-menu {
+        position: fixed;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.5rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        z-index: 10000;
+        min-width: 160px;
+        opacity: 0;
+        transform: translateY(-10px);
+        pointer-events: none;
+        transition: all 0.2s ease;
+      }
+
+      .context-menu.active {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: all;
+      }
+
+      .context-menu button {
+        width: 100%;
+        padding: 0.75rem;
+        text-align: left;
+        background: none;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+        font-size: 0.9rem;
+      }
+
+      .context-menu button:hover {
+        background: var(--bg-primary);
+      }
+
+      .context-menu button.danger {
+        color: var(--error-color);
+      }
+
+      .context-menu button.danger:hover {
+        background: rgba(239, 68, 68, 0.1);
+      }
+
+      .context-menu hr {
+        margin: 0.5rem 0;
+        border: none;
+        border-top: 1px solid var(--border-color);
+      }
+
+      /* Loading Spinner Small */
+      .spinner-small {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+      }
+
+      /* Animations */
+      @keyframes platform-select {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.02);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @keyframes card-remove {
+        0% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+      }
+
+      /* Mobile Responsive */
+      @media (max-width: 768px) {
+        .platform-selector-modal,
+        .preview-modal,
+        .instruction-modal {
+          width: 95%;
+          max-width: none;
+        }
+
+        .platform-option {
+          grid-template-columns: auto 1fr;
+          grid-template-rows: auto auto;
+        }
+
+        .platform-preview-btn {
+          grid-column: 2;
+          justify-self: start;
+        }
+
+        .platform-checkbox {
+          grid-column: 1;
+          grid-row: 1 / 3;
+        }
+
+        .listing-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+
+        .card-platforms {
+          grid-template-columns: 1fr;
+        }
+
+        .card-actions {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .btn-icon {
+          grid-column: 1 / -1;
+        }
+      }
     </style>
 
     <!-- Lottie/Bodymovin for Animations -->
@@ -12464,5 +13100,10 @@ ${this.state.currentListing?.keywords?.join(', ')}
       </div>
       <div class="toast-message" id="toastMessage">Success!</div>
     </div>
+
+    <!-- Phase 1: Platform-Agnostic Multi-Platform Components -->
+    <script src="/utils/clipboard.js"></script>
+    <script src="/components/PlatformSelector.js"></script>
+    <script src="/components/ListingCard.js"></script>
   </body>
 </html>
