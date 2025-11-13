@@ -8748,7 +8748,17 @@
 
             if (!response.ok) {
               const error = await response.json().catch(() => ({ error: 'Upload failed' }));
-              throw new Error(error.error?.message || 'Failed to upload image to Cloudinary');
+              const errorMsg =
+                error.error?.message || error.message || 'Failed to upload image to Cloudinary';
+
+              // Provide helpful guidance for common errors
+              if (errorMsg.includes('Unknown API key') || errorMsg.includes('Upload preset')) {
+                throw new Error(
+                  'Cloudinary upload preset not configured. Please create an unsigned upload preset named "quicklist_unsigned" in your Cloudinary dashboard. See CLOUDINARY_UPLOAD_PRESET_SETUP.md for instructions.'
+                );
+              }
+
+              throw new Error(errorMsg);
             }
 
             const data = await response.json();
