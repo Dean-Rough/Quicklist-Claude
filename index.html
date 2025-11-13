@@ -6220,6 +6220,33 @@
           }
         },
 
+        /**
+         * Fetch with timeout wrapper
+         * @param {string} url - URL to fetch
+         * @param {object} options - Fetch options
+         * @param {number} timeout - Timeout in milliseconds
+         * @returns {Promise<Response>}
+         */
+        async fetchWithTimeout(url, options = {}, timeout = 30000) {
+          const controller = new AbortController();
+          const id = setTimeout(() => controller.abort(), timeout);
+
+          try {
+            const response = await fetch(url, {
+              ...options,
+              signal: controller.signal
+            });
+            clearTimeout(id);
+            return response;
+          } catch (error) {
+            clearTimeout(id);
+            if (error.name === 'AbortError') {
+              throw new Error(`Request timeout after ${timeout}ms`);
+            }
+            throw error;
+          }
+        },
+
         // Check if user is authenticated
         async checkAuth() {
           if (!this.state.token) return;
