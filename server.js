@@ -2495,6 +2495,13 @@ async function uploadToCloudinary(base64Data, userId) {
       throw new Error('Cloudinary is not configured');
     }
 
+    logger.info('Starting Cloudinary upload:', {
+      userId,
+      imageSize: base64Data.length,
+      imageType: base64Data.substring(0, 30),
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    });
+
     // Upload to Cloudinary with basic transformations (free tier compatible)
     const uploadResult = await cloudinary.uploader.upload(base64Data, {
       folder: `quicklist/${userId}`,
@@ -2544,7 +2551,15 @@ async function uploadToCloudinary(base64Data, userId) {
   } catch (error) {
     logger.error('Cloudinary upload error:', {
       error: error.message,
+      errorName: error.name,
+      errorStack: error.stack,
+      errorCode: error.error?.code || error.http_code,
+      errorDetails: error.error || {},
       userId,
+      cloudinaryConfigured: !!process.env.CLOUDINARY_CLOUD_NAME,
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+      hasApiKey: !!process.env.CLOUDINARY_API_KEY,
+      hasApiSecret: !!process.env.CLOUDINARY_API_SECRET,
     });
     throw error;
   }
