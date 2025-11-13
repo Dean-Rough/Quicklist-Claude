@@ -379,9 +379,11 @@ const authenticateToken = async (req, res, next) => {
         }
 
         // Get full user details from Clerk
+        logger.info('Fetching user details from Clerk', { userId, requestId: req.id });
         const user = await clerkClient.users.getUser(userId);
         const email = user.emailAddresses[0]?.emailAddress;
         const name = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName || user.username;
+        logger.info('Got user from Clerk', { userId, email, requestId: req.id });
 
         // Look up or create database user record
         let dbUser = await pool.query(
@@ -415,7 +417,13 @@ const authenticateToken = async (req, res, next) => {
 
         return next();
     } catch (error) {
-        logger.error('Clerk authentication error:', { error: error.message, requestId: req.id });
+        logger.error('Clerk authentication error:', {
+            error: error.message,
+            stack: error.stack,
+            requestId: req.id,
+            hasAuthHeader: !!req.headers.authorization,
+            authHeaderPrefix: req.headers.authorization?.substring(0, 20)
+        });
         return res.status(403).json({ error: 'Invalid or expired token' });
     }
 };
