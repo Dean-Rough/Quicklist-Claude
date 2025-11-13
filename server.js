@@ -289,6 +289,24 @@ app.post('/api/stripe/webhook', stripeWebhookMiddleware, async (req, res) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Error handler for JSON parsing errors
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    logger.error('JSON Parse Error:', {
+      message: err.message,
+      url: req.url,
+      method: req.method,
+      contentType: req.get('content-type'),
+      bodyPreview: req.body ? JSON.stringify(req.body).substring(0, 200) : 'No body',
+    });
+    return res.status(400).json({
+      error: 'Invalid JSON in request body',
+      details: err.message,
+    });
+  }
+  next(err);
+});
+
 // Test endpoint before Clerk middleware
 app.get('/api/ping', (req, res) => {
   res.json({ message: 'pong', timestamp: new Date().toISOString() });
@@ -2880,6 +2898,15 @@ app.post('/api/analyze-image-quality', authenticateToken, async (req, res) => {
 app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) => {
   const userId = req.user?.id; // Define at function scope for error logging
   try {
+    // Log request body for debugging
+    logger.info('Generate endpoint called:', {
+      userId,
+      hasImages: !!req.body?.images,
+      imageCount: req.body?.images?.length,
+      platform: req.body?.platform,
+      bodyKeys: Object.keys(req.body || {}),
+    });
+
     const { images, platform, hint, itemModel, conditionInfo } = req.body;
 
     // Validate images
