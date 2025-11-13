@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Platform Selector - QuickList AI</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #f9fafb;
+      --bg-secondary: #f3f4f6;
+      --bg-card: #ffffff;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --accent-indigo: #6366f1;
+      --accent-indigo-light: #eef2ff;
+      --border-color: #e5e7eb;
+      --success-color: #10b981;
+      --error-color: #ef4444;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg-primary);
+      padding: 2rem;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--bg-card);
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      margin-bottom: 1.5rem;
+      color: var(--text-primary);
+    }
+
+    .test-section {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: var(--bg-primary);
+      border-radius: 8px;
+    }
+
+    .test-section h2 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+
+    .btn-primary {
+      background: var(--accent-indigo);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      background: #4f46e5;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-secondary {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-left: 0.5rem;
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card);
+      border-color: var(--accent-indigo);
+    }
+
+    .sample-listing {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .sample-listing h3 {
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .sample-listing p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .log-area {
+      background: #1f2937;
+      color: #f3f4f6;
+      padding: 1rem;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 1rem;
+    }
+
+    .log-entry {
+      margin-bottom: 0.5rem;
+      padding: 0.25rem;
+    }
+
+    .log-entry.success { color: #10b981; }
+    .log-entry.error { color: #ef4444; }
+    .log-entry.info { color: #60a5fa; }
+
+    /* Include all Phase 1 styles from index.html */
+  </style>
+
+  <!-- Import Phase 1 styles from main app -->
+  <link rel="stylesheet" href="/index.html" media="none" onload="if(media!='all')media='all'">
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Platform Selector Test Page</h1>
+
+    <div class="test-section">
+      <h2>Test Listing</h2>
+      <div class="sample-listing">
+        <h3>Nike Air Max 90 White/Black</h3>
+        <p><strong>Price:</strong> £45 | <strong>RRP:</strong> £100 | <strong>Brand:</strong> Nike</p>
+        <p><strong>Condition:</strong> Excellent | <strong>Size:</strong> UK 9</p>
+        <p>Excellent condition Nike Air Max 90 in white and black colorway. Barely worn, just a few marks on the sole.</p>
+      </div>
+
+      <button class="btn-primary" onclick="testPlatformSelector()">
+        🚀 Open Platform Selector
+      </button>
+
+      <button class="btn-secondary" onclick="testSmartClipboard()">
+        📋 Test Smart Clipboard
+      </button>
+    </div>
+
+    <div class="test-section">
+      <h2>Console Log</h2>
+      <div class="log-area" id="logArea">
+        <div class="log-entry info">[INFO] Test page loaded. Ready to test components.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 1 Components -->
+  <script src="/utils/clipboard.js"></script>
+  <script src="/components/PlatformSelector.js"></script>
+  <script src="/components/ListingCard.js"></script>
+
+  <script>
+    // Mock listing data
+    const mockListing = {
+      id: 999,
+      title: 'Nike Air Max 90 White/Black',
+      price: 45,
+      rrp: 100,
+      brand: 'Nike',
+      category: 'Sneakers',
+      condition: 'Excellent',
+      size: '9',
+      color: 'White/Black',
+      material: 'Leather',
+      description: 'Excellent condition Nike Air Max 90 in white and black colorway. Barely worn, just a few marks on the sole. Original box included. Fast shipping available.',
+      keywords: ['nike', 'airmax', 'sneakers', 'trainers', 'white', 'black'],
+      images: [
+        {
+          url: 'https://via.placeholder.com/400x300/FFFFFF/6366f1?text=Nike+Air+Max+90',
+          cloudinaryUrl: 'https://via.placeholder.com/400x300/FFFFFF/6366f1?text=Nike+Air+Max+90'
+        }
+      ],
+      platform_statuses: [
+        { platform: 'ebay', status: 'draft' },
+        { platform: 'vinted', status: 'draft' },
+        { platform: 'depop', status: 'draft' },
+        { platform: 'facebook', status: 'draft' }
+      ]
+    };
+
+    // Logging function
+    function log(message, type = 'info') {
+      const logArea = document.getElementById('logArea');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logArea.appendChild(entry);
+      logArea.scrollTop = logArea.scrollHeight;
+      console.log(message);
+    }
+
+    // Test Platform Selector
+    async function testPlatformSelector() {
+      try {
+        log('Opening Platform Selector...', 'info');
+
+        // Mock window.app for auth token
+        window.app = {
+          authToken: 'test_token',
+          showToast: (msg, type) => log(`Toast: ${msg}`, type)
+        };
+
+        // Mock localStorage
+        localStorage.setItem('auth_token', 'test_token');
+
+        // Mock fetch for API calls
+        const originalFetch = window.fetch;
+        window.fetch = async (url, options) => {
+          log(`API Call: ${url}`, 'info');
+
+          if (url.includes('/platform-variations')) {
+            // Return mock platform variations
+            return {
+              ok: true,
+              json: async () => ({
+                ebay: {
+                  platform: 'ebay',
+                  title: mockListing.title,
+                  description: `${mockListing.description}\n\nITEM SPECIFICS:\n• Brand: ${mockListing.brand}\n• Condition: ${mockListing.condition}\n• Size: ${mockListing.size}`,
+                  clipboardText: null,
+                  itemSpecifics: {
+                    Brand: mockListing.brand,
+                    Condition: mockListing.condition
+                  }
+                },
+                vinted: {
+                  platform: 'vinted',
+                  title: `${mockListing.title} 🔥`,
+                  description: `Size: ${mockListing.size} UK\n£${mockListing.price} (RRP £${mockListing.rrp} - save 55%!)\n\n${mockListing.description}`,
+                  clipboardText: `${mockListing.title} 🔥\n\nSize: ${mockListing.size} UK\n£${mockListing.price} (RRP £${mockListing.rrp} - save 55%!)\n\n${mockListing.description}\n\n${mockListing.keywords.map(k => '#' + k).join(' ')}`
+                },
+                depop: {
+                  platform: 'depop',
+                  title: mockListing.title.toUpperCase(),
+                  description: `${mockListing.description.toLowerCase()} 😍\n\nsize ${mockListing.size}\nprice: £${mockListing.price}\ngrab a bargain! 💫`,
+                  clipboardText: `${mockListing.title.toUpperCase()} ✨\n\n${mockListing.description.toLowerCase()} 😍\n\nsize ${mockListing.size}\nprice: £${mockListing.price}\ngrab a bargain! 💫`
+                },
+                facebook: {
+                  platform: 'facebook',
+                  title: mockListing.title,
+                  description: `${mockListing.title}\n\n💰 Price: £${mockListing.price}\n📦 Condition: ${mockListing.condition}\n\n${mockListing.description}`,
+                  clipboardText: `${mockListing.title}\n\n💰 Price: £${mockListing.price}\n📦 Condition: ${mockListing.condition}\n\n${mockListing.description}`
+                }
+              })
+            };
+          }
+
+          // Mock other API calls
+          return { ok: true, json: async () => ({ success: true }) };
+        };
+
+        const selector = new PlatformSelector(mockListing.id, mockListing);
+        await selector.show();
+
+        log('Platform Selector opened successfully!', 'success');
+
+        // Restore original fetch after a delay
+        setTimeout(() => {
+          window.fetch = originalFetch;
+        }, 5000);
+
+      } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Test Smart Clipboard
+    async function testSmartClipboard() {
+      try {
+        log('Testing Smart Clipboard...', 'info');
+
+        const clipboard = new SmartClipboard();
+        const testText = 'Nike Air Max 90 - Test Clipboard Functionality';
+
+        const success = await clipboard.copy(testText, 'test');
+
+        if (success) {
+          log('✓ Clipboard copy successful!', 'success');
+          log(`Copied: "${testText}"`, 'info');
+
+          // Test browser info
+          const browserInfo = clipboard.getBrowserInfo();
+          log(`Browser: ${browserInfo.browser}`, 'info');
+          log(`iOS: ${browserInfo.isIOS}`, 'info');
+          log(`Android: ${browserInfo.isAndroid}`, 'info');
+          log(`Clipboard API: ${browserInfo.supportsClipboardAPI}`, 'info');
+        } else {
+          log('✗ Clipboard copy failed', 'error');
+        }
+
+      } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Auto-run clipboard test on load
+    window.addEventListener('load', () => {
+      log('All components loaded successfully', 'success');
+      log('Click buttons above to test functionality', 'info');
+    });
+  </script>
+</body>
+</html>
