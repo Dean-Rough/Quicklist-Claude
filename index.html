@@ -8770,7 +8770,18 @@
 
               const error = await response.json().catch(() => ({}));
               const errorMessage = error.error || `API request failed (${response.status})`;
-              throw new Error(errorMessage);
+
+              // Log full error details for debugging
+              if (error.details) {
+                console.error('Server error details:', error.details);
+                console.error('Full error object:', error);
+              }
+
+              // Include details in error message if available
+              const fullMessage = error.details
+                ? `${errorMessage}\nDetails: ${error.details}`
+                : errorMessage;
+              throw new Error(fullMessage);
             }
 
             const data = await response.json();
