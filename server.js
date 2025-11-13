@@ -90,6 +90,7 @@ const frontendUrl =
 
 // Database connection with proper configuration
 let pool;
+let schemaEnsurePromise = null;
 if (
   process.env.DATABASE_URL &&
   process.env.DATABASE_URL !==
@@ -424,7 +425,6 @@ function repairGeminiJsonString(jsonString) {
   return jsonString.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
 }
 
-let schemaEnsurePromise = null;
 async function ensureCoreSchema() {
   const schemaFiles = [
     'schema.sql',
