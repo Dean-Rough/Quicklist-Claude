@@ -71,8 +71,10 @@ const stripe = process.env.STRIPE_SECRET_KEY
   : null;
 
 // Configure Cloudinary
+const defaultCloudName = (process.env.CLOUDINARY_CLOUD_NAME || 'quicklist').trim();
+
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'quicklist',
+  cloud_name: defaultCloudName,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
@@ -345,12 +347,14 @@ app.get('/api/config/auth', (req, res) => {
 
 // Cloudinary configuration for frontend
 app.get('/api/config/cloudinary', (req, res) => {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || null;
-  const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET || 'quicklist_unsigned';
-  const enhancedPreset = process.env.CLOUDINARY_ENHANCED_UPLOAD_PRESET || 'upload-optimise';
+  const cloudName = (process.env.CLOUDINARY_CLOUD_NAME || defaultCloudName || '').trim();
+  const uploadPreset = (process.env.CLOUDINARY_UPLOAD_PRESET || 'quicklist_unsigned').trim();
+  const enhancedPreset = (
+    process.env.CLOUDINARY_ENHANCED_UPLOAD_PRESET || 'upload-optimise'
+  ).trim();
 
   res.json({
-    cloudName,
+    cloudName: cloudName || null,
     uploadPreset,
     enhancedPreset,
     mediaEditorEnabled: Boolean(cloudName),

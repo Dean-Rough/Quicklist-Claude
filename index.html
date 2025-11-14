@@ -6331,9 +6331,15 @@
 
             const data = await response.json();
             this.state.cloudinary = {
-              cloudName: data.cloudName || defaults.cloudName,
-              uploadPreset: data.uploadPreset || defaults.uploadPreset,
-              enhancedPreset: data.enhancedPreset || defaults.enhancedPreset,
+              cloudName: (data.cloudName || defaults.cloudName || '').trim() || defaults.cloudName,
+              uploadPreset:
+                (typeof data.uploadPreset === 'string'
+                  ? data.uploadPreset
+                  : defaults.uploadPreset) || defaults.uploadPreset,
+              enhancedPreset:
+                (typeof data.enhancedPreset === 'string'
+                  ? data.enhancedPreset
+                  : defaults.enhancedPreset) || defaults.enhancedPreset,
               mediaEditorEnabled: Boolean(data.mediaEditorEnabled && data.cloudName),
             };
           } catch (error) {
@@ -9095,13 +9101,18 @@
             // Using unsigned upload preset for client-side uploads
 
             const cloudinaryConfig = this.state.cloudinary || {};
-            const CLOUDINARY_CLOUD_NAME = cloudinaryConfig.cloudName || 'quicklist';
+            const CLOUDINARY_CLOUD_NAME =
+              (cloudinaryConfig.cloudName && cloudinaryConfig.cloudName.trim()) || 'quicklist';
             if (!CLOUDINARY_CLOUD_NAME) {
               throw new Error('Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME.');
             }
             // Use enhanced preset for Pro/Max users if enabled, otherwise use standard
-            const defaultPreset = cloudinaryConfig.uploadPreset || 'quicklist_unsigned';
-            const enhancedPreset = cloudinaryConfig.enhancedPreset || 'upload-optimise';
+            const defaultPreset =
+              (cloudinaryConfig.uploadPreset && cloudinaryConfig.uploadPreset.trim()) ||
+              'quicklist_unsigned';
+            const enhancedPreset =
+              (cloudinaryConfig.enhancedPreset && cloudinaryConfig.enhancedPreset.trim()) ||
+              'upload-optimise';
             const CLOUDINARY_UPLOAD_PRESET =
               this.state.useEnhancedUpload && enhancedPreset ? enhancedPreset : defaultPreset;
 
