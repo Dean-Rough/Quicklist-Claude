@@ -343,6 +343,20 @@ app.get('/api/config/auth', (req, res) => {
   });
 });
 
+// Cloudinary configuration for frontend
+app.get('/api/config/cloudinary', (req, res) => {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || null;
+  const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET || 'quicklist_unsigned';
+  const enhancedPreset = process.env.CLOUDINARY_ENHANCED_UPLOAD_PRESET || 'upload-optimise';
+
+  res.json({
+    cloudName,
+    uploadPreset,
+    enhancedPreset,
+    mediaEditorEnabled: Boolean(cloudName),
+  });
+});
+
 // Serve static files from ./public only
 app.use(
   '/.well-known',
@@ -2172,6 +2186,8 @@ ${listing.modelCodes && listing.modelCodes.length > 0 ? `Model Code: ${listing.m
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const result = JSON.parse(jsonMatch[0]);
+      const normalizedBrand = listing.brand ? listing.brand.replace(/\s+/g, '').toLowerCase() : '';
+      let candidateProductPage = result.productPageUrl || null;
 
       // Extract URLs from Google Search grounding if available
       const groundingMetadata = data.candidates[0]?.groundingMetadata;
@@ -2183,10 +2199,20 @@ ${listing.modelCodes && listing.modelCodes.length > 0 ? `Model Code: ${listing.m
             const url = chunk.web.uri;
             if (/\.(jpg|jpeg|png|webp)(\?|$)/i.test(url)) {
               imageUrls.push(url);
-            } else if (url.includes('image') || url.includes('product')) {
-              // Could be a product page - note it but don't use directly
-              if (!result.stockImageUrl && imageUrls.length === 0) {
-                result.pageUrl = url; // Store page URL as fallback
+            } else {
+              // Could be a product page - prefer brand domains
+              if (!candidateProductPage) {
+                candidateProductPage = url;
+              }
+              if (normalizedBrand) {
+                try {
+                  const host = new URL(url).hostname.replace(/^www\./i, '').toLowerCase();
+                  if (host.includes(normalizedBrand)) {
+                    candidateProductPage = url;
+                  }
+                } catch (_urlError) {
+                  // Ignore invalid URLs
+                }
               }
             }
           }
@@ -2197,6 +2223,10 @@ ${listing.modelCodes && listing.modelCodes.length > 0 ? `Model Code: ${listing.m
           result.stockImageUrl = imageUrls[0];
           result.source = 'Google Search';
           result.confidence = 'MEDIUM';
+        }
+
+        if (candidateProductPage && !result.productPageUrl) {
+          result.productPageUrl = candidateProductPage;
         }
       }
 
@@ -3327,7 +3357,7 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
 
     const conditionSection =
       aiConditionAnalysis.length > 0
-        ? `\n**PRODUCT CONDITION ANALYSIS (FROM AI INSPECTION):**\n${aiConditionAnalysis.join('\n')}\n\n**CRITICAL**: The above condition assessment was performed by AI analysis:\n- Use this information to accurately populate the "condition" field\n- Include all defects in the listing description\n- Be honest about condition - this builds buyer trust\n- If damage is present, describe it clearly and specifically\n`
+        ? `\n**PRODUCT CONDITION ANALYSIS (FROM AI INSPECTION):**\n${aiConditionAnalysis.join('\n')}\n\n**CRITICAL**: Use the observations above to write the condition section. Describe them naturally and NEVER mention AI, analysis, or that the notes came from photos.\n- Use this information to accurately populate the "condition" field\n- Include all defects in the listing description\n- Be honest about condition - this builds buyer trust\n- If damage is present, describe it clearly and specifically\n`
         : '';
 
     // Improved system prompt v3.0 - See SYSTEM-PROMPTS.md for details
@@ -3484,10 +3514,12 @@ Base your entire listing on what you can READ and VERIFY, not what you THINK you
 
      **REQUIRED FORMAT:**
 
-     **Marketing Paragraph** (2-3 sentences):
-     - Engaging opening about what the item is, what it offers, and its benefits
-     - Focus on value proposition without being grandiose
-     - Use standard marketing language that highlights key selling points
+    **Marketing Paragraph** (3-4 sentences):
+    - Engaging opening about what the item is, what it offers, and its benefits
+    - Highlight key materials, technology, or craftsmanship details the buyer cares about
+    - Describe real-world use cases (daily wear, collectors, gifting, training, etc.)
+    - Focus on value proposition without being grandiose
+    - Use standard marketing language that highlights key selling points and why this specific piece stands out
      - Example: "The Nike Air Revaderchi brings retro trail-running style to modern streetwear. Inspired by the iconic Air Mowabb, these trainers combine premium materials with classic design elements for a distinctive look that stands out from the crowd."
 
      **---** (separator line)
@@ -3505,7 +3537,7 @@ Base your entire listing on what you can READ and VERIFY, not what you THINK you
      **Condition**
      Detailed condition assessment including:
      - Overall condition category (New/Excellent/Good/Fair etc.)
-     - Specific condition notes from AI analysis
+     - Specific condition notes observed (describe exact wear/scratches/defects naturally without referencing AI or analysis)
      - Any user-provided condition information
      - Visible wear, marks, or defects
      - Example: "Fair condition with visible dirt and scuff marks on the back heel area and moderate wear on the soles. The uppers show typical signs of use but remain structurally sound. Missing insoles as noted."
@@ -3529,6 +3561,7 @@ Base your entire listing on what you can READ and VERIFY, not what you THINK you
      - Stay truthful: Don't exaggerate, but highlight positives
      - Use UK English spelling and terminology
      - Vary sentence length for rhythm and readability
+     - Never mention AI, computer vision, or that the description was generated by an analysis—speak as the seller
 
      **MANDATORY CONTENT:**
      - MUST include exact product line/model name (identified via code lookup) in first sentence - NOT generic terms
@@ -3865,12 +3898,22 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
         // Add model codes to listing for stock image search
         listing.modelCodes = parsedCodes.modelCodes || [];
         stockImageData = await findStockImage(listing, apiKey);
-        if (stockImageData && stockImageData.stockImageUrl) {
-          listing.stockImageUrl = stockImageData.stockImageUrl;
-          listing.stockImageSource = stockImageData.source;
-          listing.stockImageConfidence = stockImageData.confidence;
-          listing.stockImageAlternatives = stockImageData.alternatives || [];
-        }
+      }
+      if (stockImageData && stockImageData.stockImageUrl) {
+        listing.stockImageUrl = stockImageData.stockImageUrl;
+        listing.stockImageSource = stockImageData.source;
+        listing.stockImageConfidence = stockImageData.confidence;
+        listing.stockImageAlternatives = stockImageData.alternatives || [];
+      }
+      if (stockImageData?.productPageUrl) {
+        listing.manufacturerUrl = stockImageData.productPageUrl;
+        listing.sources = [
+          {
+            url: stockImageData.productPageUrl,
+            title: `${listing.brand || 'Manufacturer'} product page`,
+          },
+          ...(listing.sources || []),
+        ];
       }
 
       // Get eBay pricing intelligence if platform is eBay (only for primary match)

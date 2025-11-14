@@ -4,18 +4,23 @@
  */
 
 // Cache configuration
-const CACHE_VERSION = 'v1';
-const STATIC_CACHE = 'quicklist-static-v1';
-const DYNAMIC_CACHE = 'quicklist-dynamic-v1';
-const IMAGE_CACHE = 'quicklist-images-v1';
+const CACHE_VERSION = 'v2'; // Bumped for Phase 1 multi-platform release
+const STATIC_CACHE = 'quicklist-static-v2';
+const DYNAMIC_CACHE = 'quicklist-dynamic-v2';
+const IMAGE_CACHE = 'quicklist-images-v2';
 
 // Cache these files on install
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/offline.html',
+  '/manifest.json',
+  '/utils/clipboard.js',
+  '/components/PlatformSelector.js',
+  '/components/ListingCard.js',
+  '/components/BottomNav.js',
   'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
 ];
 
 // Install event - cache static assets
@@ -23,13 +28,14 @@ self.addEventListener('install', (event) => {
   console.log('[ServiceWorker] Install');
 
   event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then(cache => {
+    caches
+      .open(STATIC_CACHE)
+      .then((cache) => {
         console.log('[ServiceWorker] Caching static assets');
         // Cache each asset individually to handle failures gracefully
         return Promise.allSettled(
-          STATIC_ASSETS.map(url =>
-            cache.add(url).catch(err => {
+          STATIC_ASSETS.map((url) =>
+            cache.add(url).catch((err) => {
               console.warn(`[ServiceWorker] Failed to cache ${url}:`, err);
             })
           )
@@ -44,20 +50,22 @@ self.addEventListener('activate', (event) => {
   console.log('[ServiceWorker] Activate');
 
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames
-          .filter(cacheName => {
-            // Delete old version caches
-            return cacheName.startsWith('quicklist-') &&
-                   !cacheName.endsWith(CACHE_VERSION);
-          })
-          .map(cacheName => {
-            console.log('[ServiceWorker] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          })
-      );
-    }).then(() => self.clients.claim()) // Take control immediately
+    caches
+      .keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter((cacheName) => {
+              // Delete old version caches
+              return cacheName.startsWith('quicklist-') && !cacheName.endsWith(CACHE_VERSION);
+            })
+            .map((cacheName) => {
+              console.log('[ServiceWorker] Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            })
+        );
+      })
+      .then(() => self.clients.claim()) // Take control immediately
   );
 });
 
@@ -93,17 +101,18 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Images - cache first, network fallback
-  if (request.destination === 'image' ||
-      url.pathname.match(/\.(jpg|jpeg|png|gif|svg|webp)$/i)) {
+  if (request.destination === 'image' || url.pathname.match(/\.(jpg|jpeg|png|gif|svg|webp)$/i)) {
     event.respondWith(cacheFirstStrategy(request, IMAGE_CACHE));
     return;
   }
 
   // Static assets - cache first
-  if (STATIC_ASSETS.includes(url.pathname) ||
-      url.hostname.includes('fonts.googleapis.com') ||
-      url.hostname.includes('fonts.gstatic.com') ||
-      url.hostname.includes('cdnjs.cloudflare.com')) {
+  if (
+    STATIC_ASSETS.includes(url.pathname) ||
+    url.hostname.includes('fonts.googleapis.com') ||
+    url.hostname.includes('fonts.gstatic.com') ||
+    url.hostname.includes('cdnjs.cloudflare.com')
+  ) {
     event.respondWith(cacheFirstStrategy(request, STATIC_CACHE));
     return;
   }
@@ -137,10 +146,13 @@ async function cacheFirstStrategy(request, cacheName = DYNAMIC_CACHE) {
     console.error('[ServiceWorker] Cache first failed:', error);
     // Return offline page if available
     const offlineResponse = await caches.match('/offline.html');
-    return offlineResponse || new Response('Offline', {
-      status: 503,
-      statusText: 'Service Unavailable'
-    });
+    return (
+      offlineResponse ||
+      new Response('Offline', {
+        status: 503,
+        statusText: 'Service Unavailable',
+      })
+    );
   }
 }
 
@@ -170,28 +182,31 @@ async function networkFirstStrategy(request) {
       return new Response(
         JSON.stringify({
           error: 'Offline - request queued for sync',
-          offline: true
+          offline: true,
         }),
         {
           status: 503,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
         }
       );
     }
 
     // Return offline page
     const offlineResponse = await caches.match('/offline.html');
-    return offlineResponse || new Response('Offline', {
-      status: 503,
-      statusText: 'Service Unavailable'
-    });
+    return (
+      offlineResponse ||
+      new Response('Offline', {
+        status: 503,
+        statusText: 'Service Unavailable',
+      })
+    );
   }
 }
 
 // Background fetch and cache update
 function fetchAndCache(request, cache) {
   fetch(request)
-    .then(response => {
+    .then((response) => {
       if (response.ok) {
         cache.put(request, response);
       }
@@ -231,9 +246,9 @@ async function syncQueuedListings() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': listing.auth
+            Authorization: listing.auth,
           },
-          body: JSON.stringify(listing.data)
+          body: JSON.stringify(listing.data),
         });
 
         if (response.ok) {
@@ -245,7 +260,7 @@ async function syncQueuedListings() {
           // Notify client
           await notifyClients('listing-synced', {
             listingId: listing.id,
-            success: true
+            success: true,
           });
         }
       } catch (error) {
@@ -274,9 +289,9 @@ async function syncListing(listingId) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': listing.auth
+        Authorization: listing.auth,
       },
-      body: JSON.stringify(listing.data)
+      body: JSON.stringify(listing.data),
     });
 
     if (response.ok) {
@@ -288,7 +303,7 @@ async function syncListing(listingId) {
       // Notify client
       await notifyClients('listing-synced', {
         listingId,
-        success: true
+        success: true,
       });
     }
   } catch (error) {
@@ -298,7 +313,7 @@ async function syncListing(listingId) {
     await notifyClients('listing-synced', {
       listingId,
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 }
@@ -311,7 +326,7 @@ self.addEventListener('push', (event) => {
     title: 'QuickList AI',
     body: 'You have a new notification',
     icon: '/icons/icon-192.png',
-    badge: '/icons/badge-72.png'
+    badge: '/icons/badge-72.png',
   };
 
   if (event.data) {
@@ -328,12 +343,10 @@ self.addEventListener('push', (event) => {
     badge: data.badge || '/icons/badge-72.png',
     vibrate: [200, 100, 200],
     data: data.data || {},
-    actions: data.actions || []
+    actions: data.actions || [],
   };
 
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+  event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
 // Notification click handling
@@ -350,21 +363,20 @@ self.addEventListener('notificationclick', (event) => {
 
   // Default click - open app
   event.waitUntil(
-    clients.matchAll({ type: 'window' })
-      .then(clientList => {
-        // Focus existing window if open
-        for (const client of clientList) {
-          if (client.url.includes('quicklist') && 'focus' in client) {
-            return client.focus();
-          }
+    clients.matchAll({ type: 'window' }).then((clientList) => {
+      // Focus existing window if open
+      for (const client of clientList) {
+        if (client.url.includes('quicklist') && 'focus' in client) {
+          return client.focus();
         }
+      }
 
-        // Open new window
-        if (clients.openWindow) {
-          const url = event.notification.data?.url || '/';
-          return clients.openWindow(url);
-        }
-      })
+      // Open new window
+      if (clients.openWindow) {
+        const url = event.notification.data?.url || '/';
+        return clients.openWindow(url);
+      }
+    })
   );
 });
 
@@ -404,7 +416,7 @@ async function queueListing(listing) {
       id: Date.now().toString(),
       data: listing.data,
       auth: listing.auth,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     // Register for background sync
@@ -416,7 +428,7 @@ async function queueListing(listing) {
     console.error('[ServiceWorker] Failed to queue listing:', error);
     await notifyClients('listing-queued', {
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 }
@@ -424,10 +436,10 @@ async function queueListing(listing) {
 // Notify all clients
 async function notifyClients(type, data) {
   const clients = await self.clients.matchAll();
-  clients.forEach(client => {
+  clients.forEach((client) => {
     client.postMessage({
       type,
-      ...data
+      ...data,
     });
   });
 }

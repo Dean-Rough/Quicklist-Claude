@@ -7,7 +7,7 @@ Create an unsigned upload preset to enable direct browser-to-Cloudinary uploads,
 ## 📋 Prerequisites
 
 - Access to your Cloudinary dashboard
-- Cloud name: `dqmxmwfiv`
+- Cloud name: `quicklist`
 
 ## 🚀 Step-by-Step Instructions
 
@@ -113,7 +113,7 @@ formData.append('file', yourImageBlob);
 formData.append('upload_preset', 'quicklist_unsigned');
 formData.append('folder', 'quicklist/test');
 
-fetch('https://api.cloudinary.com/v1_1/dqmxmwfiv/image/upload', {
+fetch('https://api.cloudinary.com/v1_1/quicklist/image/upload', {
   method: 'POST',
   body: formData,
 })
@@ -149,7 +149,7 @@ Expected response:
 
 ### Error: "Invalid credentials"
 
-- ✅ Cloud name is wrong (should be: `dqmxmwfiv`)
+- ✅ Cloud name is wrong (should be: `quicklist`)
 - ✅ Trying to use signed upload (we need unsigned)
 
 ### Images not being resized:
@@ -157,14 +157,93 @@ Expected response:
 - ✅ Check "Incoming Transformation" is configured (not "Eager")
 - ✅ Verify transformation parameters are correct
 
+## 🚀 Premium Preset: `upload-optimise`
+
+For users who want enhanced product images with AI-powered improvements:
+
+### Configuration
+
+**Preset name**: `upload-optimise`
+**Signing mode**: **Unsigned**
+
+#### Incoming Transformation
+
+```
+c_limit,w_1200/e_improve:outdoor:60/e_sharpen:120/q_auto:best
+```
+
+This transformation:
+
+- Limits to 1200px width (saves storage)
+- Applies outdoor improvement at 60% strength
+- Sharpens image at 120% for crisp product details
+- Uses best quality auto-optimization
+
+#### AI Features Enabled
+
+1. **Amazon Rekognition Auto Tagging**: Detects objects, scenes, activities
+2. **Google Auto Tagging**: Additional AI-powered categorization
+3. **Advanced OCR (adv_ocr)**: Extracts text from product labels, packaging
+4. **Auto Tagging**: 0.7 threshold (70% confidence minimum)
+5. **Detection Features**:
+   - **Captioning**: AI-generated image descriptions
+   - **IQA (Image Quality Analysis)**: Detects blur, focus, exposure issues
+
+#### Cost Implications
+
+- **Auto-tagging**: ~$0.002 per image
+- **Advanced OCR**: ~$0.002 per image
+- **Captioning**: ~$0.001 per image
+- **IQA**: ~$0.001 per image
+- **Total**: ~$0.006-0.01 per image
+
+For 1,000 images/month = ~$6-10 additional cost
+
+#### Benefits
+
+1. **Rich Metadata**: Auto-tags provide detailed product categorization
+2. **Text Extraction**: OCR captures brand names, model numbers, specifications
+3. **Quality Control**: IQA automatically flags poor quality images
+4. **Better AI Listings**: Captioning and tags give Gemini more context for generating descriptions
+5. **Enhanced Search**: Auto-tags improve product discoverability
+
+### Two-Tier System Strategy
+
+| Feature            | `quicklist_unsigned` (Standard) | `upload-optimise` (Premium)      |
+| ------------------ | ------------------------------- | -------------------------------- |
+| **Resize**         | ✅ 1200px limit                 | ✅ 1200px limit                  |
+| **Quality**        | ✅ auto                         | ✅ best                          |
+| **Enhancement**    | ❌ None                         | ✅ Improve + Sharpen             |
+| **Auto-tagging**   | ❌ None                         | ✅ Amazon + Google               |
+| **OCR**            | ❌ None                         | ✅ Advanced OCR                  |
+| **IQA**            | ❌ None                         | ✅ Quality Analysis              |
+| **Captioning**     | ❌ None                         | ✅ AI Descriptions               |
+| **Cost per image** | Free                            | ~$0.01                           |
+| **Best for**       | Casual sellers, basic items     | Power sellers, detailed products |
+
+### Implementation in Frontend
+
+Currently, the app uses `quicklist_unsigned` by default. To enable preset selection:
+
+```javascript
+// In index.html, modify uploadImageToCloudinary function:
+const CLOUDINARY_UPLOAD_PRESET = this.state.user?.premiumTier
+  ? 'upload-optimise'
+  : 'quicklist_unsigned';
+```
+
+Or add a UI toggle for users to choose per-listing.
+
 ## 📝 Summary
 
-Once this preset is created:
+Once both presets are created:
 
 1. ✅ Browser uploads directly to Cloudinary
 2. ✅ Bypasses Vercel's 4.5MB limit
 3. ✅ Automatically resizes images
 4. ✅ Saves 70-90% storage space
 5. ✅ Faster uploads (no server roundtrip)
+6. ✅ Premium users get AI-enhanced images
+7. ✅ Auto-tagging provides rich metadata for better listings
 
-**Action Required**: Create the `quicklist_unsigned` preset in your Cloudinary dashboard now!
+**Action Required**: Both `quicklist_unsigned` and `upload-optimise` presets are now configured!

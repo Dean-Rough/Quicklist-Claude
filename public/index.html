@@ -67,7 +67,7 @@
     <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.clerk.dev https://*.clerk.accounts.dev https://*.clerk.dev https://*.lottiefiles.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' http://localhost:3000 https://api.clerk.dev https://*.clerk.accounts.dev https://*.clerk.dev https://clerk.clerk.com; frame-src 'self' https://accounts.clerk.dev https://*.clerk.accounts.dev; worker-src 'self' blob:;"> -->
 
     <!-- Cloudinary Media Editor SDK -->
-    <script src="https://media-editor.cloudinary.com/all.js" type="text/javascript"></script>
+    <script src="https://media-editor.cloudinary.com/latest/all.js" type="text/javascript"></script>
 
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
@@ -1926,6 +1926,20 @@
         border-radius: 12px;
         overflow: hidden;
         border: 1px solid var(--border-color);
+      }
+      .review-image--clickable {
+        cursor: pointer;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      .review-image--clickable:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.15);
+      }
+      .review-image--clickable:focus-visible {
+        outline: 2px solid var(--accent-indigo);
+        outline-offset: 3px;
       }
 
       .review-image img {
@@ -6005,6 +6019,12 @@
           settings: {
             autoDownloadZip: false,
           },
+          cloudinary: {
+            cloudName: 'quicklist',
+            uploadPreset: 'quicklist_unsigned',
+            enhancedPreset: 'upload-optimise',
+            mediaEditorEnabled: false,
+          },
           messages: [],
           messagesLoading: false,
           generationCancelled: false,
@@ -6184,6 +6204,7 @@
 
           this.loadSettings();
           this.loadToken();
+          await this.loadCloudinaryConfig();
 
           // Register Service Worker for PWA
           this.registerServiceWorker();
@@ -6284,6 +6305,40 @@
           const token = localStorage.getItem('quicklist-token');
           if (token) {
             this.state.token = token;
+          }
+        },
+
+        async loadCloudinaryConfig() {
+          const defaults = {
+            cloudName: 'quicklist',
+            uploadPreset: 'quicklist_unsigned',
+            enhancedPreset: 'upload-optimise',
+            mediaEditorEnabled: false,
+          };
+
+          try {
+            const response = await fetch('/api/config/cloudinary', {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              cache: 'no-store',
+            });
+
+            if (!response.ok) {
+              throw new Error(`Failed to load Cloudinary config (${response.status})`);
+            }
+
+            const data = await response.json();
+            this.state.cloudinary = {
+              cloudName: data.cloudName || defaults.cloudName,
+              uploadPreset: data.uploadPreset || defaults.uploadPreset,
+              enhancedPreset: data.enhancedPreset || defaults.enhancedPreset,
+              mediaEditorEnabled: Boolean(data.mediaEditorEnabled && data.cloudName),
+            };
+          } catch (error) {
+            console.warn('Unable to load Cloudinary configuration, using defaults:', error);
+            this.state.cloudinary = { ...defaults, ...(this.state.cloudinary || {}) };
           }
         },
 
@@ -6943,11 +6998,22 @@
           const img = this.state.uploadedImages[index];
           if (!img) return;
 
+          const cloudinaryConfig = this.state.cloudinary || {};
+
           // Display quality information in modal (fallback for non-Cloudinary images)
           const modal = document.getElementById('imageEditorModal');
           if (modal) {
             modal.classList.remove('hidden');
             this.displayQualityInfo(img);
+          }
+
+          if (!cloudinaryConfig.mediaEditorEnabled || !cloudinaryConfig.cloudName) {
+            console.warn('Cloudinary Media Editor disabled or missing configuration');
+            this.showToast(
+              'Cloudinary editor not available. Showing quality info only for this image.',
+              'warning'
+            );
+            return;
           }
 
           try {
@@ -6981,7 +7047,7 @@
 
             const editor = cloudinary.mediaEditor();
             editor.update({
-              cloudName: 'dqmxmwfiv',
+              cloudName: cloudinaryConfig.cloudName,
               publicIds: [img.cloudinaryPublicId],
 
               // Configure export settings
@@ -7514,6 +7580,54 @@
           if (modal) modal.remove();
         },
 
+        // Attempt to map a generated/review image back to the uploadedImages array
+        getUploadedImageIndexForReview(image, fallbackIndex = null) {
+          if (!Array.isArray(this.state.uploadedImages) || this.state.uploadedImages.length === 0) {
+            return null;
+          }
+
+          const matchIndex = this.state.uploadedImages.findIndex((uploaded) => {
+            if (image.id && uploaded.id === image.id) return true;
+            if (image.image_id && uploaded.id === image.image_id) return true;
+            if (image.public_id && uploaded.cloudinaryPublicId === image.public_id) return true;
+            if (
+              image.cloudinaryPublicId &&
+              uploaded.cloudinaryPublicId === image.cloudinaryPublicId
+            )
+              return true;
+            if (
+              image.cloudinary_public_id &&
+              uploaded.cloudinaryPublicId === image.cloudinary_public_id
+            )
+              return true;
+
+            const imageUrls = [
+              image.cloudinaryUrl,
+              image.image_url,
+              image.url,
+              image.thumbnail_url,
+              image.data,
+            ].filter(Boolean);
+            if (imageUrls.length === 0) return false;
+
+            const uploadedUrls = [
+              uploaded.cloudinaryUrl,
+              uploaded.image_url,
+              uploaded.url,
+              uploaded.thumbnail_url,
+              uploaded.data,
+            ].filter(Boolean);
+
+            return imageUrls.some((imgUrl) => uploadedUrls.includes(imgUrl));
+          });
+
+          if (matchIndex !== -1) {
+            return matchIndex;
+          }
+
+          return fallbackIndex;
+        },
+
         renderReviewImages(images = null) {
           const container = document.getElementById('reviewImages');
           const countEl = document.getElementById('reviewImageCount');
@@ -7521,6 +7635,7 @@
 
           const sourceImages =
             Array.isArray(images) && images.length ? images : this.state.uploadedImages;
+          const usingUploadedState = sourceImages === this.state.uploadedImages;
 
           if (!sourceImages || sourceImages.length === 0) {
             container.innerHTML =
@@ -7541,8 +7656,16 @@
                   '/upload/w_200,h_200,c_fill,g_auto,q_auto,f_auto,e_improve,e_sharpen:100/'
                 );
               }
+              const editorIndex = this.getUploadedImageIndexForReview(
+                img,
+                usingUploadedState ? index : null
+              );
+              const isClickable = editorIndex !== null && editorIndex !== undefined;
+              const interactiveAttrs = isClickable
+                ? ` role="button" tabindex="0" aria-label="Edit photo ${index + 1}" onclick="event.preventDefault(); app.openImageEditor(${editorIndex});" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); app.openImageEditor(${editorIndex});}"`
+                : '';
               return `
-                        <div class="review-image">
+                        <div class="review-image${isClickable ? ' review-image--clickable' : ''}"${interactiveAttrs}>
                             <img src="${url}" alt="Listing photo ${index + 1}" loading="lazy">
                             <span>${index + 1}</span>
                         </div>
@@ -8802,6 +8925,10 @@
             return {
               listing: data.listing,
               pricingIntelligence: data.pricingIntelligence,
+              stockImageData: data.stockImageData,
+              predictedPrice: data.predictedPrice,
+              requiresUserSelection: data.requiresUserSelection,
+              imageQuality: data.imageQuality,
             };
           } catch (error) {
             // Handle network errors
@@ -8967,11 +9094,16 @@
             // DIRECT UPLOAD TO CLOUDINARY (bypasses Vercel 4.5MB limit)
             // Using unsigned upload preset for client-side uploads
 
-            const CLOUDINARY_CLOUD_NAME = 'quicklist';
+            const cloudinaryConfig = this.state.cloudinary || {};
+            const CLOUDINARY_CLOUD_NAME = cloudinaryConfig.cloudName || 'quicklist';
+            if (!CLOUDINARY_CLOUD_NAME) {
+              throw new Error('Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME.');
+            }
             // Use enhanced preset for Pro/Max users if enabled, otherwise use standard
-            const CLOUDINARY_UPLOAD_PRESET = this.state.useEnhancedUpload
-              ? 'upload-optimise'
-              : 'quicklist_unsigned';
+            const defaultPreset = cloudinaryConfig.uploadPreset || 'quicklist_unsigned';
+            const enhancedPreset = cloudinaryConfig.enhancedPreset || 'upload-optimise';
+            const CLOUDINARY_UPLOAD_PRESET =
+              this.state.useEnhancedUpload && enhancedPreset ? enhancedPreset : defaultPreset;
 
             // First compress the image client-side (1200px, 70% quality)
             const base64Data = await this.fileToBase64(file, 1200, 0.7);
@@ -9013,7 +9145,7 @@
               // Provide helpful guidance for common errors
               if (errorMsg.includes('Unknown API key') || errorMsg.includes('Upload preset')) {
                 throw new Error(
-                  'Cloudinary upload preset not configured. Please create an unsigned upload preset named "quicklist_unsigned" in your Cloudinary dashboard. See CLOUDINARY_UPLOAD_PRESET_SETUP.md for instructions.'
+                  `Cloudinary upload preset "${CLOUDINARY_UPLOAD_PRESET}" is not configured. Please verify the preset exists and is set to unsigned. See CLOUDINARY_UPLOAD_PRESET_SETUP.md for instructions.`
                 );
               }
 
@@ -9406,6 +9538,15 @@
                                 ? `
                                 <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
                                     <strong>Alternatives:</strong> ${stockImageData.alternatives.length} found
+                                </p>
+                            `
+                                : ''
+                            }
+                            ${
+                              stockImageData.productPageUrl
+                                ? `
+                                <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+                                    <strong>Product page:</strong> <a href="${stockImageData.productPageUrl}" target="_blank" rel="noopener" style="color: var(--primary); text-decoration: underline;">Open manufacturer page</a>
                                 </p>
                             `
                                 : ''

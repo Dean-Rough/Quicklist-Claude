@@ -1,7 +1,7 @@
 {
-  "name": "QuickList AI - Marketplace Listing Generator",
+  "name": "QuickList AI - Multi-Platform Listing Generator",
   "short_name": "QuickList",
-  "description": "AI-powered marketplace listing generator for resellers. Create professional listings for eBay, Vinted, and Gumtree in seconds.",
+  "description": "AI-powered listing generator for eBay, Vinted, Depop, and Facebook Marketplace. Upload photos, get professional listings for all platforms in seconds.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
@@ -92,39 +92,39 @@
   ],
   "shortcuts": [
     {
-      "name": "Scan Item",
-      "short_name": "Scan",
-      "description": "Open camera to scan new item",
-      "url": "/?action=scan",
+      "name": "New Listing",
+      "short_name": "New",
+      "description": "Create a new listing",
+      "url": "/?action=new",
       "icons": [
         {
-          "src": "/icons/scan-96.png",
+          "src": "/icons/icon-96.png",
           "sizes": "96x96",
           "type": "image/png"
         }
       ]
     },
     {
-      "name": "View Listings",
+      "name": "My Listings",
       "short_name": "Listings",
-      "description": "View all your listings",
-      "url": "/?action=listings",
+      "description": "View your listings",
+      "url": "/?view=listings",
       "icons": [
         {
-          "src": "/icons/list-96.png",
+          "src": "/icons/icon-96.png",
           "sizes": "96x96",
           "type": "image/png"
         }
       ]
     },
     {
-      "name": "Dashboard",
-      "short_name": "Stats",
-      "description": "View sales dashboard",
-      "url": "/?action=dashboard",
+      "name": "Connect eBay",
+      "short_name": "eBay",
+      "description": "Connect your eBay account",
+      "url": "/auth/ebay/authorize",
       "icons": [
         {
-          "src": "/icons/dashboard-96.png",
+          "src": "/icons/icon-96.png",
           "sizes": "96x96",
           "type": "image/png"
         }
@@ -135,10 +135,11 @@
   "related_applications": [],
   "features": [
     "ai-generation",
+    "multi-platform-posting",
     "offline-mode",
     "camera-capture",
-    "background-sync",
-    "push-notifications"
+    "smart-clipboard",
+    "ebay-oauth"
   ],
   "edge_side_panel": {
     "preferred_width": 400
@@ -153,8 +154,8 @@
       "url": "url",
       "files": [
         {
-          "name": "image",
-          "accept": ["image/*"]
+          "name": "images",
+          "accept": ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic"]
         }
       ]
     }
