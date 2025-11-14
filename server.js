@@ -152,6 +152,30 @@ const generateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: 'Too many uploads, please wait a moment before uploading again',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const aiAnalysisLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 6,
+  message: 'Analysis limit reached. Please try again in a few seconds.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const barcodeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: 'Too many barcode lookups. Please slow down.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Security headers with Helmet
 app.use(
   helmet({
@@ -739,33 +763,37 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Initialize database schema
-app.get('/api/init-db', async (req, res) => {
-  try {
-    if (process.env.ALLOW_DB_INIT !== 'true') {
-      return res.status(403).json({ error: 'Database initialization is disabled' });
+if (!isProduction) {
+  // Initialize database schema (development only)
+  app.get('/api/init-db', async (req, res) => {
+    try {
+      if (process.env.ALLOW_DB_INIT !== 'true') {
+        return res.status(403).json({ error: 'Database initialization is disabled' });
+      }
+
+      const fs = require('fs');
+      const schemaFiles = ['schema.sql', 'schema_updates.sql', 'schema_clerk_migration.sql']
+        .map((file) => path.join(__dirname, file))
+        .filter(fs.existsSync);
+
+      for (const filePath of schemaFiles) {
+        const sql = fs.readFileSync(filePath, 'utf8');
+        await safeQuery(sql);
+      }
+
+      logger.info('Database initialized successfully');
+      res.json({
+        message: 'Database initialized successfully',
+        files: schemaFiles.map((f) => path.basename(f)),
+      });
+    } catch (error) {
+      logger.error('Database initialization error:', error);
+      res.status(500).json({ error: 'Failed to initialize database' });
     }
-
-    const fs = require('fs');
-    const schemaFiles = ['schema.sql', 'schema_updates.sql', 'schema_clerk_migration.sql']
-      .map((file) => path.join(__dirname, file))
-      .filter(fs.existsSync);
-
-    for (const filePath of schemaFiles) {
-      const sql = fs.readFileSync(filePath, 'utf8');
-      await safeQuery(sql);
-    }
-
-    logger.info('Database initialized successfully');
-    res.json({
-      message: 'Database initialized successfully',
-      files: schemaFiles.map((f) => path.basename(f)),
-    });
-  } catch (error) {
-    logger.error('Database initialization error:', error);
-    res.status(500).json({ error: 'Failed to initialize database' });
-  }
-});
+  });
+} else {
+  logger.info('Database initialization endpoint disabled in production');
+}
 
 // Auth endpoints - Clerk handles signup/signin via their SDK
 // Legacy JWT endpoints removed - use Clerk OAuth or email/password via Clerk UI
@@ -2812,7 +2840,7 @@ async function uploadToCloudinary(base64Data, userId) {
  * Body: { image: "data:image/jpeg;base64,..." }
  * Returns: { publicId, url, thumbnailUrl, format, width, height, bytes }
  */
-app.post('/api/images/upload', authenticateToken, async (req, res) => {
+app.post('/api/images/upload', uploadLimiter, authenticateToken, async (req, res) => {
   try {
     const { image } = req.body;
     const userId = req.user.id;
@@ -3069,7 +3097,7 @@ async function predictOptimalPrice(listing, ebayData, imageQuality = 70) {
 }
 
 // Image quality analysis endpoint (for pre-upload feedback)
-app.post('/api/analyze-image-quality', authenticateToken, async (req, res) => {
+app.post('/api/analyze-image-quality', aiAnalysisLimiter, authenticateToken, async (req, res) => {
   try {
     const { image } = req.body;
 
@@ -4008,7 +4036,7 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
 });
 
 // Barcode lookup endpoint
-app.post('/api/lookup-barcode', authenticateToken, async (req, res) => {
+app.post('/api/lookup-barcode', barcodeLimiter, authenticateToken, async (req, res) => {
   try {
     const { barcode } = req.body;
     const userId = req.user.id;
@@ -4457,7 +4485,7 @@ Provide honest but not alarming language for the condition disclosure.`;
 }
 
 // Damage detection endpoint
-app.post('/api/analyze-damage', authenticateToken, async (req, res) => {
+app.post('/api/analyze-damage', aiAnalysisLimiter, authenticateToken, async (req, res) => {
   try {
     const { images } = req.body;
     const userId = req.user.id;
@@ -4507,7 +4535,7 @@ app.post('/api/analyze-damage', authenticateToken, async (req, res) => {
 });
 
 // Label Analysis - Extract all product information from a label image
-app.post('/api/analyze-label', authenticateToken, async (req, res) => {
+app.post('/api/analyze-label', aiAnalysisLimiter, authenticateToken, async (req, res) => {
   try {
     const { image } = req.body;
     const userId = req.user.id;
