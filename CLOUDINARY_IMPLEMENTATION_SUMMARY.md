@@ -147,9 +147,9 @@ Total lines added: ~210 lines
 Already configured in `.env`:
 
 ```env
-CLOUDINARY_CLOUD_NAME=quicklist
-CLOUDINARY_API_KEY=723311842369376
-CLOUDINARY_API_SECRET=pVMUDVTYIHDfmb4_75ucQF7Nhro
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 ```
 
 > **Production checklist:** double-check that `CLOUDINARY_CLOUD_NAME` is set to `quicklist` in Vercel/Render/Heroku before deploying. If the value is left as the legacy `dqmxmwfiv`, the browser will continue uploading to the wrong tenant and Cloudinary will respond with `Unknown API key`. The unsigned presets `quicklist_unsigned` (standard) and `upload-optimise` (premium) must exist inside the `quicklist` cloud for uploads to succeed.
