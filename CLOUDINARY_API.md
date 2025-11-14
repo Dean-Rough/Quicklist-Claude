@@ -33,6 +33,7 @@ Upload an image to Cloudinary with automatic optimization and transformations.
 **Authentication**: Required (Bearer token)
 
 **Request Body**:
+
 ```json
 {
   "image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA..."
@@ -40,18 +41,20 @@ Upload an image to Cloudinary with automatic optimization and transformations.
 ```
 
 **Request Headers**:
+
 ```
 Content-Type: application/json
 Authorization: Bearer <your_clerk_token>
 ```
 
 **Success Response** (200 OK):
+
 ```json
 {
   "success": true,
   "publicId": "quicklist/123/abc123def456",
-  "url": "https://res.cloudinary.com/dqmxmwfiv/image/upload/v1234567890/quicklist/123/abc123def456.jpg",
-  "thumbnailUrl": "https://res.cloudinary.com/dqmxmwfiv/image/upload/c_fill,g_auto,h_300,q_auto:good,w_300/quicklist/123/abc123def456.jpg",
+  "url": "https://res.cloudinary.com/quicklist/image/upload/v1234567890/quicklist/123/abc123def456.jpg",
+  "thumbnailUrl": "https://res.cloudinary.com/quicklist/image/upload/c_fill,g_auto,h_300,q_auto:good,w_300/quicklist/123/abc123def456.jpg",
   "format": "jpg",
   "width": 1200,
   "height": 900,
@@ -62,6 +65,7 @@ Authorization: Bearer <your_clerk_token>
 **Error Responses**:
 
 - **400 Bad Request** - Missing or invalid image data:
+
   ```json
   {
     "error": "Image data required"
@@ -69,6 +73,7 @@ Authorization: Bearer <your_clerk_token>
   ```
 
 - **400 Bad Request** - Invalid image format:
+
   ```json
   {
     "error": "Invalid image format. Must be base64 encoded with data:image prefix"
@@ -76,6 +81,7 @@ Authorization: Bearer <your_clerk_token>
   ```
 
 - **400 Bad Request** - Image too large:
+
   ```json
   {
     "error": "Image too large. Maximum size is 10MB"
@@ -83,6 +89,7 @@ Authorization: Bearer <your_clerk_token>
   ```
 
 - **401 Unauthorized** - Missing or invalid token:
+
   ```json
   {
     "error": "Access token required"
@@ -90,6 +97,7 @@ Authorization: Bearer <your_clerk_token>
   ```
 
 - **503 Service Unavailable** - Cloudinary not configured:
+
   ```json
   {
     "error": "Image upload service is not available"
@@ -105,6 +113,7 @@ Authorization: Bearer <your_clerk_token>
   ```
 
 **Image Transformations Applied**:
+
 - **Main Image**:
   - Max width: 1200px (maintains aspect ratio)
   - Quality: auto:good (automatic optimization)
@@ -130,23 +139,28 @@ Delete an image from Cloudinary. Only the owner can delete their images.
 **Authentication**: Required (Bearer token)
 
 **URL Parameters**:
+
 - `publicId` (required): The Cloudinary public ID (must be URL-encoded)
 
 **Request Headers**:
+
 ```
 Authorization: Bearer <your_clerk_token>
 ```
 
 **Example Request**:
+
 ```bash
 DELETE /api/images/quicklist%2F123%2Fabc123def456
 ```
 
 Note: The publicId contains slashes, so it must be URL-encoded:
+
 - Raw: `quicklist/123/abc123def456`
 - Encoded: `quicklist%2F123%2Fabc123def456`
 
 **Success Response** (200 OK):
+
 ```json
 {
   "success": true,
@@ -157,6 +171,7 @@ Note: The publicId contains slashes, so it must be URL-encoded:
 **Error Responses**:
 
 - **400 Bad Request** - Missing public ID:
+
   ```json
   {
     "error": "Public ID required"
@@ -164,6 +179,7 @@ Note: The publicId contains slashes, so it must be URL-encoded:
   ```
 
 - **401 Unauthorized** - Missing or invalid token:
+
   ```json
   {
     "error": "Access token required"
@@ -171,6 +187,7 @@ Note: The publicId contains slashes, so it must be URL-encoded:
   ```
 
 - **403 Forbidden** - User doesn't own the image:
+
   ```json
   {
     "error": "You do not have permission to delete this image"
@@ -178,6 +195,7 @@ Note: The publicId contains slashes, so it must be URL-encoded:
   ```
 
 - **404 Not Found** - Image doesn't exist:
+
   ```json
   {
     "error": "Image not found"
@@ -193,6 +211,7 @@ Note: The publicId contains slashes, so it must be URL-encoded:
   ```
 
 **Security**:
+
 - Only images in the user's folder (`quicklist/{userId}/`) can be deleted
 - Folder path is validated against the authenticated user's ID
 
@@ -201,6 +220,7 @@ Note: The publicId contains slashes, so it must be URL-encoded:
 ### JavaScript (Fetch API)
 
 **Upload an image**:
+
 ```javascript
 // Convert file to base64
 function fileToBase64(file) {
@@ -220,9 +240,9 @@ async function uploadImage(file, token) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ image: base64Image })
+    body: JSON.stringify({ image: base64Image }),
   });
 
   if (!response.ok) {
@@ -251,6 +271,7 @@ fileInput.addEventListener('change', async (e) => {
 ```
 
 **Delete an image**:
+
 ```javascript
 async function deleteImage(publicId, token) {
   // URL-encode the publicId
@@ -259,8 +280,8 @@ async function deleteImage(publicId, token) {
   const response = await fetch(`http://localhost:4577/api/images/${encodedPublicId}`, {
     method: 'DELETE',
     headers: {
-      'Authorization': `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!response.ok) {
@@ -286,6 +307,7 @@ try {
 ### cURL Examples
 
 **Upload an image**:
+
 ```bash
 # Using a small test image (1x1 red pixel PNG)
 curl -X POST http://localhost:4577/api/images/upload \
@@ -297,6 +319,7 @@ curl -X POST http://localhost:4577/api/images/upload \
 ```
 
 **Delete an image**:
+
 ```bash
 curl -X DELETE "http://localhost:4577/api/images/quicklist%2F123%2Fabc123def456" \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
@@ -305,6 +328,7 @@ curl -X DELETE "http://localhost:4577/api/images/quicklist%2F123%2Fabc123def456"
 ### Node.js (Axios)
 
 **Upload an image**:
+
 ```javascript
 const axios = require('axios');
 const fs = require('fs');
@@ -326,8 +350,8 @@ async function uploadImage(imagePath, token) {
     {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     }
   );
 
@@ -337,27 +361,25 @@ async function uploadImage(imagePath, token) {
 // Usage
 const token = 'your_clerk_token';
 uploadImage('./photo.jpg', token)
-  .then(result => {
+  .then((result) => {
     console.log('Upload successful:', result);
   })
-  .catch(error => {
+  .catch((error) => {
     console.error('Upload failed:', error.response?.data || error.message);
   });
 ```
 
 **Delete an image**:
+
 ```javascript
 async function deleteImage(publicId, token) {
   const encodedPublicId = encodeURIComponent(publicId);
 
-  const response = await axios.delete(
-    `http://localhost:4577/api/images/${encodedPublicId}`,
-    {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+  const response = await axios.delete(`http://localhost:4577/api/images/${encodedPublicId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   return response.data;
 }
@@ -367,10 +389,10 @@ const token = 'your_clerk_token';
 const publicId = 'quicklist/123/abc123def456';
 
 deleteImage(publicId, token)
-  .then(result => {
+  .then((result) => {
     console.log('Delete successful:', result);
   })
-  .catch(error => {
+  .catch((error) => {
     console.error('Delete failed:', error.response?.data || error.message);
   });
 ```
@@ -420,6 +442,7 @@ To integrate Cloudinary with the existing listings system:
    - Migrate old images in background
 
 3. **Recommended approach**:
+
    ```sql
    -- Add new columns to images table
    ALTER TABLE images ADD COLUMN cloudinary_public_id TEXT;
@@ -431,11 +454,10 @@ To integrate Cloudinary with the existing listings system:
    ```
 
    Then in code:
+
    ```javascript
    // When creating a listing with images
-   const uploadedImages = await Promise.all(
-     images.map(img => uploadToCloudinary(img, userId))
-   );
+   const uploadedImages = await Promise.all(images.map((img) => uploadToCloudinary(img, userId)));
 
    // Store in database
    for (const img of uploadedImages) {
@@ -450,11 +472,13 @@ To integrate Cloudinary with the existing listings system:
 ## Rate Limits and Quotas
 
 **Cloudinary Free Tier**:
+
 - 25 GB storage
 - 25 GB bandwidth/month
 - 25,000 transformations/month
 
 **Recommendations**:
+
 - Monitor usage in Cloudinary dashboard
 - Implement image size limits (currently 10MB)
 - Consider compression before upload
@@ -474,19 +498,23 @@ node test-cloudinary.js
 ## Troubleshooting
 
 **"Image upload service is not available"**
+
 - Check that Cloudinary credentials are set in `.env`
 - Verify credentials are correct in Cloudinary dashboard
 
 **"Failed to upload image"**
+
 - Check image size (max 10MB)
 - Verify image is valid base64 with data:image prefix
 - Check Cloudinary dashboard for errors
 
 **"You do not have permission to delete this image"**
+
 - Verify the publicId starts with `quicklist/{your_user_id}/`
 - Check that you're authenticated as the correct user
 
 **Images not loading**
+
 - Verify Cloudinary URLs are accessible
 - Check CORS settings in Cloudinary dashboard
 - Ensure images haven't been deleted

@@ -11,11 +11,13 @@ Successfully implemented Cloudinary cloud storage integration for the Quicklist-
 **File**: `/Users/deannewton/Projects/QLC/Quicklist-Claude/server.js`
 
 **Line 16**: Added Cloudinary import
+
 ```javascript
 const cloudinary = require('cloudinary').v2;
 ```
 
 **Lines 71-82**: Added Cloudinary configuration
+
 ```javascript
 // Configure Cloudinary
 cloudinary.config({
@@ -50,6 +52,7 @@ async function uploadToCloudinary(base64Data, userId) {
 ```
 
 **Features**:
+
 - Input validation (base64 format, data:image prefix)
 - Configuration check
 - Automatic image optimization
@@ -67,6 +70,7 @@ async function uploadToCloudinary(base64Data, userId) {
 **Lines 2469-2521**: Added `POST /api/images/upload` endpoint
 
 **Request**:
+
 ```json
 {
   "image": "data:image/jpeg;base64,/9j/4AAQ..."
@@ -74,12 +78,13 @@ async function uploadToCloudinary(base64Data, userId) {
 ```
 
 **Response** (Success - 200):
+
 ```json
 {
   "success": true,
   "publicId": "quicklist/123/abc123def456",
-  "url": "https://res.cloudinary.com/dqmxmwfiv/image/upload/v1234567890/quicklist/123/abc123def456.jpg",
-  "thumbnailUrl": "https://res.cloudinary.com/dqmxmwfiv/image/upload/c_fill,g_auto,h_300,q_auto:good,w_300/quicklist/123/abc123def456.jpg",
+  "url": "https://res.cloudinary.com/quicklist/image/upload/v1234567890/quicklist/123/abc123def456.jpg",
+  "thumbnailUrl": "https://res.cloudinary.com/quicklist/image/upload/c_fill,g_auto,h_300,q_auto:good,w_300/quicklist/123/abc123def456.jpg",
   "format": "jpg",
   "width": 1200,
   "height": 900,
@@ -88,6 +93,7 @@ async function uploadToCloudinary(base64Data, userId) {
 ```
 
 **Features**:
+
 - Requires authentication (Clerk token)
 - Validates image format and size (max 10MB)
 - Returns both full URL and thumbnail URL
@@ -99,11 +105,13 @@ async function uploadToCloudinary(base64Data, userId) {
 **Lines 2530-2581**: Added `DELETE /api/images/:publicId(*)` endpoint
 
 **Request**:
+
 ```
 DELETE /api/images/quicklist%2F123%2Fabc123def456
 ```
 
 **Response** (Success - 200):
+
 ```json
 {
   "success": true,
@@ -112,6 +120,7 @@ DELETE /api/images/quicklist%2F123%2Fabc123def456
 ```
 
 **Features**:
+
 - Requires authentication (Clerk token)
 - Authorization check: Users can only delete their own images
 - Validates folder path matches authenticated user ID
@@ -123,21 +132,22 @@ DELETE /api/images/quicklist%2F123%2Fabc123def456
 
 ### server.js Additions
 
-| Section | Lines | Description |
-|---------|-------|-------------|
-| Import | 16 | Cloudinary v2 import |
-| Configuration | 71-82 | Cloudinary config with env vars |
+| Section         | Lines     | Description                              |
+| --------------- | --------- | ---------------------------------------- |
+| Import          | 16        | Cloudinary v2 import                     |
+| Configuration   | 71-82     | Cloudinary config with env vars          |
 | Helper Function | 2392-2461 | `uploadToCloudinary()` reusable function |
-| Upload Endpoint | 2469-2521 | `POST /api/images/upload` |
-| Delete Endpoint | 2530-2581 | `DELETE /api/images/:publicId(*)` |
+| Upload Endpoint | 2469-2521 | `POST /api/images/upload`                |
+| Delete Endpoint | 2530-2581 | `DELETE /api/images/:publicId(*)`        |
 
 Total lines added: ~210 lines
 
 ## Environment Variables
 
 Already configured in `.env`:
+
 ```env
-CLOUDINARY_CLOUD_NAME=dqmxmwfiv
+CLOUDINARY_CLOUD_NAME=quicklist
 CLOUDINARY_API_KEY=723311842369376
 CLOUDINARY_API_SECRET=pVMUDVTYIHDfmb4_75ucQF7Nhro
 ```
@@ -161,9 +171,9 @@ async function uploadImage(file) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ image: base64 })
+    body: JSON.stringify({ image: base64 }),
   });
 
   const result = await response.json();
@@ -178,8 +188,8 @@ async function deleteImage(publicId) {
   const response = await fetch(`/api/images/${encodedId}`, {
     method: 'DELETE',
     headers: {
-      'Authorization': `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
   return await response.json();
 }
@@ -204,12 +214,14 @@ curl -X DELETE "http://localhost:4577/api/images/quicklist%2F123%2Fabc" \
 ### Test Script
 
 Created `/Users/deannewton/Projects/QLC/Quicklist-Claude/test-cloudinary.js` with:
+
 - Upload test
 - Delete test
 - Error case tests
 - Helper functions for testing
 
 **Run tests**:
+
 ```bash
 # 1. Update AUTH_TOKEN in test-cloudinary.js
 # 2. Run tests
@@ -219,6 +231,7 @@ node test-cloudinary.js
 ### Verification
 
 Server loads successfully with Cloudinary configured:
+
 ```
 ✓ Cloudinary SDK installed (v2.8.0)
 ✓ No syntax errors in server.js
@@ -229,6 +242,7 @@ Server loads successfully with Cloudinary configured:
 ## Documentation
 
 Created `/Users/deannewton/Projects/QLC/Quicklist-Claude/CLOUDINARY_API.md` with:
+
 - Complete API reference
 - Request/response examples
 - Error handling documentation
@@ -263,12 +277,14 @@ Created `/Users/deannewton/Projects/QLC/Quicklist-Claude/CLOUDINARY_API.md` with
 **Current State**: Images stored as base64 TEXT in database (33% size overhead)
 
 **With Cloudinary**:
+
 - Images stored externally
 - Only URLs stored in database (small TEXT fields)
 - Reduces database size by ~90% for image data
 - Faster queries (no large TEXT fields)
 
 **Migration Path** (recommended):
+
 ```sql
 -- Add Cloudinary columns to images table
 ALTER TABLE images ADD COLUMN cloudinary_public_id TEXT;
@@ -310,6 +326,7 @@ To fully integrate Cloudinary into the application:
    - Handle Cloudinary URLs in listings
 
 4. **Add Rate Limiting**:
+
    ```javascript
    const uploadLimiter = rateLimit({
      windowMs: 15 * 60 * 1000, // 15 minutes
@@ -355,6 +372,7 @@ To fully integrate Cloudinary into the application:
 ## Conclusion
 
 Cloudinary integration successfully implemented with:
+
 - 2 new API endpoints (upload, delete)
 - 1 reusable helper function
 - Automatic image optimization and transformations
