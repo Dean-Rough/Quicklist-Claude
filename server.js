@@ -2676,25 +2676,6 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
   }
 }
 
-// API endpoint for image quality analysis
-app.post('/api/analyze-image-quality', authenticateToken, async (req, res) => {
-  try {
-    const { image } = req.body;
-
-    if (!image || typeof image !== 'string' || !image.startsWith('data:image')) {
-      return res.status(400).json({ error: 'Valid image required' });
-    }
-
-    const apiKey = process.env.GEMINI_API_KEY;
-    const quality = await analyzeImageQuality(image, apiKey);
-
-    res.json(quality);
-  } catch (error) {
-    logger.error('Image quality analysis endpoint error:', error);
-    res.status(500).json({ error: 'Failed to analyze image quality' });
-  }
-});
-
 // ============================================================================
 // CLOUDINARY IMAGE UPLOAD
 // ============================================================================
@@ -3764,13 +3745,13 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
             parts: parts,
           },
         ],
-        responseMimeType: 'application/json',
         tools: [
           {
             google_search: {},
           },
         ],
         generationConfig: {
+          responseMimeType: 'application/json',
           temperature: 0.7, // Increased for more creative, engaging descriptions while maintaining accuracy
           topP: 0.95,
           topK: 40,
