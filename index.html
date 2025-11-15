@@ -7054,7 +7054,12 @@
             const editor = cloudinary.mediaEditor();
             editor.update({
               cloudName: cloudinaryConfig.cloudName,
-              publicIds: [img.cloudinaryPublicId],
+              asset: {
+                publicId: img.cloudinaryPublicId,
+                resourceType: 'image',
+                type: 'upload',
+              },
+              useCredentials: false,
 
               // Configure export settings
               export: {
@@ -7084,6 +7089,7 @@
                   if (modal) {
                     modal.classList.add('hidden');
                   }
+                  editor.destroy();
                 } catch (error) {
                   console.error('Error saving edited image:', error);
                   this.showToast('Failed to save edited image', 'error');
@@ -7095,6 +7101,7 @@
                 if (modal) {
                   modal.classList.add('hidden');
                 }
+                editor.destroy();
               },
             });
 
