@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuickList AI</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="popup-container">
+      <!-- Header -->
+      <div class="header">
+        <div class="logo">
+          <span class="logo-icon">⚡</span>
+          <span class="logo-text">QuickList AI</span>
+        </div>
+        <div class="status" id="status">
+          <span class="status-dot"></span>
+          <span class="status-text">Checking...</span>
+        </div>
+      </div>
+
+      <!-- Sign In View -->
+      <div id="signInView" class="view hidden">
+        <div class="empty-state">
+          <div class="empty-icon">🔐</div>
+          <h2>Sign In Required</h2>
+          <p>Connect your QuickList AI account to auto-fill marketplace listings.</p>
+          <button id="signInBtn" class="btn-primary">Sign In to QuickList</button>
+        </div>
+      </div>
+
+      <!-- Main View (Listings) -->
+      <div id="mainView" class="view hidden">
+        <!-- Search -->
+        <div class="search-bar">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search listings..."
+            class="search-input"
+          />
+        </div>
+
+        <!-- Listings Grid -->
+        <div id="listingsContainer" class="listings-grid">
+          <!-- Listings will be loaded here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state hidden">
+          <div class="empty-icon">📦</div>
+          <h2>No Listings Yet</h2>
+          <p>Create your first listing on QuickList AI to get started.</p>
+          <button id="createListingBtn" class="btn-primary">Create Listing</button>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading your listings...</p>
+        </div>
+      </div>
+
+      <!-- Detection View (when on marketplace) -->
+      <div id="detectionView" class="view hidden">
+        <div class="detection-card">
+          <div class="detection-icon">🎯</div>
+          <h3 id="detectedPlatform"></h3>
+          <p>Select a listing to auto-fill this form</p>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <button id="selectListingBtn" class="btn-primary">Choose Listing</button>
+          <button id="openQuickListBtn" class="btn-secondary">Open QuickList</button>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <a href="https://quicklist.it.com" target="_blank" class="footer-link">
+          Open QuickList AI
+        </a>
+        <button id="settingsBtn" class="footer-btn">⚙️</button>
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

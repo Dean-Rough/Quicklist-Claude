@@ -1,0 +1,137 @@
+/**
+ * QuickList AI Extension - Overlay Styles
+ * Injected into marketplace pages
+ */
+
+ .quicklist-overlay {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 999999;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  animation: quicklist-slide-in 0.3s ease;
+}
+
+@keyframes quicklist-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.quicklist-overlay-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.quicklist-overlay-icon {
+  font-size: 1.5rem;
+}
+
+.quicklist-overlay-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.quicklist-overlay-message {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  margin-bottom: 1rem;
+}
+
+.quicklist-overlay-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.quicklist-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quicklist-btn-primary {
+  background: white;
+  color: #6366f1;
+}
+
+.quicklist-btn-primary:hover {
+  background: #f3f4f6;
+  transform: translateY(-1px);
+}
+
+.quicklist-btn-secondary {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.quicklist-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.quicklist-close-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  padding: 0.25rem;
+}
+
+.quicklist-close-btn:hover {
+  opacity: 1;
+}
+
+/* Success state */
+.quicklist-overlay.success {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+/* Loading state */
+.quicklist-overlay.loading .quicklist-overlay-message::after {
+  content: '...';
+  animation: quicklist-loading 1.5s infinite;
+}
+
+@keyframes quicklist-loading {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '...'; }
+}
+
+/* Highlight effect for auto-filled fields */
+.quicklist-autofilled {
+  animation: quicklist-highlight 2s ease;
+  border-color: #6366f1 !important;
+}
+
+@keyframes quicklist-highlight {
+  0%, 100% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: rgba(99, 102, 241, 0.1);
+  }
+}

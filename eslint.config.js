@@ -12,6 +12,7 @@ module.exports = [
       'docs/**',
       'worktrees/**',
       'json_anim/**',
+      'chrome-extension/**',
     ],
   },
   {

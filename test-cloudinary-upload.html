@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Test Cloudinary Upload</title>
+  </head>
+  <body>
+    <h1>Cloudinary Upload Test</h1>
+    <input type="file" id="fileInput" accept="image/*" />
+    <button onclick="testUpload()">Test Upload</button>
+    <div id="result"></div>
+
+    <script>
+      async function testUpload() {
+        const fileInput = document.getElementById('fileInput');
+        const resultDiv = document.getElementById('result');
+
+        if (!fileInput.files[0]) {
+          resultDiv.innerHTML = '<p style="color: red;">Please select a file first</p>';
+          return;
+        }
+
+        const file = fileInput.files[0];
+
+        try {
+          resultDiv.innerHTML = '<p>Uploading...</p>';
+
+          // Create form data
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('upload_preset', 'quicklist_unsigned');
+          formData.append('folder', 'quicklist/test');
+
+          console.log('Uploading to Cloudinary...');
+
+          // Upload directly to Cloudinary
+          const response = await fetch('https://api.cloudinary.com/v1_1/quicklist/image/upload', {
+            method: 'POST',
+            body: formData,
+          });
+
+          console.log('Response status:', response.status);
+
+          const data = await response.json();
+
+          console.log('Response data:', data);
+
+          if (!response.ok) {
+            resultDiv.innerHTML = `
+                        <h2 style="color: red;">Upload Failed</h2>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Error:</strong> ${data.error?.message || 'Unknown error'}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+          } else {
+            resultDiv.innerHTML = `
+                        <h2 style="color: green;">Upload Success!</h2>
+                        <p><strong>URL:</strong> <a href="${data.secure_url}" target="_blank">${data.secure_url}</a></p>
+                        <p><strong>Public ID:</strong> ${data.public_id}</p>
+                        <p><strong>Size:</strong> ${Math.round(data.bytes / 1024)} KB</p>
+                        <p><strong>Dimensions:</strong> ${data.width} x ${data.height}</p>
+                        <img src="${data.secure_url}" style="max-width: 400px; margin-top: 20px;" />
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+          }
+        } catch (error) {
+          console.error('Upload error:', error);
+          resultDiv.innerHTML = `
+                    <h2 style="color: red;">Upload Error</h2>
+                    <p>${error.message}</p>
+                    <pre>${error.stack}</pre>
+                `;
+        }
+      }
+    </script>
+  </body>
+</html>

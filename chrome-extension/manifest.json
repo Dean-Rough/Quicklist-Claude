@@ -1,0 +1,82 @@
+{
+  "manifest_version": 3,
+  "name": "QuickList AI - Auto-Fill Marketplace Listings",
+  "version": "1.0.0",
+  "description": "Auto-fill your marketplace listings on eBay, Vinted, Depop, and Facebook. One-click listing from QuickList AI.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    },
+    "default_title": "QuickList AI"
+  },
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.ebay.co.uk/sl/sell*",
+        "https://www.ebay.com/sl/sell*",
+        "https://sell.ebay.co.uk/*",
+        "https://sell.ebay.com/*"
+      ],
+      "js": ["content/ebay-autofill.js"],
+      "css": ["content/quicklist-overlay.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.vinted.co.uk/items/new*",
+        "https://www.vinted.com/items/new*",
+        "https://www.vinted.fr/items/new*"
+      ],
+      "js": ["content/vinted-autofill.js"],
+      "css": ["content/quicklist-overlay.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.depop.com/products/create/*", "https://www.depop.com/sell/*"],
+      "js": ["content/depop-autofill.js"],
+      "css": ["content/quicklist-overlay.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.facebook.com/marketplace/create/*",
+        "https://www.facebook.com/selling/*"
+      ],
+      "js": ["content/facebook-autofill.js"],
+      "css": ["content/quicklist-overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://quicklist.it.com/*",
+    "https://*.ebay.co.uk/*",
+    "https://*.ebay.com/*",
+    "https://*.vinted.co.uk/*",
+    "https://*.vinted.com/*",
+    "https://*.depop.com/*",
+    "https://*.facebook.com/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*.png", "content/quicklist-overlay.css"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

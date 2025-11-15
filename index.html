@@ -7051,6 +7051,10 @@
               this.renderImageGrid();
             }
 
+            if (!img.cloudinaryPublicId) {
+              throw new Error('Cloudinary public ID missing for this image.');
+            }
+
             // Initialize Cloudinary Media Editor widget
             const cloudinary = window.cloudinary;
             if (!cloudinary) {
@@ -7060,6 +7064,7 @@
             const editor = cloudinary.mediaEditor();
             editor.update({
               cloudName: cloudinaryConfig.cloudName,
+              publicIds: [img.cloudinaryPublicId],
               asset: {
                 publicId: img.cloudinaryPublicId,
                 resourceType: 'image',
