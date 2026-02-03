@@ -177,7 +177,7 @@
     </div>
 
     <!-- Install PWA Button -->
-    <button id="installPWA" class="install-pwa-button">
+    <button id="installPWA" class="install-pwa-button" aria-label="Install QuickList app">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
         <path
           d="M18 1.01L8 1c-1.1 0-2 .9-2 2v3h2V5h10v14H8v-1H6v3c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM10 15h2V8H5v2h3.59L3 15.59 4.41 17 10 11.41z"
@@ -304,7 +304,7 @@
           <a class="nav-link" onclick="app.navigateToApp('settings')" aria-label="Open settings"
             >Settings</a
           >
-          <button class="btn btn-secondary" onclick="app.signOut()" style="margin-left: auto">
+          <button class="btn btn-secondary" onclick="app.signOut()" style="margin-left: auto" aria-label="Sign out of QuickList">
             Sign Out
           </button>
         </nav>
@@ -834,7 +834,7 @@
                   <li>Basic price suggestions</li>
                   <li>Standard image tools</li>
                 </ul>
-                <button class="btn btn-secondary" onclick="app.showAuthModal()">Get Started</button>
+                <button class="btn btn-secondary" onclick="app.showAuthModal()" aria-label="Get started with QuickList">Get Started</button>
               </div>
               <div class="pricing-card">
                 <div class="pricing-tier">Casual</div>
