@@ -1,19 +1,27 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
-ROOT_DIR="/Users/deannewton/Projects/QLC/Quicklist-Claude"
-PORT_TO_FREE=${PORT_TO_FREE:-4577}
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PUBLIC_DIR="$ROOT_DIR/public"
 
-cd "$ROOT_DIR"
+mkdir -p "$PUBLIC_DIR"
 
-if command -v lsof >/dev/null 2>&1; then
-  PIDS=$(lsof -ti ":${PORT_TO_FREE}" || true)
-  if [[ -n "${PIDS}" ]]; then
-    echo "Killing processes on port ${PORT_TO_FREE}: ${PIDS}"
-    kill ${PIDS} || true
+# Sync static assets into public for dev parity with Vercel
+cp -f "$ROOT_DIR/index.html" "$PUBLIC_DIR/index.html"
+for file in manifest.json service-worker.js pwa-features.js offline.html; do
+  if [ -f "$ROOT_DIR/$file" ]; then
+    cp -f "$ROOT_DIR/$file" "$PUBLIC_DIR/"
   fi
-else
-  echo "lsof not found; skipping port cleanup."
-fi
+done
 
-exec nodemon server.js
+for dir in icons json_anim brand; do
+  if [ -d "$ROOT_DIR/$dir" ]; then
+    cp -R "$ROOT_DIR/$dir" "$PUBLIC_DIR/" 2>/dev/null || true
+  fi
+done
+
+if command -v nodemon >/dev/null 2>&1; then
+  nodemon "$ROOT_DIR/server.js"
+else
+  node "$ROOT_DIR/server.js"
+fi

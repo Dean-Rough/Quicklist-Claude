@@ -56,8 +56,8 @@ CREATE INDEX IF NOT EXISTS idx_listings_status ON listings(status);
 CREATE INDEX IF NOT EXISTS idx_listings_sold_at ON listings(sold_at);
 CREATE INDEX IF NOT EXISTS idx_images_listing_id ON images(listing_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
-CREATE INDEX IF NOT EXISTS idx_listings_ebay_item_id ON listings(ebay_item_id);
+-- CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id); -- Moved to schema_updates.sql
+-- CREATE INDEX IF NOT EXISTS idx_listings_ebay_item_id ON listings(ebay_item_id); -- Moved to schema_listing_updates.sql
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()

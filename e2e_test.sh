@@ -52,7 +52,7 @@ LISTING_RESPONSE=$(curl -s -X POST "$BASE_URL/api/listings" \
     "keywords": ["test", "product", "electronics"],
     "sources": [{"url": "https://example.com", "title": "Example"}],
     "platform": "vinted",
-    "images": []
+    "images": [{"url": "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg", "isBlurry": false}]
   }')
 echo $LISTING_RESPONSE | jq .
 LISTING_ID=$(echo $LISTING_RESPONSE | jq -r '.listing.id')
