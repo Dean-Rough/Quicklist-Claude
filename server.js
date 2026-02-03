@@ -384,6 +384,40 @@ app.get('/api/config/auth', (req, res) => {
   });
 });
 
+// Pricing configuration for frontend
+app.get('/api/config/pricing', (req, res) => {
+  res.json({
+    tiers: {
+      casual: {
+        priceId: process.env.STRIPE_PRICE_CASUAL || null,
+        name: 'Casual',
+        price: 4.99,
+        listings: 50,
+      },
+      pro: {
+        priceId: process.env.STRIPE_PRICE_PRO || null,
+        name: 'Pro',
+        price: 9.99,
+        listings: 200,
+        featured: true,
+      },
+      max: {
+        priceId: process.env.STRIPE_PRICE_MAX || null,
+        name: 'Max',
+        price: 19.99,
+        listings: -1, // unlimited
+      },
+    },
+    currency: 'GBP',
+    currencySymbol: '£',
+    configured: !!(
+      process.env.STRIPE_PRICE_CASUAL &&
+      process.env.STRIPE_PRICE_PRO &&
+      process.env.STRIPE_PRICE_MAX
+    ),
+  });
+});
+
 // Cloudinary configuration for frontend
 app.get('/api/config/cloudinary', (req, res) => {
   const uploadPreset = (process.env.CLOUDINARY_UPLOAD_PRESET || 'quicklist_unsigned').trim();
@@ -678,8 +712,7 @@ function extractGeminiText(candidate, userId = null) {
           normalizedMime.length === 0;
 
         if (allowInline) {
-          const isProbablyBase64 =
-            data.length % 4 === 0 && /^[A-Za-z0-9+/=]+$/.test(data);
+          const isProbablyBase64 = data.length % 4 === 0 && /^[A-Za-z0-9+/=]+$/.test(data);
           if (isProbablyBase64) {
             try {
               const decoded = Buffer.from(data, 'base64').toString('utf-8').trim();
@@ -847,10 +880,7 @@ async function getPlanLimit(userId) {
 // Auth middleware - Enhanced Clerk middleware that adds user info to req.user
 const authenticateToken = async (req, res, next) => {
   try {
-    if (
-      process.env.ALLOW_TEST_AUTH === '1' &&
-      process.env.NODE_ENV !== 'production'
-    ) {
+    if (process.env.ALLOW_TEST_AUTH === '1' && process.env.NODE_ENV !== 'production') {
       req.user = {
         id: 1,
         clerkId: 'test-user',
@@ -1720,12 +1750,12 @@ app.post('/api/listings', authenticateToken, async (req, res) => {
 
           // STRICT ENFORCEMENT: Reject Base64 / Require URL
           if (!imageData.startsWith('http')) {
-             logger.warn('Skipping non-URL image (Base64 rejected)', {
-               listingId: listing.id,
-               imageIndex: idx,
-               preview: imageData.substring(0, 50)
-             });
-             return null;
+            logger.warn('Skipping non-URL image (Base64 rejected)', {
+              listingId: listing.id,
+              imageIndex: idx,
+              preview: imageData.substring(0, 50),
+            });
+            return null;
           }
 
           return {
@@ -2942,7 +2972,6 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
     const qualityData = extractJsonFromGeminiText(text);
 
     if (qualityData) {
-
       // Calculate overall score if not provided
       if (!qualityData.overallScore) {
         const scores = [
@@ -4748,7 +4777,6 @@ Provide honest but not alarming language for the condition disclosure.`;
     const damageData = extractJsonFromGeminiText(text);
 
     if (damageData) {
-
       // Ensure all required fields exist with defaults
       return {
         overallCondition: damageData.overallCondition || 'Good',
