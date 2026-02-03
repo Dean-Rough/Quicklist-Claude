@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global AbortController */
 
 const fs = require('fs');
 const path = require('path');
