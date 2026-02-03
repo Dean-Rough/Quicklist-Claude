@@ -22,6 +22,15 @@ if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
   require('dotenv').config();
 }
 
+const GEMINI_API_VERSION = process.env.GEMINI_API_VERSION || 'v1beta';
+const GEMINI_LISTING_MODEL =
+  process.env.GEMINI_LISTING_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_VISION_MODEL =
+  process.env.GEMINI_VISION_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+
+const buildGeminiUrl = (model, apiKey) =>
+  `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:generateContent?key=${apiKey}`;
+
 // Initialize Sentry error tracking (optional - only if DSN is configured)
 const Sentry = require('@sentry/node');
 if (process.env.SENTRY_DSN) {
@@ -114,7 +123,9 @@ if (
     pool.query('SELECT NOW()', (err, res) => {
       if (err) {
         logger.error('Database connection error:', err);
-        process.exit(1);
+        if (process.env.PROMPT_EVAL_MODE !== '1') {
+          process.exit(1);
+        }
       } else {
         logger.info('Database connected successfully');
       }
@@ -127,7 +138,7 @@ if (
 } else {
   logger.error('No valid DATABASE_URL found. Database connection required.');
   // Don't exit in serverless - let requests fail gracefully
-  if (!process.env.VERCEL) {
+  if (!process.env.VERCEL && process.env.PROMPT_EVAL_MODE !== '1') {
     process.exit(1);
   }
 }
@@ -347,7 +358,11 @@ app.get('/api/ping', (req, res) => {
 
 // Clerk middleware - must be before routes that need auth
 // Only use Clerk middleware if properly configured
-if (process.env.CLERK_SECRET_KEY && process.env.CLERK_PUBLISHABLE_KEY) {
+if (
+  process.env.CLERK_SECRET_KEY &&
+  process.env.CLERK_PUBLISHABLE_KEY &&
+  process.env.PROMPT_EVAL_MODE !== '1'
+) {
   try {
     app.use(clerkMiddleware());
     logger.info('Clerk middleware initialized');
@@ -464,7 +479,134 @@ function repairGeminiJsonString(jsonString) {
     return jsonString;
   }
 
-  return jsonString.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+  let sanitized = '';
+  let inString = false;
+  let stringStartIndex = null;
+
+  for (let i = 0; i < jsonString.length; i += 1) {
+    const char = jsonString[i];
+
+    if (inString) {
+      if (char === '"') {
+        inString = false;
+        stringStartIndex = null;
+        sanitized += char;
+        continue;
+      }
+
+      if (char === '\\') {
+        const next = jsonString[i + 1];
+        if (next && /["\\/bfnrtu]/.test(next)) {
+          sanitized += `\\${next}`;
+          i += 1;
+          continue;
+        }
+
+        sanitized += '\\\\';
+        continue;
+      }
+
+      if (char === '\n') {
+        sanitized += '\\n';
+        continue;
+      }
+      if (char === '\r') {
+        sanitized += '\\r';
+        continue;
+      }
+      if (char === '\t') {
+        sanitized += '\\t';
+        continue;
+      }
+    } else if (char === '"') {
+      inString = true;
+      stringStartIndex = sanitized.length;
+    }
+
+    sanitized += char;
+  }
+
+  if (inString) {
+    let prevIndex = stringStartIndex !== null ? stringStartIndex - 1 : sanitized.length - 1;
+    while (prevIndex >= 0 && /\s/.test(sanitized[prevIndex])) {
+      prevIndex -= 1;
+    }
+    const prevChar = prevIndex >= 0 ? sanitized[prevIndex] : null;
+
+    if (prevChar === '{' || prevChar === ',') {
+      sanitized = sanitized.slice(0, stringStartIndex);
+    } else {
+      let backslashCount = 0;
+      for (let i = sanitized.length - 1; i >= 0 && sanitized[i] === '\\'; i -= 1) {
+        backslashCount += 1;
+      }
+      if (backslashCount % 2 === 1) {
+        sanitized += '\\';
+      }
+      sanitized += '"';
+    }
+  }
+
+  if (/:\s*$/.test(sanitized)) {
+    sanitized += ' null';
+  }
+
+  const balanced = balanceJsonBrackets(sanitized);
+  return balanced.replace(/,(\s*[}\]])/g, '$1');
+}
+
+function balanceJsonBrackets(jsonString) {
+  if (typeof jsonString !== 'string') {
+    return jsonString;
+  }
+
+  const stack = [];
+  let inString = false;
+  let escapeNext = false;
+
+  for (let i = 0; i < jsonString.length; i += 1) {
+    const char = jsonString[i];
+
+    if (inString) {
+      if (escapeNext) {
+        escapeNext = false;
+        continue;
+      }
+      if (char === '\\') {
+        escapeNext = true;
+        continue;
+      }
+      if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{' || char === '[') {
+      stack.push(char);
+    } else if (char === '}' || char === ']') {
+      const last = stack[stack.length - 1];
+      if ((char === '}' && last === '{') || (char === ']' && last === '[')) {
+        stack.pop();
+      }
+    }
+  }
+
+  if (!stack.length) {
+    return jsonString;
+  }
+
+  let closing = '';
+  for (let i = stack.length - 1; i >= 0; i -= 1) {
+    closing += stack[i] === '{' ? '}' : ']';
+  }
+
+  return `${jsonString}${closing}`;
 }
 
 function sliceBalancedJson(text, startIndex) {
@@ -514,7 +656,54 @@ function sliceBalancedJson(text, startIndex) {
   return null;
 }
 
-function extractListingFromGeminiText(text) {
+function extractGeminiText(candidate, userId = null) {
+  if (!candidate?.content?.parts) {
+    return '';
+  }
+
+  const textParts = [];
+  candidate.content.parts.forEach((part) => {
+    if (typeof part.text === 'string' && part.text.trim().length > 0) {
+      textParts.push(part.text.trim());
+    } else {
+      const inline = part.inlineData || part.inline_data;
+      const mimeType = inline?.mimeType || inline?.mime_type || '';
+      const data = inline?.data;
+
+      if (typeof data === 'string') {
+        const normalizedMime = mimeType.toLowerCase();
+        const allowInline =
+          normalizedMime.startsWith('application/json') ||
+          normalizedMime.startsWith('text/') ||
+          normalizedMime.length === 0;
+
+        if (allowInline) {
+          const isProbablyBase64 =
+            data.length % 4 === 0 && /^[A-Za-z0-9+/=]+$/.test(data);
+          if (isProbablyBase64) {
+            try {
+              const decoded = Buffer.from(data, 'base64').toString('utf-8').trim();
+              if (decoded.length > 0) {
+                textParts.push(decoded);
+              }
+            } catch (decodeError) {
+              logger.warn('Failed to decode inlineData from Gemini response', {
+                error: decodeError.message,
+                userId,
+              });
+            }
+          } else if (data.trim().length > 0) {
+            textParts.push(data.trim());
+          }
+        }
+      }
+    }
+  });
+
+  return textParts.join('\n').trim();
+}
+
+function extractJsonFromGeminiText(text) {
   if (typeof text !== 'string' || text.trim().length === 0) {
     return null;
   }
@@ -548,6 +737,10 @@ function extractListingFromGeminiText(text) {
   }
 
   return null;
+}
+
+function extractListingFromGeminiText(text) {
+  return extractJsonFromGeminiText(text);
 }
 
 function tryParseJson(payload) {
@@ -590,6 +783,9 @@ async function ensureCoreSchema() {
 
 function ensureSchemaReady() {
   if (!pool) {
+    if (process.env.PROMPT_EVAL_MODE === '1') {
+      return Promise.resolve();
+    }
     throw new Error('Database pool not initialized');
   }
 
@@ -626,6 +822,9 @@ const MOBILE_TIPS = [
 
 // Get plan limits helper
 async function getPlanLimit(userId) {
+  if (!pool) {
+    return 5;
+  }
   try {
     const result = await pool.query(
       `SELECT plan_type FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
@@ -648,6 +847,19 @@ async function getPlanLimit(userId) {
 // Auth middleware - Enhanced Clerk middleware that adds user info to req.user
 const authenticateToken = async (req, res, next) => {
   try {
+    if (
+      process.env.ALLOW_TEST_AUTH === '1' &&
+      process.env.NODE_ENV !== 'production'
+    ) {
+      req.user = {
+        id: 1,
+        clerkId: 'test-user',
+        email: 'test@example.com',
+        name: 'Test User',
+      };
+      return next();
+    }
+
     await ensureSchemaReady();
     // Try to get auth from Clerk middleware first (cookie-based)
     let { userId } = getAuth(req);
@@ -1506,6 +1718,16 @@ app.post('/api/listings', authenticateToken, async (req, res) => {
             return null;
           }
 
+          // STRICT ENFORCEMENT: Reject Base64 / Require URL
+          if (!imageData.startsWith('http')) {
+             logger.warn('Skipping non-URL image (Base64 rejected)', {
+               listingId: listing.id,
+               imageIndex: idx,
+               preview: imageData.substring(0, 50)
+             });
+             return null;
+          }
+
           return {
             listingId: listing.id,
             imageData,
@@ -1575,9 +1797,13 @@ app.get('/api/listings', authenticateToken, async (req, res) => {
     const offset = (page - 1) * limit;
 
     // Get listings with pagination (without full image data for performance)
+    // Only return image URL if it's short (likely a URL) to prevent Base64 bloat
     const result = await safeQuery(
       `SELECT l.*,
-                    (SELECT json_agg(json_build_object('id', i.id, 'image_url', i.image_data, 'thumbnail_url', i.image_data, 'isBlurry', i.is_blurry, 'order', i.image_order) ORDER BY i.image_order)
+                    (SELECT json_agg(json_build_object('id', i.id, 
+                      'image_url', CASE WHEN length(i.image_data) < 1000 THEN i.image_data ELSE NULL END, 
+                      'thumbnail_url', CASE WHEN length(i.image_data) < 1000 THEN i.image_data ELSE NULL END, 
+                      'isBlurry', i.is_blurry, 'order', i.image_order) ORDER BY i.image_order)
                      FROM images i WHERE i.listing_id = l.id) as images
              FROM listings l
              WHERE l.user_id = $1
@@ -2120,7 +2346,7 @@ async function postToEbay(listingData, images, userToken, ebayCategoryId = null)
 // Phase 4: Stock Image Finder - Find official manufacturer product images
 async function findStockImage(listing, apiKey) {
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = buildGeminiUrl(GEMINI_VISION_MODEL, apiKey);
 
     // Build search query from identified product
     const searchQuery = `${listing.brand} ${listing.title}`.trim();
@@ -2211,12 +2437,20 @@ ${listing.modelCodes && listing.modelCodes.length > 0 ? `Model Code: ${listing.m
     }
 
     const data = await response.json();
-    const text = data.candidates[0].content.parts[0].text;
+    const candidate = data.candidates?.[0];
+    if (!candidate) {
+      logger.warn('No candidates in stock image response');
+      return {
+        stockImageUrl: null,
+        source: null,
+        confidence: 'LOW',
+        alternatives: [],
+      };
+    }
 
-    // Extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const result = JSON.parse(jsonMatch[0]);
+    const text = extractGeminiText(candidate);
+    const result = extractJsonFromGeminiText(text);
+    if (result) {
       const normalizedBrand = listing.brand ? listing.brand.replace(/\s+/g, '').toLowerCase() : '';
       let candidateProductPage = result.productPageUrl || null;
 
@@ -2266,15 +2500,17 @@ ${listing.modelCodes && listing.modelCodes.length > 0 ? `Model Code: ${listing.m
         confidence: result.confidence,
       });
       return result;
-    } else {
-      logger.warn('No JSON found in stock image response');
-      return {
-        stockImageUrl: null,
-        source: null,
-        confidence: 'LOW',
-        alternatives: [],
-      };
     }
+
+    logger.warn('No JSON found in stock image response', {
+      textPreview: text ? text.slice(0, 200) : '',
+    });
+    return {
+      stockImageUrl: null,
+      source: null,
+      confidence: 'LOW',
+      alternatives: [],
+    };
   } catch (error) {
     logger.error('Stock image search error:', { error: error.message });
     return {
@@ -2295,7 +2531,7 @@ async function recognizeProductWithVision(images, apiKey) {
 
     // For now, we'll use Gemini Vision with a specialized recognition prompt
     // In production, you'd use actual Google Cloud Vision API
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = buildGeminiUrl(GEMINI_VISION_MODEL, apiKey);
 
     const visionPrompt = `You are a specialized product recognition system using Google Vision capabilities. Analyze the product images to identify the exact product model, product line, and visual features.
 
@@ -2346,6 +2582,7 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
           },
         ],
         generationConfig: {
+          responseMimeType: 'application/json',
           temperature: 0.2, // Low temperature for accurate recognition
           topP: 0.85,
           topK: 30,
@@ -2355,16 +2592,25 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
     });
 
     if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      logger.error('Vision API request failed:', {
+        status: response.status,
+        error: errorText.substring(0, 200),
+      });
       throw new Error(`Vision API request failed: ${response.status}`);
     }
 
     const data = await response.json();
-    const text = data.candidates[0].content.parts[0].text;
+    const candidate = data.candidates?.[0];
+    const text = extractGeminiText(candidate);
+    if (!text && candidate?.content?.parts) {
+      logger.warn('Vision response contained no text parts', {
+        partKeys: candidate.content.parts.map((part) => Object.keys(part)),
+      });
+    }
+    const recognized = extractJsonFromGeminiText(text);
 
-    // Extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const recognized = JSON.parse(jsonMatch[0]);
+    if (recognized) {
       logger.info('Vision recognition complete:', {
         visualBrand: recognized.visualBrand,
         productLine: recognized.productLine,
@@ -2372,7 +2618,12 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
       });
       return recognized;
     } else {
-      logger.warn('No JSON found in vision response, falling back to empty structure');
+      logger.warn('No JSON found in vision response, falling back to empty structure', {
+        textPreview: text ? text.slice(0, 200) : '',
+      });
+      if (process.env.DEBUG_GEMINI_JSON === '1' && text) {
+        fs.writeFileSync('/tmp/qlc_vision_raw.txt', text);
+      }
       return {
         visualBrand: null,
         productLine: null,
@@ -2403,7 +2654,7 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
 // Intensive parsing engine - Extract ALL codes and text from images FIRST
 async function parseProductCodes(images, apiKey) {
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = buildGeminiUrl(GEMINI_VISION_MODEL, apiKey);
 
     const parsingPrompt = `You are a specialized OCR and code extraction system. Your ONLY job is to extract ALL visible text, codes, and identifiers from product tags and labels.
 
@@ -2457,6 +2708,7 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
           },
         ],
         generationConfig: {
+          responseMimeType: 'application/json',
           temperature: 0.1, // Low temperature for precise extraction
           topP: 0.8,
           topK: 20,
@@ -2466,16 +2718,25 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
     });
 
     if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      logger.error('Parsing API request failed:', {
+        status: response.status,
+        error: errorText.substring(0, 200),
+      });
       throw new Error(`Parsing API request failed: ${response.status}`);
     }
 
     const data = await response.json();
-    const text = data.candidates[0].content.parts[0].text;
+    const candidate = data.candidates?.[0];
+    const text = extractGeminiText(candidate);
+    if (!text && candidate?.content?.parts) {
+      logger.warn('Parsing response contained no text parts', {
+        partKeys: candidate.content.parts.map((part) => Object.keys(part)),
+      });
+    }
+    const parsed = extractJsonFromGeminiText(text);
 
-    // Extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
+    if (parsed) {
       logger.info('Parsed codes:', {
         brand: parsed.brand,
         modelCodes: parsed.modelCodes?.length || 0,
@@ -2485,7 +2746,12 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
       });
       return parsed;
     } else {
-      logger.warn('No JSON found in parsing response, falling back to empty structure');
+      logger.warn('No JSON found in parsing response, falling back to empty structure', {
+        textPreview: text ? text.slice(0, 200) : '',
+      });
+      if (process.env.DEBUG_GEMINI_JSON === '1' && text) {
+        fs.writeFileSync('/tmp/qlc_parse_raw.txt', text);
+      }
       return {
         brand: null,
         modelCodes: [],
@@ -2547,7 +2813,7 @@ function prepareImageForGemini(image) {
 // Feature 3: Image Quality Scoring - Analyze image quality for marketplace listings
 async function analyzeImageQuality(imageBase64, apiKey) {
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = buildGeminiUrl(GEMINI_VISION_MODEL, apiKey);
 
     const qualityPrompt = `Analyze this product image for marketplace listing quality AND condition/damage.
 
@@ -2647,6 +2913,7 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
           },
         ],
         generationConfig: {
+          responseMimeType: 'application/json',
           temperature: 0.2, // Low temperature for consistent scoring
           topP: 0.8,
           topK: 20,
@@ -2656,16 +2923,25 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
     });
 
     if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      logger.error('Quality analysis API request failed:', {
+        status: response.status,
+        error: errorText.substring(0, 200),
+      });
       throw new Error(`Quality analysis API request failed: ${response.status}`);
     }
 
     const data = await response.json();
-    const text = data.candidates[0].content.parts[0].text;
+    const candidate = data.candidates?.[0];
+    const text = extractGeminiText(candidate);
+    if (!text && candidate?.content?.parts) {
+      logger.warn('Quality response contained no text parts', {
+        partKeys: candidate.content.parts.map((part) => Object.keys(part)),
+      });
+    }
+    const qualityData = extractJsonFromGeminiText(text);
 
-    // Extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const qualityData = JSON.parse(jsonMatch[0]);
+    if (qualityData) {
 
       // Calculate overall score if not provided
       if (!qualityData.overallScore) {
@@ -2692,7 +2968,12 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
 
       return qualityData;
     } else {
-      logger.warn('No JSON found in quality analysis response');
+      logger.warn('No JSON found in quality analysis response', {
+        textPreview: text ? text.slice(0, 200) : '',
+      });
+      if (process.env.DEBUG_GEMINI_JSON === '1' && text) {
+        fs.writeFileSync('/tmp/qlc_quality_raw.txt', text);
+      }
       return {
         overallScore: 70,
         sharpness: 7,
@@ -3239,50 +3520,49 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
       }
     }
 
-    // Check usage limits before generation
-    const limit = await getPlanLimit(userId);
-    let currentUsage = 0;
+    // Check usage limits before generation (skip during prompt evaluation)
+    if (process.env.PROMPT_EVAL_MODE !== '1' && pool) {
+      const limit = await getPlanLimit(userId);
+      let currentUsage = 0;
 
-    try {
-      const periodStart = new Date();
-      periodStart.setDate(1); // First day of month
-      const periodEnd = new Date(periodStart);
-      periodEnd.setMonth(periodEnd.getMonth() + 1);
+      try {
+        const periodStart = new Date();
+        periodStart.setDate(1); // First day of month
+        const periodEnd = new Date(periodStart);
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
 
-      const usageResult = await pool.query(
-        `SELECT ai_generations FROM usage_tracking
-                 WHERE user_id = $1 AND period_start >= $2 AND period_start < $3
-                 ORDER BY period_start DESC LIMIT 1`,
-        [userId, periodStart, periodEnd]
-      );
-      currentUsage = usageResult.rows[0]?.ai_generations || 0;
+        const usageResult = await pool.query(
+          `SELECT ai_generations FROM usage_tracking
+                   WHERE user_id = $1 AND period_start >= $2 AND period_start < $3
+                   ORDER BY period_start DESC LIMIT 1`,
+          [userId, periodStart, periodEnd]
+        );
+        currentUsage = usageResult.rows[0]?.ai_generations || 0;
 
-      if (currentUsage >= limit) {
-        return res.status(403).json({
-          error: 'Plan limit exceeded',
-          limit,
-          currentUsage,
-        });
-      }
-    } catch (error) {
-      // If usage_tracking table doesn't exist or column is missing, allow generation (treat as no usage)
-      if (error.code !== '42P01' && error.code !== '42703') {
-        // 42P01 = relation does not exist, 42703 = column does not exist
-        logger.error('Usage check error:', { error: error.message, code: error.code, userId });
-        // Don't block generation on usage tracking errors
-      } else {
-        logger.warn('usage_tracking table or column not found, skipping usage check', {
-          userId,
-          errorCode: error.code,
-        });
+        if (currentUsage >= limit) {
+          return res.status(403).json({
+            error: 'Plan limit exceeded',
+            limit,
+            currentUsage,
+          });
+        }
+      } catch (error) {
+        // If usage_tracking table doesn't exist or column is missing, allow generation (treat as no usage)
+        if (error.code !== '42P01' && error.code !== '42703') {
+          // 42P01 = relation does not exist, 42703 = column does not exist
+          logger.error('Usage check error:', { error: error.message, code: error.code, userId });
+          // Don't block generation on usage tracking errors
+        } else {
+          logger.warn('usage_tracking table or column not found, skipping usage check', {
+            userId,
+            errorCode: error.code,
+          });
+        }
       }
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
-    // Using Gemini 2.0 Flash (stable) - Best for OCR/label reading as of Nov 2025
-    // Research shows 2.0 Flash excels at text extraction from product labels
-    // Gemini 2.5 models have worse OCR quality vs 2.0 Flash for straightforward text extraction
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = buildGeminiUrl(GEMINI_LISTING_MODEL, apiKey);
 
     // PHASE 1, 3 & Quality: Run code parsing, vision recognition, and quality analysis IN PARALLEL for speed
     logger.info('Starting parallel processing:', { userId, imageCount: images.length, platform });
@@ -3815,7 +4095,6 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
           },
         ],
         generationConfig: {
-          responseMimeType: 'application/json',
           temperature: 0.7, // Increased for more creative, engaging descriptions while maintaining accuracy
           topP: 0.95,
           topK: 40,
@@ -3910,7 +4189,31 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
       logger.info('Found research sources:', { count: searchSources.length, userId });
     }
 
-    const listing = extractListingFromGeminiText(combinedText);
+    let listing = extractListingFromGeminiText(combinedText);
+
+    // Fallback if JSON parsing fails
+    if (!listing || !listing.title || !listing.description) {
+      logger.warn('Failed to extract JSON from Gemini response, using fallback', {
+        textPreview: combinedText.substring(0, 200),
+        userId,
+      });
+
+      // Create fallback listing from raw text
+      listing = {
+        title: 'Generated Listing (Check Description)',
+        brand: 'Unknown',
+        category: 'General',
+        description: combinedText,
+        condition: 'Good', // Default
+        rrp: '0.00',
+        price: '0.00',
+        keywords: ['check-description'],
+        sources: [],
+        confidence: 'LOW',
+        alternatives: [],
+      };
+    }
+
     if (listing) {
       // Merge AI-generated sources with grounding sources
       if (searchSources.length > 0) {
@@ -3983,17 +4286,19 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
         }
       }
 
-      // Track usage after successful generation
-      try {
-        await safeQuery(
-          `INSERT INTO usage_tracking (user_id, period_start, period_end, ai_generations, listings_created)
-                     VALUES ($1, DATE_TRUNC('month', CURRENT_DATE), DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month', 1, 0)
-                     ON CONFLICT (user_id, period_start) 
-                     DO UPDATE SET ai_generations = usage_tracking.ai_generations + 1`,
-          [userId]
-        );
-      } catch (usageError) {
-        logger.warn('Usage tracking failed:', { error: usageError.message, userId });
+      // Track usage after successful generation (skip during prompt evaluation)
+      if (process.env.PROMPT_EVAL_MODE !== '1' && pool) {
+        try {
+          await safeQuery(
+            `INSERT INTO usage_tracking (user_id, period_start, period_end, ai_generations, listings_created)
+                       VALUES ($1, DATE_TRUNC('month', CURRENT_DATE), DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month', 1, 0)
+                       ON CONFLICT (user_id, period_start) 
+                       DO UPDATE SET ai_generations = usage_tracking.ai_generations + 1`,
+            [userId]
+          );
+        } catch (usageError) {
+          logger.warn('Usage tracking failed:', { error: usageError.message, userId });
+        }
       }
 
       logger.info('Successfully generated listing:', {
@@ -4018,12 +4323,6 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
         requiresUserSelection:
           confidence !== 'HIGH' && listing.alternatives && listing.alternatives.length > 0,
       });
-    } else {
-      logger.error('Failed to extract JSON from Gemini response:', {
-        textPreview: combinedText.substring(0, 500),
-        userId,
-      });
-      throw new Error('AI response JSON parsing failed');
     }
   } catch (error) {
     logger.error('Generate listing error:', { error: error.message, requestId: req.id, userId });
@@ -4226,7 +4525,7 @@ app.post('/api/listings/:id/post-to-ebay', authenticateToken, async (req, res) =
 // Analyze multiple images for damage, defects, and wear
 async function analyzeLabelImage(image, apiKey) {
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = buildGeminiUrl(GEMINI_VISION_MODEL, apiKey);
 
     const labelPrompt = `You are a product information extraction AI analyzing a product label image.
 
@@ -4301,6 +4600,7 @@ If you can't read certain parts clearly, note this in the response.`;
           },
         ],
         generationConfig: {
+          responseMimeType: 'application/json',
           temperature: 0.2, // Low temperature for accurate text extraction
           topP: 0.95,
           topK: 40,
@@ -4310,10 +4610,10 @@ If you can't read certain parts clearly, note this in the response.`;
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorText = await response.text().catch(() => '');
       logger.error('Gemini API error in label analysis:', {
         status: response.status,
-        error: errorData,
+        error: errorText.substring(0, 200),
       });
       throw new Error(`Gemini API request failed: ${response.status}`);
     }
@@ -4324,12 +4624,12 @@ If you can't read certain parts clearly, note this in the response.`;
       throw new Error('No response from Gemini API');
     }
 
-    const text = data.candidates[0].content.parts[0].text;
-    const cleanedText = text
-      .replace(/```json\n?/g, '')
-      .replace(/```\n?/g, '')
-      .trim();
-    const labelData = JSON.parse(cleanedText);
+    const text = extractGeminiText(data.candidates[0]);
+    const labelData = extractJsonFromGeminiText(text);
+
+    if (!labelData) {
+      throw new Error('No JSON found in label analysis response');
+    }
 
     return labelData;
   } catch (error) {
@@ -4340,7 +4640,7 @@ If you can't read certain parts clearly, note this in the response.`;
 
 async function analyzeDamageInImages(images, apiKey) {
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = buildGeminiUrl(GEMINI_VISION_MODEL, apiKey);
 
     const damagePrompt = `You are a professional product inspector analyzing images for defects and damage.
 
@@ -4419,6 +4719,7 @@ Provide honest but not alarming language for the condition disclosure.`;
           },
         ],
         generationConfig: {
+          responseMimeType: 'application/json',
           temperature: 0.3, // Lower temperature for more factual damage assessment
           topP: 0.95,
           topK: 40,
@@ -4428,10 +4729,10 @@ Provide honest but not alarming language for the condition disclosure.`;
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorText = await response.text().catch(() => '');
       logger.error('Gemini API error in damage detection:', {
         status: response.status,
-        error: errorData,
+        error: errorText.substring(0, 200),
       });
       throw new Error(`Gemini API request failed: ${response.status}`);
     }
@@ -4443,12 +4744,10 @@ Provide honest but not alarming language for the condition disclosure.`;
       throw new Error('No response from AI model');
     }
 
-    const text = data.candidates[0].content.parts[0].text;
+    const text = extractGeminiText(data.candidates[0]);
+    const damageData = extractJsonFromGeminiText(text);
 
-    // Extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const damageData = JSON.parse(jsonMatch[0]);
+    if (damageData) {
 
       // Ensure all required fields exist with defaults
       return {
