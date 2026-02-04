@@ -5276,70 +5276,10 @@ ${this.state.currentListing?.keywords?.join(', ')}
 
   // Toast notification
   showToast(message, type = 'info') {
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
-    toast.textContent = message;
-
-    // Type-based styling
-    const typeStyles = {
-      success: {
-        background: 'var(--success)',
-        color: 'white',
-        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle"><polyline points="20 6 9 17 4 12"></polyline></svg>',
-      },
-      error: {
-        background: 'var(--error)',
-        color: 'white',
-        icon: '✕',
-      },
-      warning: {
-        background: 'var(--warning)',
-        color: 'white',
-        icon: '⚠',
-      },
-      info: {
-        background: 'var(--accent-indigo)',
-        color: 'white',
-        icon: 'ℹ',
-      },
-    };
-
-    const style = typeStyles[type] || typeStyles.info;
-
-    toast.style.cssText = `
-                    position: fixed;
-                    bottom: 2rem;
-                    right: 2rem;
-                    background: ${style.background};
-                    color: ${style.color};
-                    padding: 1rem 1.5rem;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                    z-index: 3000;
-                    animation: slideIn 0.3s ease;
-                    font-weight: 600;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    max-width: 400px;
-                `;
-
-    // Add icon
-    const icon = document.createElement('span');
-    icon.innerHTML = style.icon;
-    icon.style.cssText = 'font-size: 1.2rem;';
-    toast.insertBefore(icon, toast.firstChild);
-
-    document.body.appendChild(toast);
-
-    // Auto-remove after delay (longer for errors)
-    const delay = type === 'error' ? 5000 : 3000;
-    setTimeout(() => {
-      toast.style.animation = 'slideOut 0.3s ease';
-      setTimeout(() => toast.remove(), 300);
-    }, delay);
+    // Use new toast manager (with queue and debouncing)
+    if (window.toastManager) {
+      window.toastManager.showToast(message, type);
+    }
   },
 
   // ============================================
@@ -5875,32 +5815,8 @@ ${this.state.currentListing?.keywords?.join(', ')}
     }
   },
   showMobileToast(message, type = 'success') {
-    const toast = document.getElementById('toast');
-    const icon = document.getElementById('toastIcon');
-    const msg = document.getElementById('toastMessage');
-
-    msg.textContent = message;
-
-    const icons = {
-      success:
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle"><polyline points="20 6 9 17 4 12"></polyline></svg>',
-      error: '✕',
-      warning: '⚠',
-      info: 'ℹ',
-    };
-
-    icon.textContent = icons[type] || icons.info;
-
-    toast.classList.remove('success', 'error', 'warning', 'info');
-    toast.classList.add(type);
-    toast.classList.add('show');
-
-    setTimeout(
-      () => {
-        toast.classList.remove('show');
-      },
-      type === 'error' ? 5000 : 3000
-    );
+    // Use unified toast manager
+    this.showToast(message, type);
   },
 
   initSwipeableCards() {
