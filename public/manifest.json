@@ -1,172 +1,62 @@
 {
-  "name": "QuickList AI - Multi-Platform Listing Generator",
-  "short_name": "QuickList",
-  "description": "AI-powered listing generator for eBay, Vinted, Depop, and Facebook Marketplace. Upload photos, get professional listings for all platforms in seconds.",
+  "name": "Quicklist - AI Listing Generator",
+  "short_name": "Quicklist",
+  "description": "AI-powered listing generator for eBay, Vinted, and Gumtree",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f7f2ea",
-  "theme_color": "#0f766e",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
   "orientation": "portrait-primary",
-  "scope": "/",
-  "id": "quicklist-ai-pwa",
-  "categories": ["productivity", "business", "utilities", "shopping"],
   "icons": [
     {
-      "src": "/icons/icon-72.png",
+      "src": "/icons/icon-72x72.svg",
       "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-96.png",
+      "src": "/icons/icon-96x96.svg",
       "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-128.png",
+      "src": "/icons/icon-128x128.svg",
       "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-144.png",
+      "src": "/icons/icon-144x144.svg",
       "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-152.png",
+      "src": "/icons/icon-152x152.svg",
       "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-192.png",
+      "src": "/icons/icon-192x192.svg",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-384.png",
+      "src": "/icons/icon-384x384.svg",
       "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icons/icon-512x512.svg",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshots/mobile-home.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Home Screen"
-    },
-    {
-      "src": "/screenshots/mobile-scan.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Scan Items"
-    },
-    {
-      "src": "/screenshots/mobile-listing.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "AI-Generated Listings"
-    },
-    {
-      "src": "/screenshots/desktop-dashboard.png",
-      "sizes": "1920x1080",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Dashboard View"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "New Listing",
-      "short_name": "New",
-      "description": "Create a new listing",
-      "url": "/?action=new",
-      "icons": [
-        {
-          "src": "/icons/icon-96.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "My Listings",
-      "short_name": "Listings",
-      "description": "View your listings",
-      "url": "/?view=listings",
-      "icons": [
-        {
-          "src": "/icons/icon-96.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "Connect eBay",
-      "short_name": "eBay",
-      "description": "Connect your eBay account",
-      "url": "/auth/ebay/authorize",
-      "icons": [
-        {
-          "src": "/icons/icon-96.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    }
-  ],
-  "prefer_related_applications": false,
-  "related_applications": [],
-  "features": [
-    "ai-generation",
-    "multi-platform-posting",
-    "offline-mode",
-    "camera-capture",
-    "smart-clipboard",
-    "ebay-oauth"
-  ],
-  "edge_side_panel": {
-    "preferred_width": 400
-  },
-  "share_target": {
-    "action": "/share",
-    "method": "POST",
-    "enctype": "multipart/form-data",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url",
-      "files": [
-        {
-          "name": "images",
-          "accept": ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic"]
-        }
-      ]
-    }
-  },
-  "launch_handler": {
-    "client_mode": "focus-existing"
-  },
-  "protocol_handlers": [
-    {
-      "protocol": "web+quicklist",
-      "url": "/?action=%s"
-    }
-  ]
+  "categories": ["productivity", "utilities"],
+  "screenshots": []
 }
