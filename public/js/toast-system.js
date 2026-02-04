@@ -154,7 +154,7 @@ toastStyles.textContent = `
   }
 
   .qk-toast-success {
-    color: #15803d;
+    color: #0f766e;
   }
 
   .qk-toast-error {
