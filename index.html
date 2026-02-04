@@ -161,6 +161,9 @@
     <!-- Skip Link for Accessibility -->
     <a href="#marketingView" class="skip-link">Skip to main content</a>
     
+    <!-- Screen Reader Announcements (Live Region) -->
+    <div role="status" aria-live="polite" aria-atomic="true" class="sr-only" id="announcements"></div>
+    
     <!-- Offline Indicator -->
     <div id="offlineIndicator" class="offline-indicator">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -989,7 +992,7 @@
             <div class="card">
               <h2 class="mb-3">Listing Details</h2>
               <div class="form-group">
-                <label class="form-label"
+                <label class="form-label" for="itemHint"
                   >Item Name or Model
                   <small style="color: var(--text-muted)">(Optional)</small></label
                 >
@@ -1028,7 +1031,7 @@
                 >
               </div>
               <div class="form-group">
-                <label class="form-label"
+                <label class="form-label" for="conditionInfo"
                   >Further Info <small style="color: var(--text-muted)">(Optional)</small></label
                 >
                 <div class="input-with-icon">

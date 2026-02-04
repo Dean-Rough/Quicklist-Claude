@@ -15,7 +15,7 @@
             --accent-purple: #f97316;
             --text-primary: #1f2937;
             --text-secondary: #475569;
-            --text-muted: #6b7280;
+            --text-muted: #525b67; /* Darkened from #6b7280 for WCAG AA compliance (4.5:1 ratio) */
             --border-color: #e5dccf;
             --success: #15803d;
             --warning: #d97706;
@@ -795,17 +795,20 @@
             position: absolute;
             top: 4px;
             right: 4px;
-            width: 28px;
-            height: 28px;
+            width: 36px;
+            height: 36px;
+            min-width: 44px; /* Touch target accessibility */
+            min-height: 44px;
             background: var(--error);
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             color: white;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0.9;
+            font-size: 1.25rem;
         }
 
         .image-thumbnail-delete:hover {
@@ -2469,4 +2472,17 @@
         
         .skip-link:focus {
             top: 0;
+        }
+
+        /* Screen Reader Only (visually hidden but accessible) */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
         }
