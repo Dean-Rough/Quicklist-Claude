@@ -55,9 +55,9 @@ h3,
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: var(--glass);
+  background: var(--accent-indigo);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .header-content {
@@ -72,7 +72,7 @@ h3,
 .logo {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--accent-indigo);
+  color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -98,7 +98,7 @@ h3,
 }
 
 .nav-link {
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.9);
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s;
@@ -106,7 +106,7 @@ h3,
 }
 
 .nav-link:hover {
-  color: var(--accent-indigo);
+  color: white;
 }
 
 .btn {
