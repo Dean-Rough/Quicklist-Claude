@@ -52,10 +52,10 @@ const requiredEnvVars = [
   'CLOUDINARY_API_SECRET',
 ];
 
-const missingVars = requiredEnvVars.filter(v => !process.env[v]);
+const missingVars = requiredEnvVars.filter((v) => !process.env[v]);
 if (missingVars.length > 0) {
   console.error('❌ Missing required environment variables:');
-  missingVars.forEach(v => console.error(`   - ${v}`));
+  missingVars.forEach((v) => console.error(`   - ${v}`));
   console.error('\nAdd these to your .env file and try again.');
   process.exit(1);
 }
@@ -116,9 +116,7 @@ async function migrateImages() {
       ? 'WHERE migration_error IS NOT NULL'
       : 'WHERE migrated_to_cloudinary = false OR migrated_to_cloudinary IS NULL';
 
-    const countResult = await pool.query(
-      `SELECT COUNT(*) FROM images ${whereClause}`
-    );
+    const countResult = await pool.query(`SELECT COUNT(*) FROM images ${whereClause}`);
     stats.total = parseInt(countResult.rows[0].count);
 
     if (stats.total === 0) {
@@ -165,7 +163,6 @@ async function migrateImages() {
 
     console.log('\n' + '─'.repeat(65));
     printSummary();
-
   } catch (error) {
     console.error('\n❌ Migration failed:', error.message);
     console.error(error);
@@ -200,25 +197,20 @@ async function migrateImage(image, retryCount = 0) {
     }
 
     // Upload to Cloudinary
-    const uploadResult = await cloudinary.uploader.upload(
-      `data:image/jpeg;base64,${image_data}`,
-      {
-        public_id: publicId,
-        folder: 'quicklist',
-        resource_type: 'image',
-        transformation: [
-          { quality: 'auto', fetch_format: 'auto' }
-        ],
-        timeout: 60000, // 60 second timeout
-      }
-    );
+    const uploadResult = await cloudinary.uploader.upload(`data:image/jpeg;base64,${image_data}`, {
+      public_id: publicId,
+      folder: 'quicklist',
+      resource_type: 'image',
+      transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+      timeout: 60000, // 60 second timeout
+    });
 
     // Generate thumbnail URL with Cloudinary transformations
     const thumbnailUrl = cloudinary.url(publicId, {
       transformation: [
         { width: 300, height: 300, crop: 'fill' },
-        { quality: 'auto', fetch_format: 'auto' }
-      ]
+        { quality: 'auto', fetch_format: 'auto' },
+      ],
     });
 
     // Update database with Cloudinary URLs
@@ -236,7 +228,6 @@ async function migrateImage(image, retryCount = 0) {
 
     stats.migrated++;
     console.log(`  ✓ Image ${id}: Migrated successfully`);
-
   } catch (error) {
     // Retry logic
     if (retryCount < CONFIG.MAX_RETRIES) {
@@ -251,15 +242,17 @@ async function migrateImage(image, retryCount = 0) {
 
     if (!CONFIG.DRY_RUN) {
       // Log error to database
-      await pool.query(
-        `UPDATE images
+      await pool
+        .query(
+          `UPDATE images
          SET migration_error = $1,
              migration_attempted_at = NOW()
          WHERE id = $2`,
-        [error.message, id]
-      ).catch(err => {
-        console.error(`  ⚠ Failed to log error for image ${id}:`, err.message);
-      });
+          [error.message, id]
+        )
+        .catch((err) => {
+          console.error(`  ⚠ Failed to log error for image ${id}:`, err.message);
+        });
     }
   }
 }
@@ -275,8 +268,8 @@ function printProgress() {
 
   process.stdout.write(
     `  Progress: ${processed}/${stats.total} (${percent}%) | ` +
-    `Migrated: ${stats.migrated} | Failed: ${stats.failed} | ` +
-    `Rate: ${rate}/sec\r`
+      `Migrated: ${stats.migrated} | Failed: ${stats.failed} | ` +
+      `Rate: ${rate}/sec\r`
   );
 }
 
@@ -302,7 +295,9 @@ function printSummary() {
   if (stats.failed > 0) {
     console.log('⚠ Some images failed to migrate.');
     console.log('  Run this query to see errors:');
-    console.log('  SELECT id, listing_id, migration_error FROM images WHERE migration_error IS NOT NULL;\n');
+    console.log(
+      '  SELECT id, listing_id, migration_error FROM images WHERE migration_error IS NOT NULL;\n'
+    );
     console.log('  To retry failed images, run:');
     console.log('  node scripts/migrate_to_cloudinary.js --retry-failed\n');
   }
@@ -323,7 +318,7 @@ function printSummary() {
  * Sleep utility
  */
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -344,7 +339,7 @@ process.on('SIGTERM', async () => {
 });
 
 // Run migration
-migrateImages().catch(error => {
+migrateImages().catch((error) => {
   console.error('\n❌ Fatal error:', error);
   process.exit(1);
 });

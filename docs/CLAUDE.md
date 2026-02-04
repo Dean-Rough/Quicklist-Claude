@@ -36,29 +36,32 @@ npm start
 ### Single-File Frontend Structure
 
 All code is in `index.html`:
+
 - **Lines 1-9**: HTML structure and meta tags
 - **Lines 10-881**: Embedded CSS (dark mode design with indigo accents)
 - **Lines 882-1479**: HTML markup (marketing pages + app views)
 - **Lines 1480-2382**: JavaScript application logic
 
 **State Management**: Global `app` object with centralized state:
+
 ```javascript
 app.state = {
-    isAuthenticated: false,
-    user: null,
-    token: null,
-    currentView: 'home',           // Marketing navigation
-    currentAppView: 'newItem',     // App navigation
-    uploadedImages: [],
-    currentListing: null,
-    savedListings: [],
-    settings: { autoDownloadZip: false }
-}
+  isAuthenticated: false,
+  user: null,
+  token: null,
+  currentView: 'home', // Marketing navigation
+  currentAppView: 'newItem', // App navigation
+  uploadedImages: [],
+  currentListing: null,
+  savedListings: [],
+  settings: { autoDownloadZip: false },
+};
 ```
 
 ### Backend API Structure (`server.js`)
 
 **Route Categories**:
+
 1. **Auth**: `/api/auth/signup`, `/api/auth/signin`, `/api/auth/verify`
 2. **Listings CRUD**: `/api/listings` (GET/POST), `/api/listings/:id` (GET/PUT/DELETE)
 3. **AI Generation**: `/api/generate` (receives image + platform, returns listing)
@@ -69,11 +72,13 @@ app.state = {
 ### Database Schema
 
 **Three tables** (see `schema.sql`):
+
 1. **users**: id, email, password_hash, timestamps
 2. **listings**: user_id, title, brand, category, description, condition, rrp, price, **keywords (TEXT[])**, **sources (JSONB)**, platform, timestamps
 3. **images**: listing_id, image_data (base64), image_order, is_blurry, timestamp
 
 **Important**:
+
 - Keywords stored as PostgreSQL array (`TEXT[]`)
 - Sources stored as JSONB for flexible structure
 - Images stored as base64 strings (not filesystem/blob)
@@ -92,6 +97,7 @@ app.state = {
 7. User can edit, save to DB, or download as ZIP
 
 **Gemini Prompt Structure**: The prompt in `server.js` line ~200 instructs the AI to:
+
 - Analyze the image and generate title, brand, category, description, condition
 - Research similar items online and provide `rrp` (retail price) and competitive `price`
 - Extract keywords and provide `sources` (array of URLs used for research)
@@ -109,11 +115,13 @@ app.state = {
 ### When editing `index.html`:
 
 **CSS (Lines 10-881)**:
+
 - Uses CSS custom properties (variables) defined in `:root` selector
 - Dark mode color scheme: `--bg-primary: #0f0f23`, `--indigo-500: #6366f1`
 - Responsive breakpoints handled with media queries
 
 **JavaScript (Lines 1480-2382)**:
+
 - All code is in single `app` object namespace
 - Async/await used throughout (no callbacks/promises)
 - Key methods:
@@ -125,6 +133,7 @@ app.state = {
   - `downloadZip()`: Generate ZIP file with JSZip
 
 **When adding new features**:
+
 - Add CSS in the `<style>` block (lines 10-881)
 - Add HTML markup in appropriate section (marketing vs app)
 - Add JavaScript methods to `app` object
@@ -146,6 +155,7 @@ app.state = {
 ## Environment Variables
 
 Required in `.env` or `.env.local`:
+
 ```env
 DATABASE_URL=postgresql://... (Neon database connection string)
 GEMINI_API_KEY=... (Google AI Studio)
@@ -158,12 +168,14 @@ PORT=4577
 **No automated test suite** - manual E2E testing documented in `E2E_TEST_REPORT.md`.
 
 **Testing approach**:
+
 1. Start server: `npm run dev`
 2. Test endpoints with curl/Postman
 3. Manual UI testing in browser
 4. Check console for errors
 
 **Common test scenarios**:
+
 - Sign up → generate listing → save → load from saved items → delete
 - Upload multiple images → blur detection → ZIP download
 - Copy individual fields vs copy all
@@ -180,6 +192,7 @@ PORT=4577
   - CORS enabled
 
 **Before deployment**:
+
 - Generate new `JWT_SECRET` (use `require('crypto').randomBytes(64).toString('hex')`)
 - Ensure `.env` is never committed
 - Review CORS origins (currently allows all)

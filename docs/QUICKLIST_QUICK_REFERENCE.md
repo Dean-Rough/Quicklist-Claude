@@ -5,6 +5,7 @@
 **What is it?** AI-powered listing generator for resale marketplaces (Vinted, eBay, Gumtree)
 
 **How it works:**
+
 1. User uploads product images
 2. AI analyzes images using Google Gemini Vision API
 3. Multi-phase processing: code parsing → visual recognition → pricing research → stock image search
@@ -12,6 +13,7 @@
 5. User edits/saves/downloads as ZIP
 
 **Key Files:**
+
 - `/index.html` - 4229 line all-in-one frontend
 - `/server.js` - 1610 line Express backend
 - `/schema.sql` - Database schema
@@ -21,34 +23,36 @@
 
 ## Current Features Summary
 
-| Feature | Status | Details |
-|---------|--------|---------|
-| AI Listing Generation | ✅ Complete | 4-phase pipeline (OCR, Vision, Pricing, Stock Images) |
-| Image Upload | ✅ Complete | Multi-image, device camera support |
-| Marketplace Support | ✅ 3 platforms | Vinted, eBay, Gumtree |
-| eBay Pricing Intelligence | ✅ Complete | Finds sold/active listings, price recommendations |
-| Product Code Parsing | ✅ Complete | OCR extraction of SKUs, model codes, size |
-| Visual Recognition | ✅ Complete | Google Vision to identify product lines |
-| Stock Image Finder | ✅ Complete | Phase 4, finds official product images |
-| User Accounts | ✅ Complete | Sign up, JWT auth, cross-device access |
-| Save/Load Listings | ✅ Complete | Database persistence |
-| ZIP Download | ✅ Complete | Export listing + images |
-| eBay Direct Posting | ⚠️ Partial | Code ready, may need auth flow |
-| Vinted Integration | ⚠️ Basic | Autofill/redirect only |
-| Batch Processing | ❌ Incomplete | UI present, not implemented |
-| Hero Image Generation | ❌ UI only | Toggle in UI, not implemented |
-| Image Enhancement | ❌ UI only | Toggle in UI, not implemented |
+| Feature                   | Status         | Details                                               |
+| ------------------------- | -------------- | ----------------------------------------------------- |
+| AI Listing Generation     | ✅ Complete    | 4-phase pipeline (OCR, Vision, Pricing, Stock Images) |
+| Image Upload              | ✅ Complete    | Multi-image, device camera support                    |
+| Marketplace Support       | ✅ 3 platforms | Vinted, eBay, Gumtree                                 |
+| eBay Pricing Intelligence | ✅ Complete    | Finds sold/active listings, price recommendations     |
+| Product Code Parsing      | ✅ Complete    | OCR extraction of SKUs, model codes, size             |
+| Visual Recognition        | ✅ Complete    | Google Vision to identify product lines               |
+| Stock Image Finder        | ✅ Complete    | Phase 4, finds official product images                |
+| User Accounts             | ✅ Complete    | Sign up, JWT auth, cross-device access                |
+| Save/Load Listings        | ✅ Complete    | Database persistence                                  |
+| ZIP Download              | ✅ Complete    | Export listing + images                               |
+| eBay Direct Posting       | ⚠️ Partial     | Code ready, may need auth flow                        |
+| Vinted Integration        | ⚠️ Basic       | Autofill/redirect only                                |
+| Batch Processing          | ❌ Incomplete  | UI present, not implemented                           |
+| Hero Image Generation     | ❌ UI only     | Toggle in UI, not implemented                         |
+| Image Enhancement         | ❌ UI only     | Toggle in UI, not implemented                         |
 
 ---
 
 ## API Endpoints (17 total)
 
 ### Authentication (3)
+
 - `POST /api/auth/signup` - Register
 - `POST /api/auth/signin` - Login
 - `GET /api/auth/verify` - Verify token
 
 ### Listings (5)
+
 - `GET /api/listings` - All user's listings
 - `GET /api/listings/:id` - Specific listing
 - `POST /api/listings` - Save new listing
@@ -56,12 +60,15 @@
 - `DELETE /api/listings/:id` - Delete listing
 
 ### Generation (1)
+
 - `POST /api/generate` - Generate listing from images
 
 ### eBay (1)
+
 - `POST /api/listings/:id/post-to-ebay` - Post to eBay
 
 ### Utilities (2)
+
 - `GET /api/health` - Health check
 - `GET /api/init-db` - Initialize database
 
@@ -70,18 +77,21 @@
 ## Tech Stack
 
 **Frontend:**
+
 - Vanilla JavaScript (no framework)
 - Single HTML file (4229 lines)
 - localStorage for persistence
 - JSZip for downloads
 
 **Backend:**
+
 - Node.js + Express
 - PostgreSQL (Neon)
 - bcryptjs (password hashing)
 - JWT (authentication)
 
 **External APIs:**
+
 - Google Gemini 2.0 Flash (vision)
 - eBay Finding API (pricing)
 - eBay Trading API (posting)
@@ -103,6 +113,7 @@
 ## Competitive Gaps
 
 **Major Gaps:**
+
 - No direct Vinted/Gumtree posting (only autofill)
 - No other marketplace support (Depop, Mercari, Poshmark)
 - Incomplete batch processing
@@ -111,6 +122,7 @@
 - No mobile app
 
 **Minor Gaps:**
+
 - No subscription system (free tier logic UI only)
 - No API for custom integrations
 - No team collaboration
@@ -122,11 +134,13 @@
 ## Database Overview
 
 **3 Tables:**
+
 1. **users** - Email, password_hash, timestamps
 2. **listings** - Title, brand, category, description, price, keywords (array), sources (JSON), eBay tracking
 3. **images** - Base64 image data, order, blur flag
 
 **Data Relationships:**
+
 ```
 User (1) → (N) Listings → (N) Images
 Cascade deletes: User → Listings → Images
@@ -137,6 +151,7 @@ Cascade deletes: User → Listings → Images
 ## Marketplace Features by Platform
 
 ### eBay (Most Advanced)
+
 - Pricing intelligence from sold listings
 - Post directly to eBay account
 - Category mapping (11450 generic fallback)
@@ -147,12 +162,14 @@ Cascade deletes: User → Listings → Images
 - XML-based API integration
 
 ### Vinted (Basic)
+
 - List generation only
 - Autofill button opens Vinted with URL params
 - Manual data entry on Vinted
 - Vinted-specific categories
 
 ### Gumtree (Basic)
+
 - List generation only
 - No direct integration
 - Manual posting on Gumtree
@@ -162,18 +179,21 @@ Cascade deletes: User → Listings → Images
 ## AI Processing Pipeline
 
 **Phase 1: Code Parsing (Parallel)**
+
 - Extracts ALL text from product tags
 - Identifies model codes (CK0697-010), style codes (SP200710EAG), SKU numbers
 - Reads size markings (UK 10, M, L, 50ml, etc.)
 - Uses Gemini with low temperature (0.1) for accuracy
 
 **Phase 3: Vision Recognition (Parallel)**
+
 - Identifies product line from visual features
 - Recognizes logos and brand marks
 - Extracts design elements
 - Uses Gemini with low temperature (0.2)
 
 **Phase 2: Main Generation (Sequential)**
+
 - Uses extracted codes and visual recognition
 - Generates SEO-optimized title (80 chars max)
 - Writes sales-focused description (1000 chars max)
@@ -184,12 +204,14 @@ Cascade deletes: User → Listings → Images
 - Suggests resale price based on market data
 
 **Phase 4: Stock Image Finder (Sequential)**
+
 - Searches for official product images
 - Checks brand websites first
 - Checks authorized retailers
 - Returns confidence level
 
 **Bonus: eBay Pricing Intelligence**
+
 - Finds completed/sold listings
 - Calculates average, median, min/max prices
 - Analyzes active competitors
@@ -207,6 +229,7 @@ PORT=4577                      # Server port
 ```
 
 **Optional (eBay features):**
+
 ```env
 EBAY_APP_ID=...
 EBAY_DEV_ID=...
@@ -256,6 +279,7 @@ IMGUR_CLIENT_ID=...
 ## Deployment Notes
 
 **Production Checklist:**
+
 - [ ] Generate new JWT_SECRET (`node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`)
 - [ ] Restrict `/api/init-db` endpoint
 - [ ] Enable CORS restrictions
@@ -270,6 +294,7 @@ IMGUR_CLIENT_ID=...
 ## For Competitive Analysis
 
 **Key Differentiators:**
+
 1. Multi-phase AI for better accuracy
 2. Real-time market pricing
 3. Free tier with no credit card
@@ -277,6 +302,7 @@ IMGUR_CLIENT_ID=...
 5. Stock image integration
 
 **Key Vulnerabilities:**
+
 1. Limited marketplace coverage
 2. No batch processing
 3. No analytics
@@ -284,6 +310,7 @@ IMGUR_CLIENT_ID=...
 5. Missing advanced image features
 
 **Most Likely Next Features:**
+
 1. Direct Vinted API posting
 2. Batch processing
 3. Hero image generation

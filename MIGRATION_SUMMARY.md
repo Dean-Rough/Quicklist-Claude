@@ -7,23 +7,27 @@ This migration transitions QuickList AI from storing images as base64-encoded TE
 ## Benefits
 
 ### Performance
+
 - **Faster page loads:** Images served from Cloudinary CDN (200+ global edge locations)
 - **Reduced database size:** 60-80% reduction in images table size
 - **Faster queries:** Smaller table = faster scans, joins, and backups
 - **Optimized delivery:** Auto-format (WebP/AVIF), auto-quality, responsive images
 
 ### Scalability
+
 - **No storage limits:** Cloudinary handles unlimited images
 - **Bandwidth optimization:** Cloudinary manages traffic spikes
 - **On-the-fly transformations:** Thumbnails, watermarks, crops without backend processing
 - **Global distribution:** Images cached at edge locations worldwide
 
 ### Cost
+
 - **Reduced database costs:** Smaller database = lower storage and backup costs
 - **Reduced bandwidth:** Cloudinary serves images, not your server
 - **Free tier:** 25GB storage, 25GB bandwidth/month free on Cloudinary
 
 ### Developer Experience
+
 - **Image management:** Upload, delete, transform via API or dashboard
 - **Auto-optimization:** Cloudinary handles compression, format selection
 - **Responsive images:** Generate multiple sizes on-demand
@@ -32,9 +36,11 @@ This migration transitions QuickList AI from storing images as base64-encoded TE
 ## Files Created
 
 ### 1. schema_cloudinary_migration.sql
+
 **Location:** `/Users/deannewton/Projects/QLC/Quicklist-Claude/schema_cloudinary_migration.sql`
 
 Complete SQL migration file with:
+
 - Phase 1: Add new columns (image_url, thumbnail_url, cloudinary_public_id)
 - Phase 2: Data migration instructions
 - Phase 3: Verification queries
@@ -43,9 +49,11 @@ Complete SQL migration file with:
 - Monitoring queries
 
 ### 2. MIGRATION_INSTRUCTIONS.md
+
 **Location:** `/Users/deannewton/Projects/QLC/Quicklist-Claude/MIGRATION_INSTRUCTIONS.md`
 
 Complete step-by-step guide (15+ pages) with:
+
 - Prerequisites and setup
 - Detailed instructions for all 4 phases
 - Time estimates by database size
@@ -54,9 +62,11 @@ Complete step-by-step guide (15+ pages) with:
 - Post-migration best practices
 
 ### 3. scripts/migrate_to_cloudinary.js
+
 **Location:** `/Users/deannewton/Projects/QLC/Quicklist-Claude/scripts/migrate_to_cloudinary.js`
 
 Automated migration script with:
+
 - Batch processing
 - Retry logic
 - Error handling
@@ -65,9 +75,11 @@ Automated migration script with:
 - Resumable operation
 
 ### 4. MIGRATION_QUICK_REFERENCE.md
+
 **Location:** `/Users/deannewton/Projects/QLC/Quicklist-Claude/MIGRATION_QUICK_REFERENCE.md`
 
 One-page quick reference with:
+
 - 4-step process
 - Common commands
 - Time estimates
@@ -76,6 +88,7 @@ One-page quick reference with:
 ## Running the Migration
 
 ### Quick Start
+
 ```bash
 # 1. Setup Cloudinary credentials in .env
 # 2. Backup database
@@ -91,12 +104,12 @@ psql $DATABASE_URL -c "SELECT COUNT(*) FROM images WHERE migrated_to_cloudinary 
 
 ## Time Estimates
 
-| Images   | Schema | Migration | Total    |
-|----------|--------|-----------|----------|
-| 100      | < 1s   | 2-3 min   | ~5 min   |
-| 1,000    | < 1s   | 20-30 min | ~35 min  |
-| 10,000   | < 1s   | 3-5 hours | ~5 hours |
-| 100,000  | < 1s   | 1-2 days  | ~2 days  |
+| Images  | Schema | Migration | Total    |
+| ------- | ------ | --------- | -------- |
+| 100     | < 1s   | 2-3 min   | ~5 min   |
+| 1,000   | < 1s   | 20-30 min | ~35 min  |
+| 10,000  | < 1s   | 3-5 hours | ~5 hours |
+| 100,000 | < 1s   | 1-2 days  | ~2 days  |
 
 ## Next Steps
 

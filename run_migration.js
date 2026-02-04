@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const { Pool } = require('pg');
 const fs = require('fs');
@@ -13,10 +12,10 @@ async function run() {
   try {
     console.log('Reading migration file...');
     const sql = fs.readFileSync(path.join(__dirname, 'schema_cloudinary_migration.sql'), 'utf8');
-    
+
     console.log('Executing migration...');
     await pool.query(sql);
-    
+
     console.log('Migration successful!');
   } catch (err) {
     console.error('Migration failed:', err);

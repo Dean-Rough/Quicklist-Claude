@@ -1,4 +1,5 @@
 # Stripe Integration Security & Best Practices Audit
+
 ## Quicklist Application
 
 **Audit Date:** 2026-02-03  
@@ -18,6 +19,7 @@ This audit reviews the Stripe integration in Quicklist against the best practice
 ## 1. Webhook Handling Security
 
 ### ✅ PASSED: Signature Verification
+
 **Location:** `server.js:121-136`
 
 ```javascript
@@ -37,6 +39,7 @@ try {
 ```
 
 **✅ GOOD:**
+
 - Uses `stripe.webhooks.constructEvent()` for signature verification
 - Rejects invalid signatures with 400 status
 - Logs signature failures for security monitoring
@@ -51,11 +54,13 @@ try {
 **Location:** `server.js:524-589`
 
 #### 🔴 CRITICAL: Missing Idempotency Keys
+
 **Issue:** No idempotency key implementation for checkout session creation.
 
 **Risk:** If a user double-clicks the "Subscribe" button or network retry occurs, multiple identical sessions could be created, potentially charging the customer twice.
 
 **Current Code:**
+
 ```javascript
 const session = await stripe.checkout.sessions.create({
   customer: customerId,
@@ -66,6 +71,7 @@ const session = await stripe.checkout.sessions.create({
 ```
 
 **Fix Required:**
+
 ```javascript
 const idempotencyKey = `checkout_${userId}_${Date.now()}_${priceId}`;
 const session = await stripe.checkout.sessions.create({
@@ -79,9 +85,11 @@ const session = await stripe.checkout.sessions.create({
 ```
 
 #### 🟡 WARNING: No Error Recovery
+
 **Issue:** If checkout session creation fails, there's no retry logic or user guidance.
 
 **Current Code:**
+
 ```javascript
 } catch (error) {
   logger.error('Stripe checkout error:', { error: error.message, requestId: req.id });
@@ -92,6 +100,7 @@ const session = await stripe.checkout.sessions.create({
 **Recommendation:** Add specific error handling for common Stripe errors (rate limits, invalid price IDs, etc.)
 
 #### ✅ GOOD PRACTICES:
+
 - Uses `customer` parameter to link checkout to existing customer
 - Includes metadata (`user_id`, `plan_type`) for webhook processing
 - Mode set to 'subscription' appropriately
@@ -106,14 +115,17 @@ const session = await stripe.checkout.sessions.create({
 **Location:** `server.js:165-224`
 
 #### 🔴 CRITICAL: Missing Idempotent Webhook Processing
+
 **Issue:** No mechanism to prevent duplicate webhook processing.
 
 **Risk:** If Stripe retries a webhook (which it does automatically on failure), the same subscription update could be processed multiple times, potentially:
+
 - Creating duplicate database records
 - Sending multiple confirmation emails
 - Double-incrementing usage counters
 
 **Current Code:**
+
 ```javascript
 async function handleCheckoutCompleted(session) {
   try {
@@ -134,6 +146,7 @@ async function handleCheckoutCompleted(session) {
 **🔴 BAD:** No event ID tracking to prevent duplicate processing
 
 **Fix Required:**
+
 ```javascript
 // Add events table
 CREATE TABLE IF NOT EXISTS webhook_events (
@@ -152,14 +165,14 @@ async function handleCheckoutCompleted(session, eventId) {
       'SELECT id FROM webhook_events WHERE event_id = $1',
       [eventId]
     );
-    
+
     if (existing.rows.length > 0) {
       logger.info('Event already processed, skipping', { eventId });
       return;
     }
-    
+
     // Process subscription...
-    
+
     // Mark as processed
     await pool.query(
       'INSERT INTO webhook_events (event_id, event_type) VALUES ($1, $2)',
@@ -173,7 +186,9 @@ async function handleCheckoutCompleted(session, eventId) {
 ```
 
 #### 🟡 WARNING: Incomplete Event Handling
+
 **Handled Events:**
+
 - ✅ `checkout.session.completed`
 - ✅ `customer.subscription.created`
 - ✅ `customer.subscription.updated`
@@ -182,6 +197,7 @@ async function handleCheckoutCompleted(session, eventId) {
 - ✅ `invoice.payment_failed`
 
 **Missing Critical Events:**
+
 - ❌ `customer.subscription.trial_will_end` - No trial handling
 - ❌ `invoice.payment_action_required` - No 3D Secure retry
 - ❌ `customer.subscription.paused` - No pause handling
@@ -190,6 +206,7 @@ async function handleCheckoutCompleted(session, eventId) {
 **Recommendation:** Add handlers for these events to improve user experience and reduce support burden.
 
 #### ✅ GOOD PRACTICES:
+
 - Subscription status properly synced to database
 - Period start/end dates tracked
 - Error logging in place
@@ -204,40 +221,45 @@ async function handleCheckoutCompleted(session, eventId) {
 **Location:** Various
 
 #### 🟡 WARNING: Generic Error Messages
+
 **Issue:** Generic error messages don't help users troubleshoot payment issues.
 
 **Example (server.js:586):**
+
 ```javascript
 res.status(500).json({ error: 'Failed to create checkout session' });
 ```
 
 **Better Approach:**
+
 ```javascript
 if (error.type === 'StripeCardError') {
-  return res.status(400).json({ 
-    error: 'Payment failed', 
+  return res.status(400).json({
+    error: 'Payment failed',
     message: error.message,
-    type: 'card_error'
+    type: 'card_error',
   });
 } else if (error.type === 'StripeInvalidRequestError') {
-  return res.status(400).json({ 
-    error: 'Invalid subscription plan', 
+  return res.status(400).json({
+    error: 'Invalid subscription plan',
     message: 'The selected plan is not available',
-    type: 'invalid_request'
+    type: 'invalid_request',
   });
 } else if (error.type === 'StripeRateLimitError') {
-  return res.status(429).json({ 
-    error: 'Too many requests', 
+  return res.status(429).json({
+    error: 'Too many requests',
     message: 'Please try again in a moment',
-    type: 'rate_limit'
+    type: 'rate_limit',
   });
 }
 ```
 
 #### 🟡 WARNING: No Retry Logic
+
 **Issue:** No exponential backoff or retry for transient Stripe API failures.
 
 **Recommendation:** Implement retry logic with exponential backoff for:
+
 - Network timeouts
 - Rate limit errors (429)
 - Stripe service errors (500, 503)
@@ -256,24 +278,26 @@ app.post('/api/stripe/create-portal-session', authenticateToken, async (req, res
     if (!stripe) {
       return res.status(503).json({ error: 'Stripe not configured' });
     }
-    
+
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/settings`,
     });
-    
+
     res.json({ url: session.url });
   }
 });
 ```
 
 **✅ GOOD:**
+
 - Uses Stripe's hosted billing portal (minimal PCI scope)
 - Properly authenticates user before creating portal session
 - Return URL configured correctly
 - Customer ID validated from database
 
 **💡 SUGGESTION:** Add rate limiting to prevent abuse:
+
 ```javascript
 const portalLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
@@ -281,9 +305,9 @@ const portalLimiter = rateLimit({
   message: 'Too many portal access attempts'
 });
 
-app.post('/api/stripe/create-portal-session', 
-  portalLimiter, 
-  authenticateToken, 
+app.post('/api/stripe/create-portal-session',
+  portalLimiter,
+  authenticateToken,
   async (req, res) => { ... }
 );
 ```
@@ -295,6 +319,7 @@ app.post('/api/stripe/create-portal-session',
 ### ✅ PASSED: No Raw Card Data Handling
 
 **Findings:**
+
 - ✅ Application uses Stripe Checkout (hosted page)
 - ✅ No card numbers, CVV, or expiry dates stored
 - ✅ No direct Payment Intent creation with card data
@@ -303,6 +328,7 @@ app.post('/api/stripe/create-portal-session',
 **PCI DSS Scope:** **SAQ A** (lowest compliance burden)
 
 **Evidence:**
+
 1. **Frontend (app.js):** No card input fields or Stripe Elements
 2. **Backend (server.js):** All payments via `stripe.checkout.sessions.create()`
 3. **Database:** No card data tables
@@ -316,30 +342,37 @@ app.post('/api/stripe/create-portal-session',
 ### 🔴 CRITICAL FAILURES
 
 #### Issue 1: No Idempotency Keys on Checkout Sessions
+
 **Severity:** CRITICAL  
 **Details:** See Section 2 above.
 
 #### Issue 2: No Webhook Event Deduplication
+
 **Severity:** CRITICAL  
 **Details:** See Section 3 above.
 
 #### Issue 3: No Request ID Tracking
+
 **Severity:** MEDIUM  
 **Location:** All Stripe API calls
 
 **Current State:** Request IDs are generated (`req.id = uuidv4()` on line 91) but not passed to Stripe API calls.
 
 **Fix:**
+
 ```javascript
-const session = await stripe.checkout.sessions.create({
-  // ... config
-}, {
-  idempotencyKey: idempotencyKey,
-  stripeAccount: undefined, // Not using Connect
-  headers: {
-    'X-Request-ID': req.id // Link to our internal request tracking
+const session = await stripe.checkout.sessions.create(
+  {
+    // ... config
+  },
+  {
+    idempotencyKey: idempotencyKey,
+    stripeAccount: undefined, // Not using Connect
+    headers: {
+      'X-Request-ID': req.id, // Link to our internal request tracking
+    },
   }
-});
+);
 ```
 
 ---
@@ -347,6 +380,7 @@ const session = await stripe.checkout.sessions.create({
 ## 8. Additional Security Concerns
 
 ### 🔴 CRITICAL: Webhook Secret Not Verified in Code
+
 **Location:** `server.js:122`
 
 ```javascript
@@ -358,6 +392,7 @@ event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
 **Risk:** If `STRIPE_WEBHOOK_SECRET` is not set, `constructEvent` will fail silently or use an empty secret, potentially accepting **any** webhook.
 
 **Fix:**
+
 ```javascript
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 if (!webhookSecret) {
@@ -367,9 +402,11 @@ if (!webhookSecret) {
 ```
 
 ### 🟡 WARNING: No Webhook URL Validation
+
 **Issue:** No check that webhooks are only accepted from Stripe's IP ranges.
 
 **Recommendation:** Add IP whitelist check:
+
 ```javascript
 const STRIPE_WEBHOOK_IPS = [
   '3.18.12.0/22', '3.130.192.0/22', '13.235.14.0/24',
@@ -387,6 +424,7 @@ app.post('/api/stripe/webhook', (req, res, next) => {
 ```
 
 ### 🟡 WARNING: Stripe Key Validation Missing
+
 **Location:** `server.js:45-47`
 
 ```javascript
@@ -396,32 +434,34 @@ const stripe = process.env.STRIPE_SECRET_KEY
 ```
 
 **Issue:** No validation that the key is:
+
 1. A live key in production
 2. A test key in development
 3. Has the correct format (`sk_live_` or `sk_test_`)
 
 **Fix:**
+
 ```javascript
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 if (stripeSecretKey) {
   const isLiveKey = stripeSecretKey.startsWith('sk_live_');
   const isTestKey = stripeSecretKey.startsWith('sk_test_');
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   if (isProduction && !isLiveKey) {
     logger.error('Production environment requires sk_live_ key');
     process.exit(1);
   }
-  
+
   if (!isProduction && isLiveKey) {
     logger.warn('Using LIVE Stripe key in non-production environment!');
   }
-  
+
   if (!isLiveKey && !isTestKey) {
     logger.error('Invalid Stripe secret key format');
     process.exit(1);
   }
-  
+
   stripe = require('stripe')(stripeSecretKey);
 } else {
   logger.warn('Stripe not configured - payment features disabled');
@@ -435,19 +475,19 @@ if (stripeSecretKey) {
 
 ### 📋 Checklist vs. Implementation
 
-| Best Practice | Implemented? | Notes |
-|--------------|--------------|-------|
-| Webhook signature verification | ✅ YES | Using `constructEvent()` |
-| Idempotent webhook processing | ❌ NO | **CRITICAL - needs event tracking** |
-| Idempotency keys for API calls | ❌ NO | **CRITICAL - needs implementation** |
-| Customer metadata tracking | ✅ YES | `quicklist_user_id` in metadata |
-| Test mode validation | ❌ NO | No check for test vs live keys |
-| Error-specific handling | 🟡 PARTIAL | Generic 500 errors, needs improvement |
-| Retry logic for transient failures | ❌ NO | No exponential backoff |
-| Monitoring/alerting | 🟡 PARTIAL | Logging exists, no alerting |
-| SCA (Strong Customer Authentication) | ✅ YES | Stripe Checkout handles this |
-| Trial handling | ❌ NO | No trial webhook handlers |
-| Dispute handling | ❌ NO | No dispute webhook handlers |
+| Best Practice                        | Implemented? | Notes                                 |
+| ------------------------------------ | ------------ | ------------------------------------- |
+| Webhook signature verification       | ✅ YES       | Using `constructEvent()`              |
+| Idempotent webhook processing        | ❌ NO        | **CRITICAL - needs event tracking**   |
+| Idempotency keys for API calls       | ❌ NO        | **CRITICAL - needs implementation**   |
+| Customer metadata tracking           | ✅ YES       | `quicklist_user_id` in metadata       |
+| Test mode validation                 | ❌ NO        | No check for test vs live keys        |
+| Error-specific handling              | 🟡 PARTIAL   | Generic 500 errors, needs improvement |
+| Retry logic for transient failures   | ❌ NO        | No exponential backoff                |
+| Monitoring/alerting                  | 🟡 PARTIAL   | Logging exists, no alerting           |
+| SCA (Strong Customer Authentication) | ✅ YES       | Stripe Checkout handles this          |
+| Trial handling                       | ❌ NO        | No trial webhook handlers             |
+| Dispute handling                     | ❌ NO        | No dispute webhook handlers           |
 
 ---
 
@@ -458,30 +498,33 @@ if (stripeSecretKey) {
 **Location:** `schema.sql` (not in provided files, inferred from queries)
 
 #### 🟡 WARNING: Missing Indexes
+
 **Recommendation:** Add these indexes for performance:
 
 ```sql
 -- Speed up subscription lookups by user
-CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id 
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id
 ON subscriptions(user_id);
 
 -- Speed up subscription lookups by Stripe customer ID
-CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_customer_id 
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_customer_id
 ON subscriptions(stripe_customer_id);
 
 -- Speed up subscription lookups by Stripe subscription ID
-CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_subscription_id 
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_subscription_id
 ON subscriptions(stripe_subscription_id);
 
 -- Speed up usage tracking queries
-CREATE INDEX IF NOT EXISTS idx_usage_tracking_period 
+CREATE INDEX IF NOT EXISTS idx_usage_tracking_period
 ON usage_tracking(user_id, period_start, period_end);
 ```
 
 #### 🔴 CRITICAL: No Webhook Events Table
+
 **Issue:** Missing table for event deduplication.
 
 **Required Schema:**
+
 ```sql
 CREATE TABLE IF NOT EXISTS webhook_events (
   id SERIAL PRIMARY KEY,
@@ -503,6 +546,7 @@ CREATE TABLE IF NOT EXISTS webhook_events (
 **Location:** `app.js` (searched for Stripe Elements/Card inputs)
 
 **Findings:**
+
 - ✅ No Stripe.js loaded
 - ✅ No card input forms
 - ✅ All payments redirect to Stripe Checkout
@@ -519,6 +563,7 @@ CREATE TABLE IF NOT EXISTS webhook_events (
 **Location:** `server.js:35-77`
 
 #### Missing Validation:
+
 ```javascript
 // Current code
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -533,23 +578,24 @@ const stripe = process.env.STRIPE_SECRET_KEY
 ```
 
 **Recommendation:** Add startup validation:
+
 ```javascript
 async function validateStripeConfiguration() {
   if (!process.env.STRIPE_SECRET_KEY) {
     logger.warn('STRIPE_SECRET_KEY not configured');
     return false;
   }
-  
+
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
     logger.error('STRIPE_WEBHOOK_SECRET required for webhook security');
     return false;
   }
-  
+
   if (!process.env.STRIPE_PUBLISHABLE_KEY) {
     logger.warn('STRIPE_PUBLISHABLE_KEY not configured');
     return false;
   }
-  
+
   // Verify keys work by making a test API call
   try {
     await stripe.customers.list({ limit: 1 });
@@ -558,14 +604,14 @@ async function validateStripeConfiguration() {
     logger.error('Stripe API validation failed:', error.message);
     return false;
   }
-  
+
   // Verify price IDs exist
   const priceIds = [
     process.env.STRIPE_PRICE_CASUAL,
     process.env.STRIPE_PRICE_PRO,
-    process.env.STRIPE_PRICE_MAX
+    process.env.STRIPE_PRICE_MAX,
   ].filter(Boolean);
-  
+
   for (const priceId of priceIds) {
     try {
       await stripe.prices.retrieve(priceId);
@@ -574,13 +620,13 @@ async function validateStripeConfiguration() {
       return false;
     }
   }
-  
+
   return true;
 }
 
 // Call during startup
 if (stripe) {
-  validateStripeConfiguration().then(valid => {
+  validateStripeConfiguration().then((valid) => {
     if (!valid) {
       logger.error('Stripe configuration validation failed');
       // Don't exit in serverless - just disable Stripe
@@ -668,15 +714,15 @@ if (stripe) {
 
 ## Security Scorecard
 
-| Category | Score | Grade |
-|----------|-------|-------|
-| Webhook Security | 60% | D |
-| PCI Compliance | 95% | A |
-| Idempotency | 30% | F |
-| Error Handling | 55% | D- |
-| Customer Data Protection | 90% | A- |
-| Configuration Security | 65% | D+ |
-| **OVERALL** | **66%** | **D** |
+| Category                 | Score   | Grade |
+| ------------------------ | ------- | ----- |
+| Webhook Security         | 60%     | D     |
+| PCI Compliance           | 95%     | A     |
+| Idempotency              | 30%     | F     |
+| Error Handling           | 55%     | D-    |
+| Customer Data Protection | 90%     | A-    |
+| Configuration Security   | 65%     | D+    |
+| **OVERALL**              | **66%** | **D** |
 
 ---
 
@@ -689,11 +735,13 @@ The Quicklist Stripe integration has a **solid foundation** with good PCI compli
 3. **Forged webhooks** (no webhook secret validation)
 
 ### Immediate Action Required:
+
 - **Priority 1-3 items must be fixed before processing real payments**
 - Recommend security audit sign-off after fixes implemented
 - Consider Stripe's beta features (Stripe Tax, automatic receipts) for enhanced experience
 
 ### Timeline Recommendation:
+
 - **Week 1:** Fix critical security issues (#1-3)
 - **Week 2:** Implement high-priority improvements (#4-6)
 - **Week 3:** Add monitoring and testing

@@ -5,6 +5,7 @@
 **Purpose:** Unified, production-ready prompts for Gemini Vision API integration
 
 This document defines all AI prompts used by QuickList AI for product listing generation, image processing, and metadata extraction. All prompts are optimized for:
+
 - **Precision**: Clear, unambiguous instructions
 - **Consistency**: Reliable JSON output format
 - **UK Market**: British English, GBP pricing, UK marketplace conventions
@@ -34,7 +35,7 @@ This document defines all AI prompts used by QuickList AI for product listing ge
 
 ### Prompt Template
 
-```
+````
 ${userInfoHint}
 
 You are an expert e-commerce listing specialist for the UK resale market. Your goal is to accurately identify the item in the uploaded images and generate a complete, factual product listing for ${platform}.
@@ -125,14 +126,16 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
     }
   ]
 }
-```
+````
 
 **Critical Rules:**
+
 - DO NOT fabricate product codes or model numbers not visible in images
 - DO NOT use placeholder or example data
 - DO NOT include markdown formatting in the JSON
 - DO use real market data for pricing
 - DO be honest about condition (buyers will see the actual photos)
+
 ```
 
 ### User Info Hint (Optional)
@@ -140,14 +143,17 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
 When user provides additional context:
 
 ```
+
 **User-Provided Information:**
 The user has specified: "${userTitle}"
 
 Incorporate this information into your analysis:
+
 - If mentioning packaging, note it in description
 - If mentioning specific flaws, detail them in condition
 - If mentioning size/fit, include in description
 - This is direct instruction from the user and must be respected
+
 ```
 
 ---
@@ -161,15 +167,18 @@ Incorporate this information into your analysis:
 ### Prompt Template
 
 ```
+
 Generate relevant search keywords for the marketplace '${platform}'.
 
 **Listing Details:**
+
 - Title: ${details.title}
 - Description: ${details.description}
 - Category: ${details.category}
 - Brand: ${details.brand}
 
 **Instructions:**
+
 1. Generate 5-10 distinct search keywords that real buyers would use
 2. Include specific terms:
    - Brand and product line names
@@ -205,11 +214,22 @@ Return ONLY valid JSON:
 ```
 
 Example for Nike trainers:
+
 ```json
 {
-  "keywords": ["nike air max 90", "white trainers", "UK size 10", "mens sneakers", "running shoes", "2020 release", "leather upper", "visible air unit"]
+  "keywords": [
+    "nike air max 90",
+    "white trainers",
+    "UK size 10",
+    "mens sneakers",
+    "running shoes",
+    "2020 release",
+    "leather upper",
+    "visible air unit"
+  ]
 }
 ```
+
 ```
 
 ---
@@ -223,15 +243,18 @@ Example for Nike trainers:
 ### Prompt Template
 
 ```
+
 Analyze this image for quality issues that would impact an e-commerce listing.
 
 **Check for:**
+
 - Motion blur (caused by camera shake or subject movement)
 - Out-of-focus blur (incorrect focal point)
 - Low resolution or pixelation
 - Extreme underexposure or overexposure
 
 **Decision criteria:**
+
 - If the product details are CLEARLY visible and text/labels are readable → NO
 - If blur prevents identifying key product features or reading text → YES
 - Minor blur on non-critical areas (background, edges) → NO
@@ -240,6 +263,7 @@ Respond with ONLY one word: YES or NO
 
 - YES = Image is too blurry for listing
 - NO = Image quality is acceptable
+
 ```
 
 ---
@@ -253,6 +277,7 @@ Respond with ONLY one word: YES or NO
 ### Prompt Template
 
 ```
+
 Enhance this product photo for professional e-commerce presentation.
 
 **Processing Steps:**
@@ -280,6 +305,7 @@ Enhance this product photo for professional e-commerce presentation.
 **Goal:** A clear, professional, ready-to-list product photo that accurately represents the actual item.
 
 **Critical:** The processed image must be an honest representation. Do not beautify beyond basic photo correction.
+
 ```
 
 ---
@@ -293,6 +319,7 @@ Enhance this product photo for professional e-commerce presentation.
 ### Prompt Template
 
 ```
+
 You are an expert in e-commerce photography. Select the best primary listing photo from the provided images.
 
 **Selection Criteria (in priority order):**
@@ -305,24 +332,29 @@ You are an expert in e-commerce photography. Select the best primary listing pho
 6. **Composition:** Product centered and prominent
 
 **For clothing:**
+
 - Prefer flat lay or proper hanger photos
 - Avoid photos on floor or bed unless very well-composed
 
 **For shoes:**
+
 - Prefer side profile showing full silhouette
 - Avoid top-down shots as primary
 
 **For electronics:**
+
 - Prefer showing screen/display if applicable
 - Show full device with all components visible
 
 Respond with ONLY the zero-based index number of the best image.
 
 Examples:
+
 - If the first image is best: 0
 - If the third image is best: 2
 
 No other text, explanation, or formatting.
+
 ```
 
 ---
@@ -336,6 +368,7 @@ No other text, explanation, or formatting.
 ### Prompt Template
 
 ```
+
 Create a professional e-commerce hero image for this product.
 
 **Requirements:**
@@ -369,6 +402,7 @@ Create a professional e-commerce hero image for this product.
 **Goal:** A professional product shot that looks like official stock photography, but accurately represents the actual item being sold (including its condition).
 
 **Critical:** This is NOT photo retouching. You are only changing background and lighting. The product itself must remain completely unaltered.
+
 ```
 
 ---
@@ -382,6 +416,7 @@ Create a professional e-commerce hero image for this product.
 ### Prompt Template
 
 ```
+
 Apply deblurring and sharpening to improve this product image.
 
 **Processing:**
@@ -407,6 +442,7 @@ Apply deblurring and sharpening to improve this product image.
 **Goal:** Make a blurry image clear enough for e-commerce use without creating unnatural artifacts.
 
 **Limitation:** If blur is extreme (severely out of focus or heavy motion blur), improvements may be limited. Do your best but maintain natural appearance.
+
 ```
 
 ---
@@ -420,6 +456,7 @@ Apply deblurring and sharpening to improve this product image.
 ### Prompt Template
 
 ```
+
 Using Google Image Search, find a direct URL to an official manufacturer stock product image.
 
 **Search Query:**
@@ -457,6 +494,7 @@ Example: https://example.com/products/images/product123.jpg
 If not found: Return exactly: N/A
 
 No explanations, no additional text.
+
 ```
 
 ---
@@ -470,6 +508,7 @@ No explanations, no additional text.
 ### Prompt Template
 
 ```
+
 Group these images by unique physical items.
 
 **Analysis Instructions:**
@@ -491,26 +530,29 @@ Group these images by unique physical items.
 **Examples:**
 
 Input: 5 images showing 2 items
+
 - Images 0,1,2: Nike trainers from different angles
 - Images 3,4: Adidas hoodie front and back
-Output: [[0,1,2],[3,4]]
+  Output: [[0,1,2],[3,4]]
 
 Input: 4 images showing 3 items
+
 - Image 0: Watch
 - Images 1,2: Jeans (front/back)
 - Image 3: Shirt
-Output: [[0],[1,2],[3]]
+  Output: [[0],[1,2],[3]]
 
 **Output Format:**
 
 Return ONLY a JSON array of arrays containing integer indices.
 
 ```json
-[[0,1,2],[3,4],[5]]
+[[0, 1, 2], [3, 4], [5]]
 ```
 
 No explanatory text, no markdown, no extra formatting.
-```
+
+````
 
 ---
 
@@ -525,9 +567,10 @@ No explanatory text, no markdown, no extra formatting.
      generateKeywords: require('./SYSTEM-PROMPTS.md').generateKeywords,
      // etc...
    };
-   ```
+````
 
 2. **Variable Substitution:**
+
    ```javascript
    const prompt = prompts.generateListing
      .replace('${platform}', platform)
@@ -535,6 +578,7 @@ No explanatory text, no markdown, no extra formatting.
    ```
 
 3. **Response Parsing:**
+
    ```javascript
    try {
      const jsonMatch = response.text.match(/\{[\s\S]*\}/);
@@ -569,6 +613,7 @@ No explanatory text, no markdown, no extra formatting.
 ### Versioning
 
 Track prompt versions for A/B testing and rollback:
+
 - v3.0 (current) - Unified production prompts
 - v2.0 - Original sys-prompts-2.md
 - v1.0 - Original system-prompts.md
@@ -578,6 +623,7 @@ Track prompt versions for A/B testing and rollback:
 ## Changelog
 
 **v3.0 (2025-11-10)**
+
 - Merged and improved prompts from v1.0 and v2.0
 - Added explicit UK market focus
 - Improved pricing guidance with percentage ranges
@@ -587,9 +633,11 @@ Track prompt versions for A/B testing and rollback:
 - Documented current implementation status
 
 **v2.0**
+
 - Original sys-prompts-2.md with focus on JSON reliability
 
 **v1.0**
+
 - Original system-prompts.md with basic prompt templates
 
 ---

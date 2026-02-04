@@ -71,26 +71,26 @@ class BottomNav {
         id: 'home',
         icon: '🏠',
         label: 'Home',
-        path: '/'
+        path: '/',
       },
       {
         id: 'new',
         icon: '➕',
         label: 'New Listing',
-        path: '/index.html#upload' // Will be updated once we have dedicated upload page
+        path: '/index.html#upload', // Will be updated once we have dedicated upload page
       },
       {
         id: 'listings',
         icon: '📦',
         label: 'My Listings',
-        path: '/index.html#listings'
+        path: '/index.html#listings',
       },
       {
         id: 'profile',
         icon: '👤',
         label: 'Profile',
-        path: '/index.html#profile'
-      }
+        path: '/index.html#profile',
+      },
     ];
 
     return `
@@ -140,7 +140,7 @@ class BottomNav {
 
     // Emit custom event for app to handle
     const event = new CustomEvent('bottom-nav-change', {
-      detail: { tab: tabId, path: tabPath }
+      detail: { tab: tabId, path: tabPath },
     });
     window.dispatchEvent(event);
 
@@ -157,9 +157,7 @@ class BottomNav {
     tabs.forEach((t) => t.classList.remove('active'));
 
     // Add active to clicked tab
-    const activeTab = this.container.querySelector(
-      `.bottom-nav-tab[data-tab="${tabId}"]`
-    );
+    const activeTab = this.container.querySelector(`.bottom-nav-tab[data-tab="${tabId}"]`);
     if (activeTab) {
       activeTab.classList.add('active');
     }
@@ -227,7 +225,7 @@ class BottomNav {
 
     // Emit view change event
     const event = new CustomEvent('view-change', {
-      detail: { view: viewName }
+      detail: { view: viewName },
     });
     window.dispatchEvent(event);
   }
@@ -236,9 +234,7 @@ class BottomNav {
    * Update badge count (e.g., unread notifications)
    */
   updateBadge(tabId, count) {
-    const tab = this.container.querySelector(
-      `.bottom-nav-tab[data-tab="${tabId}"]`
-    );
+    const tab = this.container.querySelector(`.bottom-nav-tab[data-tab="${tabId}"]`);
     if (!tab) return;
 
     // Remove existing badge

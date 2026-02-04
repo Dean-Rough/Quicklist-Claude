@@ -15,16 +15,20 @@ QuickList AI has a solid foundation but suffers from several UX friction points 
 ## Current UX Flow Breakdown
 
 ### 1. **Onboarding Flow**
+
 ```
 Landing Page → Sign Up/In Modal → App Dashboard
 ```
+
 **Status:** ✅ Functional  
-**Issues:** 
+**Issues:**
+
 - No email verification
 - No password strength indicator
 - No onboarding tutorial for first-time users
 
 ### 2. **Listing Generation Flow** (PRIMARY FOCUS)
+
 ```
 Upload Images → Select Platform → Add Hint (optional) → Generate → Review → Edit → Save/Download
 ```
@@ -32,6 +36,7 @@ Upload Images → Select Platform → Add Hint (optional) → Generate → Revie
 **Detailed Step Analysis:**
 
 #### Step 1: Image Upload
+
 - **Current:** Drag/drop or click to upload, supports multiple images
 - **Issues:**
   - ✅ **FIXED:** All images now sent to AI (updated to send array of images)
@@ -42,14 +47,16 @@ Upload Images → Select Platform → Add Hint (optional) → Generate → Revie
   - ✅ **FIXED:** All images are analyzed by Gemini Vision
 
 #### Step 2: Platform Selection
+
 - **Current:** Dropdown with Vinted/eBay/Gumtree
 - **Issues:**
   - ❌ No platform-specific guidance
   - ❌ No saved preferences
-  - ❌ No marketplace-specific tips 
+  - ❌ No marketplace-specific tips
   - ❌ No Market specific categorisation
 
 #### Step 3: Optional Hint
+
 - **Current:** Text input for additional context
 - **Issues:**
   - ⚠️ No examples or guidance on what to include
@@ -57,6 +64,7 @@ Upload Images → Select Platform → Add Hint (optional) → Generate → Revie
   - ⚠️ No validation
 
 #### Step 4: Generate
+
 - **Current:** Single button click, skeleton loader, then results
 - **Issues:**
   - ❌ **CRITICAL:** No progress feedback (just skeleton)
@@ -67,6 +75,7 @@ Upload Images → Select Platform → Add Hint (optional) → Generate → Revie
   - ❌ No indication of what's happening ("Analyzing image...", "Researching prices...")
 
 #### Step 5: Review & Edit
+
 - **Current:** All fields editable, individual copy buttons
 - **Issues:**
   - ⚠️ No field validation
@@ -75,6 +84,7 @@ Upload Images → Select Platform → Add Hint (optional) → Generate → Revie
   - ⚠️ No confidence indicators (how certain is AI about brand/model?)
 
 #### Step 6: Save/Download
+
 - **Current:** Save to DB or download ZIP
 - **Issues:**
   - ⚠️ No auti save at generation
@@ -152,8 +162,10 @@ Upload Images → Select Platform → Add Hint (optional) → Generate → Revie
 ### Phase 1: Critical Fixes (Week 1)
 
 #### 1.1 Multi-Image Support
+
 **Current:** Only first image sent to API  
 **Fix:** Send all images in single API call
+
 ```javascript
 // Instead of:
 const image = this.state.uploadedImages[0];
@@ -161,7 +173,7 @@ const base64Image = await this.fileToBase64(image.file);
 
 // Do:
 const images = await Promise.all(
-    this.state.uploadedImages.map(img => this.fileToBase64(img.file))
+  this.state.uploadedImages.map((img) => this.fileToBase64(img.file))
 );
 // Send all images to Gemini (it supports multiple images)
 ```
@@ -169,41 +181,47 @@ const images = await Promise.all(
 **Backend Change:** Update `/api/generate` to accept array of images and pass all to Gemini.
 
 #### 1.2 Real Blur Detection
+
 **Current:** Random 20% chance  
 **Fix:** Use Gemini Vision API or canvas-based analysis
+
 ```javascript
 // Option 1: Use Gemini Vision API
 async function detectBlur(imageBase64) {
-    const response = await fetch(`${apiUrl}/analyze-blur`, {
-        method: 'POST',
-        body: JSON.stringify({ image: imageBase64 })
-    });
-    return response.json().isBlurry;
+  const response = await fetch(`${apiUrl}/analyze-blur`, {
+    method: 'POST',
+    body: JSON.stringify({ image: imageBase64 }),
+  });
+  return response.json().isBlurry;
 }
 
 // Option 2: Canvas-based detection (faster, client-side)
 function detectBlurCanvas(imageFile) {
-    // Use Laplacian variance or edge detection
-    // Return true/false
+  // Use Laplacian variance or edge detection
+  // Return true/false
 }
 ```
 
 #### 1.3 Progress Feedback
+
 **Fix:** Add step indicators
+
 ```javascript
 // Update loading state to show progress
 const steps = [
-    'Analyzing images...',
-    'Identifying product...',
-    'Researching prices...',
-    'Generating description...',
-    'Finalizing listing...'
+  'Analyzing images...',
+  'Identifying product...',
+  'Researching prices...',
+  'Generating description...',
+  'Finalizing listing...',
 ];
 // Show current step in loadingState
 ```
 
 #### 1.4 Error Recovery
+
 **Fix:** Add retry button and better error handling
+
 ```javascript
 // In generateListing error handler:
 catch (error) {
@@ -219,26 +237,30 @@ catch (error) {
 ### Phase 2: UX Enhancements (Week 2)
 
 #### 2.1 Image Management
+
 - Add drag-to-reorder for images
 - Add "Set as Primary" button
 - Show which image is being analyzed
 - Add image preview modal (click to enlarge)
 
 #### 2.2 Confidence Indicators
+
 ```javascript
 // Add to displayListing:
 if (listing.confidence === 'LOW') {
-    showWarning('AI confidence is low. Please verify brand and model.');
+  showWarning('AI confidence is low. Please verify brand and model.');
 }
 // Highlight uncertain fields with yellow border
 ```
 
 #### 2.3 Batch Processing
+
 - Implement real batch grouping (use Gemini to group images)
 - Show progress for each item
 - Allow individual editing before saving all
 
 #### 2.4 Field-Level Regeneration
+
 - Add "Regenerate" button to each field
 - Show loading state per field
 - Allow selective regeneration (e.g., just description, just price)
@@ -246,22 +268,26 @@ if (listing.confidence === 'LOW') {
 ### Phase 3: Advanced Features (Week 3+)
 
 #### 3.1 Templates
+
 - Save common patterns (e.g., "Nike trainers template")
 - Pre-fill fields based on template
 - Share templates between users
 
 #### 3.2 Marketplace-Specific Formatting
+
 - Adapt title length (eBay: 80 chars, Vinted: 50 chars)
 - Platform-specific category suggestions
 - Format descriptions differently per platform
 
 #### 3.3 Keyboard Shortcuts
+
 - `Cmd+S` / `Ctrl+S`: Save listing
 - `Cmd+C` / `Ctrl+C`: Copy all
 - `Cmd+Enter`: Generate
 - `Esc`: Close modals
 
 #### 3.4 Undo/Redo
+
 - Track edit history
 - Allow reverting to previous state
 - Show diff view
@@ -338,6 +364,7 @@ if (listing.confidence === 'LOW') {
 ## Implementation Priority
 
 ### Week 1 (Critical)
+
 - ✅ Multi-image support - **COMPLETED**
 - ⚠️ Real blur detection - **PARTIALLY COMPLETED** (timing improved, still uses simulation)
 - ✅ Progress feedback - **COMPLETED**
@@ -352,12 +379,14 @@ if (listing.confidence === 'LOW') {
   - Draft auto-loads on page reload (expires after 7 days)
 
 ### Week 2 (High Priority)
+
 - ✅ Image reordering
 - ✅ Confidence indicators
 - ✅ Batch processing
 - ✅ Field-level regeneration
 
 ### Week 3+ (Nice to Have)
+
 - ⚠️ Templates
 - ⚠️ Marketplace-specific formatting
 - ⚠️ Keyboard shortcuts
@@ -377,6 +406,7 @@ The QuickList AI listing generation process has been significantly improved. The
 Fixing these four issues will dramatically improve user satisfaction and reduce support burden. The remaining improvements can be prioritized based on user feedback and usage patterns.
 
 **Next Steps:**
+
 1. Review this analysis with team
 2. Prioritize improvements based on user feedback
 3. Create GitHub issues for each improvement
@@ -386,4 +416,3 @@ Fixing these four issues will dramatically improve user satisfaction and reduce 
 ---
 
 **End of Analysis**
-

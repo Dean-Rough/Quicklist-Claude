@@ -1,13 +1,16 @@
 # eBay Integration Setup Guide
 
 ## Overview
+
 QuickList AI now includes:
+
 1. **Smart Pricing Engine** - Real-time pricing intelligence from eBay sold listings
 2. **Automated eBay Posting** - One-click posting to eBay marketplace
 
 ## What Was Implemented
 
 ### Backend (`server.js`)
+
 - ✅ `getEbayPricingIntelligence()` - Fetches pricing data from eBay Finding API
 - ✅ `postToEbay()` - Posts listings to eBay using Trading API
 - ✅ `uploadImageToHosting()` - Image hosting service (Imgur or fallback)
@@ -15,11 +18,13 @@ QuickList AI now includes:
 - ✅ `/api/listings/:id/post-to-ebay` - New endpoint for posting to eBay
 
 ### Frontend (`index.html`)
+
 - ✅ Pricing Intelligence UI - Displays average sold price, price range, recommendations
 - ✅ Post to eBay button - One-click posting functionality
 - ✅ Use Recommended Price - Click recommendations to auto-fill price
 
 ### Database (`schema.sql`)
+
 - ✅ Added `ebay_item_id` column
 - ✅ Added `pricing_data` JSONB column
 - ✅ Added `posted_to_ebay` boolean column
@@ -28,11 +33,13 @@ QuickList AI now includes:
 ## Setup Instructions
 
 ### 1. Install Dependencies
+
 ```bash
 npm install
 ```
 
 This will install:
+
 - `xml2js` - For parsing eBay XML responses
 - `axios` - For HTTP requests to eBay APIs
 
@@ -125,21 +132,25 @@ Or manually run the SQL from `schema.sql` (the new columns are already added).
 ## Important Notes
 
 ### Image Hosting
+
 - **Imgur API**: Requires free account at https://api.imgur.com/oauth2/addclient
 - **Fallback**: Currently uses base64 (may not work with eBay - needs proper hosting)
 - **Production**: Should implement proper image hosting service
 
 ### eBay Category Mapping
+
 - Currently uses generic category ID `11450`
 - **TODO**: Implement proper category mapping service
 - eBay has thousands of categories - need to map text categories to numeric IDs
 
 ### eBay OAuth
+
 - Currently uses single token from environment
 - **Production**: Should implement OAuth flow for each user
 - Each user needs their own eBay token
 
 ### Rate Limits
+
 - eBay API has rate limits
 - Finding API: ~5,000 calls/day
 - Trading API: Varies by call type
@@ -148,12 +159,14 @@ Or manually run the SQL from `schema.sql` (the new columns are already added).
 ## Troubleshooting
 
 ### Pricing Intelligence Not Showing
+
 - Check `EBAY_APP_ID` is set in `.env`
 - Check console for errors
 - Verify eBay API credentials are correct
 - Check network tab for API responses
 
 ### Posting Fails
+
 - Verify `EBAY_AUTH_TOKEN` is set
 - Check token is valid (not expired)
 - Verify images are uploading correctly
@@ -161,6 +174,7 @@ Or manually run the SQL from `schema.sql` (the new columns are already added).
 - Try sandbox mode first (`EBAY_SANDBOX=true`)
 
 ### Images Not Uploading
+
 - Check `IMGUR_CLIENT_ID` if using Imgur
 - Verify Imgur API is working
 - Check image size limits
@@ -184,8 +198,8 @@ Or manually run the SQL from `schema.sql` (the new columns are already added).
 ## Support
 
 For issues or questions:
+
 - Check eBay API documentation
 - Review server logs for errors
 - Test with eBay sandbox first
 - Verify all credentials are correct
-

@@ -7,6 +7,7 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 ## Features
 
 ### 🤖 AI-Powered Listing Generation
+
 - Analyzes product images using Google Gemini Vision API
 - Generates compelling, keyword-rich titles
 - Identifies brands and categories automatically
@@ -15,6 +16,7 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 - Extracts relevant keywords and hashtags
 
 ### 📸 Smart Image Processing
+
 - Automatic blur detection
 - Multi-image upload support
 - Camera integration for mobile devices
@@ -22,6 +24,7 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 - Image enhancement capabilities
 
 ### 💾 Data Persistence
+
 - PostgreSQL database integration
 - User authentication via Clerk
 - Secure password hashing with bcryptjs
@@ -29,6 +32,7 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 - Cross-device access to your data
 
 ### 🎨 Modern UI/UX
+
 - Dark mode aesthetic with indigo accents
 - Responsive design for all devices
 - Skeleton loading states
@@ -38,6 +42,7 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 ## Tech Stack
 
 ### Frontend
+
 - Single-page HTML application
 - Vanilla JavaScript (no frameworks)
 - CSS3 with custom properties
@@ -45,6 +50,7 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 - Outfit font family from Google Fonts
 
 ### Backend
+
 - Node.js with Express
 - PostgreSQL (Neon Database)
 - Clerk authentication
@@ -54,6 +60,7 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 ## Installation
 
 ### Prerequisites
+
 - Node.js 16+ installed
 - PostgreSQL database (Neon or local)
 - Google Gemini API key
@@ -61,12 +68,14 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 ### Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone <your-repo-url>
    cd Quicklist-Claude
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
@@ -74,11 +83,13 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 3. **Configure environment variables**
 
    Copy the example environment file and add your credentials:
+
    ```bash
    cp .env.example .env
    ```
 
    Then edit `.env` with your actual values:
+
    ```env
    DATABASE_URL=your_postgresql_connection_string
    GEMINI_API_KEY=your_gemini_api_key
@@ -90,6 +101,7 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 4. **Initialize the database**
 
    Start the server first, then visit:
+
    ```
    http://localhost:3000/api/init-db
    ```
@@ -97,11 +109,13 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
    This will create all necessary tables and indexes.
 
 5. **Start the server**
+
    ```bash
    npm start
    ```
 
    For development with auto-reload:
+
    ```bash
    npm run dev
    ```
@@ -109,6 +123,7 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 6. **Open the application**
 
    Navigate to:
+
    ```
    http://localhost:3000
    ```
@@ -157,10 +172,12 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 ## API Endpoints
 
 ### Authentication
+
 - `GET /api/config/auth` - Fetch Clerk publishable key/flags
 - `GET /api/auth/verify` - Validate Clerk session token
 
 ### Listings
+
 - `GET /api/listings` - Get all user's listings
 - `GET /api/listings/:id` - Get specific listing
 - `POST /api/listings` - Create new listing
@@ -168,15 +185,18 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 - `DELETE /api/listings/:id` - Delete listing
 
 ### AI Generation
+
 - `POST /api/generate` - Generate listing from image
 
 ### Utilities
+
 - `GET /api/health` - Health check
 - `GET /api/init-db` - Initialize database schema
 
 ## Database Schema
 
 ### Users Table
+
 - `id` - Primary key
 - `email` - Unique email address
 - `password_hash` - Hashed password
@@ -184,6 +204,7 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 - `updated_at` - Last update timestamp
 
 ### Listings Table
+
 - `id` - Primary key
 - `user_id` - Foreign key to users
 - `title` - Listing title
@@ -200,6 +221,7 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 - `updated_at` - Last update timestamp
 
 ### Images Table
+
 - `id` - Primary key
 - `listing_id` - Foreign key to listings
 - `image_data` - Base64 encoded image
@@ -218,6 +240,7 @@ QuickList AI is a sophisticated, AI-powered web application that helps users qui
 ## Development
 
 ### Project Structure
+
 ```
 Quicklist-Claude/
 ├── index.html          # Frontend application
@@ -241,10 +264,13 @@ The application is designed to be easily extensible:
 
 1. Ensure `.env` contains `CLERK_SECRET_KEY` and either `CLERK_FRONTEND_API` or `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`.
 2. Generate a temporary Clerk session token (automated):
+
    ```bash
    npm run clerk:token
    ```
+
    - Optional: set `CLERK_TEST_USER_EMAIL` to reuse a deterministic test user.
+
 3. Run the end-to-end smoke script (will auto-generate the token if missing):
    ```bash
    ./e2e_test.sh
@@ -254,16 +280,19 @@ The application is designed to be easily extensible:
 ## Troubleshooting
 
 ### Database Connection Issues
+
 - Verify your `DATABASE_URL` in `.env`
 - Check if the Neon database is accessible
 - Ensure SSL is properly configured
 
 ### API Key Issues
+
 - Verify `GEMINI_API_KEY` is correct
 - Check API quota limits
 - Review Gemini API console for errors
 
 ### Authentication Issues
+
 - Clear browser localStorage
 - Check browser console for error messages
 - Verify Clerk publishable + secret keys are configured

@@ -25,6 +25,7 @@ psql $DATABASE_URL -f schema_cloudinary_migration.sql
 ```
 
 **Verify:**
+
 ```sql
 \d images
 -- Should show: image_url, thumbnail_url, cloudinary_public_id
@@ -44,6 +45,7 @@ node scripts/migrate_to_cloudinary.js --retry-failed
 ```
 
 **Monitor progress:**
+
 ```sql
 SELECT
     COUNT(*) as total,
@@ -68,18 +70,19 @@ WHERE migrated_to_cloudinary = true
 ```
 
 **Test a sample image:**
+
 ```sql
 SELECT image_url FROM images WHERE migrated_to_cloudinary = true LIMIT 1;
 -- Copy URL and open in browser
 ```
 
 **Update application code:**
+
 ```javascript
 // OLD: Use image_data
-const images = await pool.query(
-  'SELECT id, image_data FROM images WHERE listing_id = $1',
-  [listingId]
-);
+const images = await pool.query('SELECT id, image_data FROM images WHERE listing_id = $1', [
+  listingId,
+]);
 
 // NEW: Use image_url
 const images = await pool.query(
@@ -100,6 +103,7 @@ psql $DATABASE_URL -f schema_cloudinary_migration.sql
 ```
 
 **Verify cleanup:**
+
 ```sql
 \d images
 -- Should NOT show: image_data, migrated_to_cloudinary, migration_* columns
@@ -107,16 +111,17 @@ psql $DATABASE_URL -f schema_cloudinary_migration.sql
 
 ## Time Estimates
 
-| Images   | Schema | Migration | Total    |
-|----------|--------|-----------|----------|
-| 100      | < 1s   | 2-3 min   | ~5 min   |
-| 1,000    | < 1s   | 20-30 min | ~35 min  |
-| 10,000   | < 1s   | 3-5 hours | ~5 hours |
-| 100,000  | < 1s   | 1-2 days  | ~2 days  |
+| Images  | Schema | Migration | Total    |
+| ------- | ------ | --------- | -------- |
+| 100     | < 1s   | 2-3 min   | ~5 min   |
+| 1,000   | < 1s   | 20-30 min | ~35 min  |
+| 10,000  | < 1s   | 3-5 hours | ~5 hours |
+| 100,000 | < 1s   | 1-2 days  | ~2 days  |
 
 ## Common Commands
 
 ### Check Migration Status
+
 ```sql
 SELECT
     COUNT(*) as total_images,
@@ -127,6 +132,7 @@ FROM images;
 ```
 
 ### View Failed Migrations
+
 ```sql
 SELECT id, listing_id, migration_error, migration_attempted_at
 FROM images
@@ -135,11 +141,13 @@ ORDER BY migration_attempted_at DESC;
 ```
 
 ### Retry All Failed
+
 ```bash
 node scripts/migrate_to_cloudinary.js --retry-failed
 ```
 
 ### Check Database Size
+
 ```sql
 SELECT pg_size_pretty(pg_total_relation_size('images')) as size;
 ```
@@ -173,12 +181,12 @@ psql $DATABASE_URL < backup_before_cleanup_YYYYMMDD.sql
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
+| Issue               | Solution                            |
+| ------------------- | ----------------------------------- |
 | Rate limit exceeded | Reduce batch size: `--batch-size 5` |
-| Timeout errors | Add delay: `--delay 5000` |
-| Images not loading | Check Cloudinary URL in browser |
-| Script crashes | Just re-run (it resumes) |
+| Timeout errors      | Add delay: `--delay 5000`           |
+| Images not loading  | Check Cloudinary URL in browser     |
+| Script crashes      | Just re-run (it resumes)            |
 
 ## Migration Script Options
 

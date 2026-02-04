@@ -10,6 +10,7 @@
 This comprehensive report analyzes 10 categories of tools adjacent to QuickList AI's core listing generation functionality. Each category includes competitive analysis, feature identification, and specific implementation recommendations prioritized by business value and technical feasibility.
 
 **Key Findings**:
+
 - **Highest ROI Opportunities**: Photo enhancement, pricing intelligence, and workflow automation
 - **Quick Wins**: Background removal, automated repricing, bulk operations
 - **Competitive Differentiators**: Voice-to-listing, AR try-on, multi-platform sync
@@ -22,6 +23,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 ### Market Leaders
 
 #### **remove.bg** (Kaleido AI)
+
 - **Key Features**:
   - AI background removal in 5 seconds
   - API with 50+ integrations
@@ -42,6 +44,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Magic wand tool for manual refinement
 
 #### **PhotoRoom**
+
 - **Key Features**:
   - Background removal + replacement
   - Batch editing with templates
@@ -61,6 +64,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Perspective correction for flat-lay photos
 
 #### **Clipping Magic**
+
 - **Key Features**:
   - Manual + AI hybrid approach
   - Edge refinement tools
@@ -71,6 +75,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $3.99/month (15 images) to $39/month (unlimited)
 
 #### **Adobe Photoshop AI (Firefly)**
+
 - **Key Features**:
   - Generative Fill for backgrounds
   - Remove Tool (one-click cleanup)
@@ -82,6 +87,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Note**: Too expensive for most resellers, but sets quality benchmark
 
 #### **Topaz Labs** (Gigapixel AI, Photo AI)
+
 - **Key Features**:
   - AI upscaling (600% without quality loss)
   - Noise reduction for low-light photos
@@ -101,6 +107,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 1: High Value, Medium Difficulty**
 
 **A. One-Click Background Removal**
+
 - **Description**: Integrate background removal API to create clean product images
 - **Technical Approach**:
   - Use remove.bg API or open-source alternatives (U2-Net, RMBG-2.0)
@@ -126,6 +133,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   ```
 
 **B. AI Photo Enhancement Suite**
+
 - **Features**:
   - Auto brightness/contrast adjustment
   - Color correction (white balance)
@@ -149,6 +157,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Topaz API: Not available (desktop only)
 
 **C. Smart Cropping & Framing**
+
 - **Description**: Auto-detect product boundaries and crop to optimal framing
 - **Technical Approach**:
   - Object detection model (YOLO, MobileNet)
@@ -164,6 +173,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 2: High Value, High Difficulty**
 
 **D. Virtual Background Replacement**
+
 - **Description**: Replace backgrounds with marketplace-optimized templates (white, shadow, lifestyle)
 - **Options**:
   - Pure white background (for consistency)
@@ -182,6 +192,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Processing: Same as background removal
 
 **E. AI Garment Smoothing & Wrinkle Removal**
+
 - **Description**: Digitally iron/smooth clothing items for better presentation
 - **Technical Approach**:
   - Use image inpainting models
@@ -197,6 +208,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 3: Medium Value, Easy Implementation**
 
 **F. Lighting Correction Presets**
+
 - **Description**: One-click presets for common lighting issues
 - **Presets**:
   - Fix yellow indoor lighting
@@ -239,6 +251,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 ### Market Leaders
 
 #### **Terapeak** (eBay Official)
+
 - **Key Features**:
   - Sold listings data for eBay
   - Price trends over time (90 days)
@@ -253,6 +266,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Data Source**: eBay's internal transaction data
 
 #### **PriceCharting** (Video games, collectibles)
+
 - **Key Features**:
   - Price history charts (10+ years)
   - Grading premium analysis
@@ -262,6 +276,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: Free (limited), $9/month (pro)
 
 #### **WorthPoint** (Antiques, collectibles)
+
 - **Key Features**:
   - 900M+ sold items database
   - Price guide for vintage items
@@ -271,6 +286,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $29.99/month
 
 #### **Zik Analytics** (eBay dropshipping)
+
 - **Key Features**:
   - Product research (trending items)
   - Competition analysis
@@ -280,6 +296,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $29-$59/month
 
 #### **PricingBot** (Amazon repricing)
+
 - **Key Features**:
   - Real-time competitor tracking
   - Automated repricing rules
@@ -293,6 +310,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 1: High Value, Medium-Hard Difficulty**
 
 **A. Real-Time Sold Listings Analyzer**
+
 - **Description**: Scrape/API fetch recent sold listings for price recommendations
 - **Data Sources**:
   - eBay: Completed/Sold filter (public data)
@@ -312,6 +330,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - APIs: eBay has official API, others don't
   - Data parsing: HTML changes frequently
 - **Implementation**:
+
   ```javascript
   // Add to server.js
   app.post('/api/pricing/research', authenticateToken, async (req, res) => {
@@ -327,7 +346,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
       priceRange: { min: Math.min(...soldListings.prices), max: Math.max(...soldListings.prices) },
       sellThroughRate: soldListings.length / totalListings,
       recommendedPrice: calculateOptimalPrice(soldListings),
-      confidence: soldListings.length > 10 ? 'high' : 'medium'
+      confidence: soldListings.length > 10 ? 'high' : 'medium',
     };
 
     res.json(insights);
@@ -335,6 +354,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   ```
 
 **B. Dynamic Pricing Recommendations**
+
 - **Description**: Real-time price adjustment suggestions based on:
   - Time listed (reduce price if no interest)
   - Season (winter coats in summer = discount)
@@ -354,6 +374,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Integration: Requires marketplace API or manual user updates
 
 **C. Price History & Trends**
+
 - **Description**: Show historical price data for brand/category
 - **Features**:
   - Line chart of average prices (last 90 days)
@@ -387,6 +408,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 2: Medium Value, Easy-Medium Difficulty**
 
 **D. Competitor Price Tracking**
+
 - **Description**: Track similar active listings and alert when prices change
 - **Use Case**: User lists designer handbag at $200, gets alert when competitor lists same item at $150
 - **Technical Approach**:
@@ -401,6 +423,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Notifications: Easy (email via SendGrid)
 
 **E. Profit Calculator**
+
 - **Description**: Calculate net profit after fees, shipping, cost of goods
 - **Inputs**:
   - Listing price
@@ -422,11 +445,12 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - No external dependencies
   - Client-side calculation
 - **Implementation**:
+
   ```javascript
   function calculateProfit(price, platform, shippingCost, cogs) {
-    const feeRates = { vinted: 0.05, ebay: 0.129, poshmark: 0.20, gumtree: 0 };
+    const feeRates = { vinted: 0.05, ebay: 0.129, poshmark: 0.2, gumtree: 0 };
     const platformFee = price * feeRates[platform];
-    const paymentFee = (price * 0.029) + 0.30;
+    const paymentFee = price * 0.029 + 0.3;
     const netProfit = price - platformFee - paymentFee - shippingCost - cogs;
     const margin = (netProfit / price) * 100;
 
@@ -435,6 +459,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   ```
 
 **F. Market Demand Indicators**
+
 - **Description**: Show demand signals for product category
 - **Metrics**:
   - Search volume (Google Trends API)
@@ -465,6 +490,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 ### Market Leaders
 
 #### **List Perfectly** (Multi-platform crossposting)
+
 - **Key Features**:
   - Cross-list to 9+ marketplaces (eBay, Poshmark, Mercari, etc.)
   - Inventory sync (sold on one platform = delete on others)
@@ -478,6 +504,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Pro: $49.99/month (API access)
 
 #### **Vendoo** (Similar to List Perfectly)
+
 - **Key Features**:
   - Cross-list to 7+ marketplaces
   - AI-powered listing import
@@ -488,6 +515,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $29-$59/month
 
 #### **Trunk** (Multi-platform inventory sync)
+
 - **Key Features**:
   - Real-time inventory sync (no overselling)
   - Multi-warehouse support
@@ -497,6 +525,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $35-$75/month
 
 #### **GoDaddy Online Store** (Bookkeeping)
+
 - **Key Features**:
   - Cost tracking (COGS)
   - Profit/loss reporting
@@ -506,6 +535,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $9.99-$14.99/month
 
 #### **Sortly** (Visual inventory)
+
 - **Key Features**:
   - Photo-based inventory catalog
   - QR code labels
@@ -520,6 +550,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 1: High Value, Medium Difficulty**
 
 **A. SKU / Barcode Management System**
+
 - **Description**: Assign unique SKUs to listings, integrate barcode scanning
 - **Features**:
   - Auto-generate SKUs (e.g., VINT-001, VINT-002)
@@ -560,6 +591,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   ```
 
 **B. Cost Tracking & Profit Analytics**
+
 - **Description**: Track cost of goods sold and calculate profit per item/period
 - **Features**:
   - Add COGS field to listings (what you paid for item)
@@ -580,6 +612,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Analytics queries: Medium
   - Dashboard UI: Medium
 - **Database Schema**:
+
   ```sql
   ALTER TABLE listings ADD COLUMN cogs DECIMAL(10,2); -- Cost of goods sold
 
@@ -596,6 +629,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   ```
 
 **C. Multi-Warehouse / Location Tracking**
+
 - **Description**: Track where physical items are stored
 - **Use Cases**:
   - Multiple storage locations (garage, closet, storage unit)
@@ -618,6 +652,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 2: Medium Value, Easy-Medium Difficulty**
 
 **D. Inventory Forecasting**
+
 - **Description**: Predict when items will sell based on historical data
 - **Features**:
   - "Estimated days to sell" per listing
@@ -635,6 +670,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - ML prediction: Hard
 
 **E. Expiry Date Tracking** (Cosmetics, food, supplements)
+
 - **Description**: Track expiration dates for perishable items
 - **Features**:
   - Add expiry date field
@@ -652,6 +688,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Notifications: Email via SendGrid
 
 **F. Bundle / Lot Management**
+
 - **Description**: Group multiple items into bundles for listing
 - **Use Cases**:
   - Clothing lots (5 shirts for $20)
@@ -686,6 +723,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 ### Market Leaders
 
 #### **Entrupy** (Luxury handbags)
+
 - **Key Features**:
   - AI + microscopic image analysis
   - 99.1% accuracy claim
@@ -698,6 +736,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Subscription: $49/month (10 authentications) or pay-per-use ($6)
 
 #### **Real Authentication** (Sneakers)
+
 - **Key Features**:
   - Human expert verification (24-48 hours)
   - Detailed report with photos
@@ -706,6 +745,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $10-$30 per item
 
 #### **Authenticate First** (Multi-category)
+
 - **Key Features**:
   - Expert authentication (handbags, jewelry, watches, art)
   - Appraisal services
@@ -714,6 +754,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $10-$100+ (depending on item value)
 
 #### **Legit Check By Ch** (App-based)
+
 - **Key Features**:
   - Crowdsourced authentication (community + AI)
   - Fast response (1-4 hours)
@@ -722,6 +763,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: Free (community), $3-$5 (priority)
 
 #### **CheckCheck** (Sneakers)
+
 - **Key Features**:
   - AI + human verification
   - Instant AI check, then human review
@@ -734,6 +776,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 1: Medium-High Value, Hard Difficulty**
 
 **A. Basic AI Authenticity Check**
+
 - **Description**: Detect obvious fakes using computer vision
 - **Approach**:
   - Check for common fake indicators:
@@ -758,6 +801,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Legal Note**: Requires clear disclaimers, not intended as professional authentication
 
 **B. Barcode / Serial Number Verification**
+
 - **Description**: Verify product authenticity via barcode/serial number lookup
 - **Features**:
   - Scan barcode, check against UPC database
@@ -787,6 +831,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 2: Low-Medium Value, Easy Difficulty**
 
 **C. Authentication Resource Links**
+
 - **Description**: Provide educational resources and partner links
 - **Features**:
   - "How to authenticate [brand]" guides
@@ -806,6 +851,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - No API/ML required
 
 **D. Brand Authentication Partnership Badges**
+
 - **Description**: Display badge if item verified by partner service
 - **Example**: "Authenticated by Entrupy" badge on listing
 - **Technical Approach**:
@@ -820,6 +866,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - API integration
 
 **E. QR Code Generation for Verification**
+
 - **Description**: Generate QR code linking to listing's authenticity info
 - **Use Case**: Print QR sticker, attach to item, buyer scans to verify listing
 - **Features**:
@@ -851,6 +898,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 ### Market Leaders
 
 #### **ListingMirror** (Multi-channel e-commerce)
+
 - **Key Features**:
   - Sales dashboard across 20+ channels
   - Revenue tracking (daily, weekly, monthly)
@@ -861,6 +909,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $35-$150/month
 
 #### **ecomdash** (Similar)
+
 - **Key Features**:
   - Multi-marketplace analytics
   - Profit margins by SKU
@@ -870,6 +919,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $60-$200/month
 
 #### **QuickBooks Online** (Bookkeeping)
+
 - **Key Features**:
   - Income/expense tracking
   - Tax preparation tools
@@ -879,6 +929,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $15-$200/month
 
 #### **GoDaddy Bookkeeping** (Simplified)
+
 - **Key Features**:
   - Auto-categorize expenses
   - Mileage tracking
@@ -888,6 +939,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $4.99-$9.99/month
 
 #### **Seller Legend** (Amazon FBA analytics)
+
 - **Key Features**:
   - Real-time sales dashboards
   - Profit analytics (after fees)
@@ -901,6 +953,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 1: High Value, Medium Difficulty**
 
 **A. Multi-Platform Sales Dashboard**
+
 - **Description**: Aggregate sales data from all marketplaces in one view
 - **Metrics**:
   - Total revenue (today, week, month, year)
@@ -929,13 +982,15 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Charting: Easy (Chart.js)
   - Real-time updates: Medium (WebSockets or polling)
 - **Implementation**:
+
   ```javascript
   // Add to server.js
   app.get('/api/analytics/dashboard', authenticateToken, async (req, res) => {
     const userId = req.userId;
     const { startDate, endDate } = req.query;
 
-    const revenueQuery = await pool.query(`
+    const revenueQuery = await pool.query(
+      `
       SELECT
         SUM(sold_price) as total_revenue,
         SUM(net_profit) as total_profit,
@@ -947,13 +1002,16 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
       WHERE l.user_id = $1 AND sold_date BETWEEN $2 AND $3
       GROUP BY day
       ORDER BY day
-    `, [userId, startDate, endDate]);
+    `,
+      [userId, startDate, endDate]
+    );
 
     res.json({ revenue: revenueQuery.rows });
   });
   ```
 
 **B. Performance Analytics by Category/Brand**
+
 - **Description**: Identify which categories/brands sell best
 - **Metrics**:
   - Average days to sell (by category)
@@ -973,6 +1031,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Materialized views: Easy (PostgreSQL)
 
 **C. Tax Reporting & Exports**
+
 - **Description**: Export data for tax filing (1099-K prep)
 - **Features**:
   - CSV export: sales, expenses, profit by month
@@ -991,15 +1050,19 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - CSV generation: Easy
   - Expense tracking: Medium (new feature)
 - **Implementation**:
+
   ```javascript
   app.get('/api/reports/tax-export', authenticateToken, async (req, res) => {
     const { year } = req.query;
-    const data = await pool.query(`
+    const data = await pool.query(
+      `
       SELECT sold_date, l.title, sold_price, platform_fees, shipping_cost, net_profit
       FROM sales s
       JOIN listings l ON s.listing_id = l.id
       WHERE l.user_id = $1 AND EXTRACT(YEAR FROM sold_date) = $2
-    `, [req.userId, year]);
+    `,
+      [req.userId, year]
+    );
 
     const csv = generateCSV(data.rows);
     res.header('Content-Type', 'text/csv');
@@ -1011,6 +1074,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 2: Medium Value, Medium Difficulty**
 
 **D. Customer Insights** (Buyer analytics)
+
 - **Description**: Track repeat buyers and buyer behavior
 - **Metrics**:
   - Repeat buyer rate
@@ -1025,6 +1089,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Requires buyer data capture (not available from most APIs)
 
 **E. Seasonal Trend Identification**
+
 - **Description**: Identify seasonal patterns in sales
 - **Features**:
   - "Coats sell best in October-November"
@@ -1042,6 +1107,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Aggregation queries
 
 **F. Email Reporting** (Weekly summaries)
+
 - **Description**: Automated email with weekly performance summary
 - **Content**:
   - Items sold this week
@@ -1075,6 +1141,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 ### Market Leaders
 
 #### **Vendoo Messages** (Multi-platform inbox)
+
 - **Key Features**:
   - Unified inbox for all marketplaces
   - Saved reply templates
@@ -1084,6 +1151,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: Included in Vendoo subscription ($29/month)
 
 #### **ChannelReply** (E-commerce messaging)
+
 - **Key Features**:
   - Centralized inbox (Amazon, eBay, Shopify, etc.)
   - Team collaboration (assign conversations)
@@ -1093,6 +1161,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $30-$100/month
 
 #### **eDesk** (Customer support for e-commerce)
+
 - **Key Features**:
   - Omnichannel inbox (marketplaces + social media)
   - AI-powered categorization
@@ -1103,6 +1172,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $65-$150/month
 
 #### **Gorgias** (Shopify-focused)
+
 - **Key Features**:
   - Helpdesk with automation
   - Macros (pre-written responses)
@@ -1112,6 +1182,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $10-$750/month
 
 #### **Zendesk** (Enterprise)
+
 - **Key Features**:
   - Full customer support suite
   - Ticket management
@@ -1125,6 +1196,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 1: Medium-High Value, Easy-Medium Difficulty**
 
 **A. Message Templates / Canned Responses**
+
 - **Description**: Pre-written responses for common buyer questions
 - **Common Templates**:
   - "Is this still available?" → "Yes, it's available! Happy to answer any questions."
@@ -1145,21 +1217,29 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Database: Simple table
   - UI: Text area + template selector
 - **Implementation**:
+
   ```javascript
   const templates = [
-    { name: 'Is Available', text: 'Yes, this item is still available! Feel free to ask any questions.' },
-    { name: 'Negotiate', text: 'Thanks for your interest! The lowest I can go is ${{lowest_price}}.' },
-    { name: 'Measurements', text: 'Here are the measurements: {{measurements}}' }
+    {
+      name: 'Is Available',
+      text: 'Yes, this item is still available! Feel free to ask any questions.',
+    },
+    {
+      name: 'Negotiate',
+      text: 'Thanks for your interest! The lowest I can go is ${{lowest_price}}.',
+    },
+    { name: 'Measurements', text: 'Here are the measurements: {{measurements}}' },
   ];
 
   function insertTemplate(templateId) {
-    const template = templates.find(t => t.id === templateId);
+    const template = templates.find((t) => t.id === templateId);
     const messageBox = document.getElementById('message-input');
     messageBox.value = template.text; // User can edit before sending
   }
   ```
 
 **B. Bundle Offer Generator**
+
 - **Description**: Auto-generate bundle discount messages
 - **Use Case**: Buyer asks "Can you bundle these 3 items?"
 - **Features**:
@@ -1180,6 +1260,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Custom listing creation: Medium
 
 **C. Multi-Language Translation**
+
 - **Description**: Translate messages to/from other languages
 - **Use Cases**:
   - International buyers on eBay
@@ -1205,7 +1286,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   async function translateMessage(text, targetLang) {
     const response = await fetch('https://translation.googleapis.com/language/translate/v2', {
       method: 'POST',
-      body: JSON.stringify({ q: text, target: targetLang, key: TRANSLATE_API_KEY })
+      body: JSON.stringify({ q: text, target: targetLang, key: TRANSLATE_API_KEY }),
     });
     const data = await response.json();
     return data.data.translations[0].translatedText;
@@ -1215,6 +1296,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 2: Low-Medium Value, Easy Difficulty**
 
 **D. Negotiation Assistant**
+
 - **Description**: Suggest counter-offers based on pricing strategy
 - **Features**:
   - Buyer offers $X (below asking price)
@@ -1236,6 +1318,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - No ML required
 
 **E. Review Response Generator**
+
 - **Description**: AI-generated responses to buyer reviews
 - **Use Cases**:
   - Positive review: Thank buyer, encourage repeat business
@@ -1253,6 +1336,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Prompt engineering only
 
 **F. Follow-Up Automation**
+
 - **Description**: Auto-send follow-up messages at key times
 - **Triggers**:
   - After sale: "Thank you! Item ships tomorrow."
@@ -1287,6 +1371,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 ### Market Leaders
 
 #### **Pirate Ship** (Discounted USPS/UPS)
+
 - **Key Features**:
   - Pre-negotiated shipping rates (up to 90% off retail)
   - Label generation with tracking
@@ -1297,6 +1382,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: FREE (makes money on shipping volume deals)
 
 #### **ShipStation** (Multi-carrier)
+
 - **Key Features**:
   - Rate comparison (USPS, UPS, FedEx, DHL)
   - Automation rules (auto-select cheapest carrier)
@@ -1307,6 +1393,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $9.99-$229/month (based on shipments/month)
 
 #### **Shippo** (API-first shipping)
+
 - **Key Features**:
   - Developer-friendly API
   - Rate shopping
@@ -1317,6 +1404,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: Pay-as-you-go ($0.05 per label) or monthly plans
 
 #### **EasyPost** (Similar to Shippo)
+
 - **Key Features**:
   - Multi-carrier API
   - Address verification
@@ -1326,6 +1414,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $0.05 per label
 
 #### **Stamps.com** (USPS-focused)
+
 - **Key Features**:
   - USPS discounts (up to 84%)
   - Postage meter (print from home)
@@ -1339,6 +1428,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 1: High Value, Medium Difficulty**
 
 **A. Shipping Label Generation**
+
 - **Description**: Create shipping labels directly in app
 - **Features**:
   - Enter buyer address (or import from marketplace)
@@ -1361,6 +1451,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Cost: $0.05 per label + shipping cost
   - Requires Shippo/EasyPost account approval
 - **Implementation**:
+
   ```javascript
   // Add to server.js
   app.post('/api/shipping/create-label', authenticateToken, async (req, res) => {
@@ -1370,7 +1461,14 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
     const shipment = await shippo.shipment.create({
       address_from: user.shippingProfile,
       address_to: toAddress,
-      parcels: [{ length: packageDimensions.length, width: packageDimensions.width, height: packageDimensions.height, weight }]
+      parcels: [
+        {
+          length: packageDimensions.length,
+          width: packageDimensions.width,
+          height: packageDimensions.height,
+          weight,
+        },
+      ],
     });
 
     // Get cheapest rate
@@ -1384,6 +1482,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   ```
 
 **B. Rate Comparison Tool**
+
 - **Description**: Compare shipping costs across carriers before purchasing
 - **Features**:
   - Input destination, package size, weight
@@ -1404,6 +1503,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Cost**: FREE (rate quotes don't cost money with Shippo)
 
 **C. Package Tracking Dashboard**
+
 - **Description**: View all shipments in one place
 - **Features**:
   - List of recent shipments with status
@@ -1426,6 +1526,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 2: Medium Value, Medium Difficulty**
 
 **D. International Customs Automation**
+
 - **Description**: Auto-generate customs forms for international shipping
 - **Features**:
   - Detect international destination
@@ -1446,6 +1547,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Legal Note**: User responsible for accuracy (customs declarations)
 
 **E. Returns Management Portal**
+
 - **Description**: Streamline return process
 - **Features**:
   - Generate return labels (buyer or seller paid)
@@ -1464,6 +1566,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Refund automation: Depends on marketplace
 
 **F. Shipping Profile Management**
+
 - **Description**: Save common shipping settings
 - **Profiles**:
   - Small package (envelope, First Class)
@@ -1499,6 +1602,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 ### Market Leaders
 
 #### **Shopify** (E-commerce platform)
+
 - **Key Features**:
   - Instagram Shopping integration
   - Facebook Shop sync
@@ -1509,6 +1613,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $29-$299/month
 
 #### **CommentSold** (Live selling platform)
+
 - **Key Features**:
   - Facebook Live shopping
   - Instagram Live selling
@@ -1519,6 +1624,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $99-$249/month
 
 #### **Soldsie** (Social commerce automation)
+
 - **Key Features**:
   - Instagram comment-to-purchase
   - Facebook Messenger orders
@@ -1528,6 +1634,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: $49-$149/month
 
 #### **Later** (Social media scheduling + shopping)
+
 - **Key Features**:
   - Instagram post scheduling
   - Linkin.bio shoppable landing page
@@ -1537,6 +1644,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: Free-$80/month
 
 #### **Planoly** (Similar to Later)
+
 - **Key Features**:
   - Instagram grid planner
   - Shoppable posts
@@ -1550,6 +1658,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 1: Medium-High Value, Medium-Hard Difficulty**
 
 **A. Instagram Post Auto-Generation**
+
 - **Description**: Create Instagram-ready posts from listings
 - **Features**:
   - Auto-generate post caption from listing
@@ -1572,6 +1681,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Instagram API: Hard (approval process, OAuth)
   - Alternative: Export only (user posts manually) = EASY
 - **Implementation (Export Only)**:
+
   ```javascript
   function generateInstagramPost(listing) {
     const canvas = document.createElement('canvas');
@@ -1588,13 +1698,14 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
     ctx.fillText(`$${listing.price}`, 40, 1030);
 
     // Generate caption
-    const caption = `${listing.title}\n\n${listing.description.substring(0, 100)}...\n\n💰 $${listing.price}\n🔗 Link in bio!\n\n${listing.keywords.map(k => '#' + k).join(' ')}`;
+    const caption = `${listing.title}\n\n${listing.description.substring(0, 100)}...\n\n💰 $${listing.price}\n🔗 Link in bio!\n\n${listing.keywords.map((k) => '#' + k).join(' ')}`;
 
     return { image: canvas.toDataURL(), caption };
   }
   ```
 
 **B. TikTok Shop Listing Sync**
+
 - **Description**: Auto-create TikTok Shop listings from app
 - **Features**:
   - One-click export to TikTok Shop
@@ -1613,6 +1724,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Note**: May need to partner with TikTok as official integration
 
 **C. Facebook Marketplace Integration**
+
 - **Description**: Post listings to Facebook Marketplace automatically
 - **Features**:
   - Cross-post to Facebook Marketplace
@@ -1632,6 +1744,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 2: Low-Medium Value, Easy-Medium Difficulty**
 
 **D. Pinterest Product Pins**
+
 - **Description**: Auto-create Pinterest product pins
 - **Features**:
   - Convert listing to product pin
@@ -1648,6 +1761,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Pinterest API: Straightforward but requires approval
 
 **E. Social Media Post Templates**
+
 - **Description**: Pre-designed post templates for various platforms
 - **Templates**:
   - Instagram Story (product showcase)
@@ -1665,6 +1779,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Pre-made templates: Easy (design work)
 
 **F. Hashtag Generator & Research**
+
 - **Description**: Generate relevant hashtags for social posts
 - **Features**:
   - Auto-suggest hashtags from keywords
@@ -1697,6 +1812,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 ### Market Leaders
 
 #### **Reeva AI** (Voice-to-listing)
+
 - **Key Features**:
   - Voice recording of product description
   - AI transcription + enhancement
@@ -1706,6 +1822,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: Not publicly available (new product)
 
 #### **Whatnot** (Live selling with AR)
+
 - **Key Features**:
   - Live stream shopping
   - AR try-on filters
@@ -1715,6 +1832,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: Free (takes commission on sales)
 
 #### **Perfect Corp** (YouCam Makeup - AR try-on)
+
 - **Key Features**:
   - AR makeup try-on
   - Skincare analysis
@@ -1724,6 +1842,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: Enterprise (custom)
 
 #### **Veesual** (AI fashion model try-on)
+
 - **Key Features**:
   - Upload clothing photo
   - See on AI-generated models
@@ -1733,6 +1852,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: API pricing not public
 
 #### **Heuritech** (Fashion trend forecasting)
+
 - **Key Features**:
   - AI analysis of social media
   - Predict trends 12 months ahead
@@ -1746,6 +1866,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 1: High Value, Medium-Hard Difficulty**
 
 **A. Voice-to-Listing (like Reeva AI)**
+
 - **Description**: Create listing by describing item verbally
 - **Workflow**:
   1. User holds item, presses record button
@@ -1767,6 +1888,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Parsing: Easy (Gemini already integrated)
   - Mobile optimization: Medium (need good UI)
 - **Implementation**:
+
   ```javascript
   // Add to index.html
   let recognition = new webkitSpeechRecognition() || new SpeechRecognition();
@@ -1781,10 +1903,10 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
     fetch('/api/parse-voice-listing', {
       method: 'POST',
       body: JSON.stringify({ transcript, imageData: app.state.uploadedImages[0] }),
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${app.state.token}` }
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${app.state.token}` },
     })
-    .then(res => res.json())
-    .then(listing => app.displayListing(listing));
+      .then((res) => res.json())
+      .then((listing) => app.displayListing(listing));
   };
 
   function startVoiceInput() {
@@ -1794,6 +1916,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   ```
 
 **B. Video-to-Listing Conversion**
+
 - **Description**: Upload short video, AI extracts keyframes and generates listing
 - **Workflow**:
   1. User records 10-second video of item (all angles)
@@ -1816,6 +1939,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Cost**: Higher Gemini API usage (multiple images per listing)
 
 **C. AR Try-On / Visualization**
+
 - **Description**: Visualize how item looks in different contexts
 - **Use Cases**:
   - Clothing: See on model (different body types)
@@ -1838,6 +1962,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 2: Medium-High Value, Medium Difficulty**
 
 **D. Style Matching & Recommendations**
+
 - **Description**: Suggest similar items from user's inventory for cross-selling
 - **Features**:
   - "Complete the look" recommendations
@@ -1855,6 +1980,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Similarity search: Vector database (pgvector in PostgreSQL)
 
 **E. Seasonal Trend Prediction**
+
 - **Description**: Predict what will sell well in upcoming season
 - **Features**:
   - "Stock up on coats in August (fall demand)"
@@ -1873,6 +1999,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Rule-based: Easy
 
 **F. Automated Reposting Optimization**
+
 - **Description**: Auto-repost listings at optimal times for visibility
 - **Features**:
   - Detect when listing loses visibility (marketplace algorithms)
@@ -1905,6 +2032,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 ### Market Leaders
 
 #### **List Perfectly** (Covered in Inventory section)
+
 - **Key Automation**:
   - Auto-delist sold items across platforms
   - Quantity sync (sold on eBay → remove from Poshmark)
@@ -1912,6 +2040,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Bulk editing (update 100 listings at once)
 
 #### **Vendoo** (Similar)
+
 - **Key Automation**:
   - Smart delisting (sold item removed everywhere)
   - Scheduled listings ("drops" for hype releases)
@@ -1919,6 +2048,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Template-based listing creation
 
 #### **Zapier** (General automation)
+
 - **Key Features**:
   - Connect 5000+ apps
   - Trigger-action workflows
@@ -1930,6 +2060,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: Free (100 tasks/month) to $20+/month
 
 #### **Make (formerly Integromat)** (Similar to Zapier)
+
 - **Key Features**:
   - Visual workflow builder
   - More complex logic than Zapier
@@ -1937,6 +2068,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - **Pricing**: Free (1000 ops/month) to $9+/month
 
 #### **IFTTT** (Simpler than Zapier)
+
 - **Key Features**:
   - Simple if-this-then-that rules
   - Mobile app integrations
@@ -1948,6 +2080,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 1: Very High Value, Medium Difficulty**
 
 **A. Auto-Delist Sold Items Across Platforms**
+
 - **Description**: When item sells on one platform, remove from all others
 - **Problem Solved**: Prevents "overselling" (selling same item twice)
 - **Workflow**:
@@ -1969,25 +2102,31 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Facebook: Commerce API available
   - **Workaround**: Generate "delete checklist" with links
 - **Implementation (Manual Checklist)**:
+
   ```javascript
   function generateDeleteChecklist(listing) {
     const platforms = [
       { name: 'eBay', url: `https://www.ebay.com/sh/lst/drafts/all/${listing.ebay_id}` },
       { name: 'Vinted', url: `https://www.vinted.com/items/${listing.vinted_id}` },
-      { name: 'Poshmark', url: `https://poshmark.com/listing/${listing.poshmark_id}` }
+      { name: 'Poshmark', url: `https://poshmark.com/listing/${listing.poshmark_id}` },
     ];
 
-    return platforms.map(p => `
+    return platforms
+      .map(
+        (p) => `
       <div>
         <input type="checkbox" id="${p.name}">
         <label>${p.name}</label>
         <a href="${p.url}" target="_blank">Open listing</a>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
   }
   ```
 
 **B. Quantity Sync Across Marketplaces**
+
 - **Description**: Update quantity on all platforms when one sells
 - **Use Cases**:
   - Selling 3 identical t-shirts on multiple platforms
@@ -2005,6 +2144,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Same challenges as auto-delist (API access)
 
 **C. Bulk Operations (Edit Multiple Listings)**
+
 - **Description**: Edit 10, 50, or 100 listings at once
 - **Operations**:
   - Bulk price change (reduce all by 10%)
@@ -2031,7 +2171,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
       await fetch(`/api/listings/${id}`, {
         method: 'PUT',
         body: JSON.stringify({ price: listings[id].price * (1 + percentChange / 100) }),
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${app.state.token}` }
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${app.state.token}` },
       });
     }
     alert('Bulk update complete!');
@@ -2041,6 +2181,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 2: High Value, Easy-Medium Difficulty**
 
 **D. Automated Price Adjustments (Repricing Rules)**
+
 - **Description**: Set rules to automatically adjust prices
 - **Rules**:
   - If listed >30 days, reduce price by 10%
@@ -2063,6 +2204,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Marketplace API: Medium (if updating external listings)
 
 **E. Scheduled Listings ("Drops")**
+
 - **Description**: Schedule listings to go live at specific times
 - **Use Cases**:
   - Hype drops (sneakers, limited editions)
@@ -2082,6 +2224,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - API publishing: Medium
 
 **F. Template-Based Listing Creation**
+
 - **Description**: Save listing templates for common item types
 - **Templates**:
   - "Men's T-Shirt" (pre-fill category, size options, condition descriptions)
@@ -2102,6 +2245,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 #### **Priority 3: Medium Value, Easy Difficulty**
 
 **G. Auto-Renewal / Reposting**
+
 - **Description**: Automatically relist expired or old listings
 - **Triggers**:
   - eBay listing expires (7 or 30 days)
@@ -2119,6 +2263,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - eBay API: Medium
 
 **H. Smart Notifications & Reminders**
+
 - **Description**: Proactive notifications for key events
 - **Notifications**:
   - "You have 5 unshipped orders" (daily at 9am)
@@ -2136,6 +2281,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
   - Cron + email service (SendGrid)
 
 **I. Zapier-Style Workflow Builder**
+
 - **Description**: Visual builder for custom automations
 - **Example Workflows**:
   - "When listing sells → Add buyer to email list"
@@ -2311,6 +2457,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 5. ✅ **Profit Calculator** (simple JavaScript calculator)
 
 **Expected Impact**:
+
 - Users can manage larger inventories
 - Faster communication with buyers
 - Better organization with SKUs
@@ -2330,6 +2477,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 9. ✅ **Dynamic Pricing Recommendations** (rule-based → ML later)
 
 **Expected Impact**:
+
 - Fastest listing creation on market (30 seconds with voice)
 - Professional-quality photos
 - Competitive pricing insights
@@ -2348,6 +2496,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 13. ✅ **Shipping Label Generation** (Shippo/EasyPost integration)
 
 **Expected Impact**:
+
 - Essential tool for cross-posters (lock-in effect)
 - Data-driven pricing (competitive advantage)
 - Expanded reach (social commerce)
@@ -2368,6 +2517,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 18. ✅ **Profit History & Trends** (historical data visualization)
 
 **Expected Impact**:
+
 - Attracts high-volume sellers (premium tier users)
 - Passive management (set-and-forget)
 - Compliance support (tax reporting)
@@ -2389,6 +2539,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 25. ✅ **AR Try-On** (mobile app required)
 
 **Expected Impact**:
+
 - Premium subscription tier ($29-49/month)
 - Enterprise features (high-volume sellers)
 - Cutting-edge positioning (market leader)
@@ -2402,6 +2553,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 ### Freemium Tiers
 
 **Free Tier** (Lead generation)
+
 - 5 listings/month
 - Basic AI listing generation
 - 1 marketplace integration
@@ -2409,6 +2561,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - Message templates (5 max)
 
 **Starter: $9.99/month**
+
 - 25 listings/month
 - All AI features (voice-to-listing, background removal)
 - 3 marketplace integrations
@@ -2417,6 +2570,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - Email support
 
 **Pro: $24.99/month** (Target: Serious resellers)
+
 - Unlimited listings
 - All features except premium
 - All marketplace integrations
@@ -2429,6 +2583,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 - Priority support
 
 **Premium: $49.99/month** (Target: Full-time resellers, boutiques)
+
 - Everything in Pro
 - Video-to-listing
 - Virtual backgrounds
@@ -2449,6 +2604,7 @@ This comprehensive report analyzes 10 categories of tools adjacent to QuickList 
 ### Estimated Revenue (Year 1)
 
 Assuming 10,000 users by end of Year 1:
+
 - 70% Free (7,000 users): $0
 - 20% Starter (2,000 users): $19,980/month
 - 8% Pro (800 users): $19,992/month
@@ -2468,6 +2624,7 @@ Add-ons: ~$5,000/month (shipping, background removal)
 ### Infrastructure Scaling
 
 **Current Stack**:
+
 - Single HTML file (2,382 lines) → Need to split into modules
 - PostgreSQL (Neon) → Sufficient for 10k users
 - Express.js → Add Redis caching for scraped data
@@ -2508,18 +2665,21 @@ Add-ons: ~$5,000/month (shipping, background removal)
 ### Third-Party API Costs (Monthly, at scale)
 
 **Phase 1-2**:
+
 - Gemini API: $0 (free tier) → $50-200 (high usage)
 - Remove.bg: $0 (use free alternative) → $200 (if using API)
 - Cloudinary: $0 (free tier) → $89/month
 - **Total**: ~$0-500/month
 
 **Phase 3-4**:
+
 - Shippo: $0 (per-transaction fees paid by users)
 - SendGrid: $20/month (email notifications)
 - Google Translate: $20/month
 - **Total**: ~$40-100/month additional
 
 **Phase 5**:
+
 - Video processing (AWS MediaConvert): ~$100/month
 - AR providers: $500-2000/month (enterprise plans)
 - **Total**: ~$600-2100/month additional
@@ -2561,11 +2721,13 @@ Add-ons: ~$5,000/month (shipping, background removal)
 ### Current Competitors
 
 **Direct Competitors** (AI listing generators):
+
 - **List Perfectly**: $29/month, multi-platform, no AI
 - **Vendoo**: $29/month, basic AI, cross-posting
 - **Poshmark-specific tools**: $5-15/month, limited scope
 
 **QuickList AI Advantages**:
+
 1. ✅ **Advanced AI** (Gemini Vision, voice-to-listing)
 2. ✅ **Photo enhancement** (background removal, corrections)
 3. ✅ **Pricing intelligence** (real-time sold data)
@@ -2592,16 +2754,19 @@ Add-ons: ~$5,000/month (shipping, background removal)
 ### Target Markets
 
 **Primary**:
+
 - Individual resellers (Poshmark, Mercari, Vinted users)
 - Age: 25-45, predominantly female (70%+)
 - Income: Side hustle ($500-3k/month) or full-time ($5k+/month)
 
 **Secondary**:
+
 - Small boutiques (5-50 items/week)
 - Thrift store resellers (vintage, collectibles)
 - Liquidation buyers (pallets, returns)
 
 **Tertiary**:
+
 - Students (decluttering, extra income)
 - Parents (children's clothing resale)
 - Eco-conscious sellers (sustainability angle)
@@ -2609,21 +2774,25 @@ Add-ons: ~$5,000/month (shipping, background removal)
 ### Marketing Strategy
 
 **Content Marketing**:
+
 - YouTube: "How to list 100 items in 1 hour with QuickList AI"
 - Blog: "Reseller profit calculator: How much are you really making?"
 - Instagram: Before/after photo transformations
 
 **Community Building**:
+
 - Facebook group: "QuickList AI Resellers Community"
 - Discord server: Tips, support, feature requests
 - User success stories (testimonials)
 
 **Partnerships**:
+
 - Reseller influencers (YouTube: Alli Schultz, Becky Park)
 - Reseller conferences (Reseller Summit, PoshFest)
 - Thrift store partnerships (bulk sourcing deals)
 
 **Paid Advertising**:
+
 - Facebook/Instagram ads (target Poshmark/Mercari sellers)
 - Google Ads ("listing tool for resellers")
 - YouTube pre-roll (reseller how-to videos)
@@ -2683,23 +2852,28 @@ Add-ons: ~$5,000/month (shipping, background removal)
 ### Risks & Mitigations
 
 **Risk 1: Marketplace API Restrictions**
+
 - Mitigation: Focus on "export" features (user manually posts)
 - Mitigation: Build for platforms with APIs (eBay, Shopify)
 
 **Risk 2: Web Scraping Blocked**
+
 - Mitigation: Use residential proxies (Bright Data)
 - Mitigation: Fall back to user-input pricing
 
 **Risk 3: AI Accuracy Issues**
+
 - Mitigation: Always allow user editing
 - Mitigation: Improve prompts iteratively with user feedback
 
 **Risk 4: High API Costs**
+
 - Mitigation: Cache aggressively (Redis)
 - Mitigation: Self-host models where possible (background removal)
 - Mitigation: Pass some costs to users (premium tiers)
 
 **Risk 5: Competitor Copy Features**
+
 - Mitigation: Move fast (ship features monthly)
 - Mitigation: Focus on AI quality (prompt engineering moat)
 - Mitigation: Build community (network effects)
@@ -2742,4 +2916,4 @@ Add-ons: ~$5,000/month (shipping, background removal)
 
 ---
 
-*This report is based on competitive research, market analysis, and feature recommendations for QuickList AI. All pricing and feature details are accurate as of January 2025 (knowledge cutoff) and should be verified before implementation.*
+_This report is based on competitive research, market analysis, and feature recommendations for QuickList AI. All pricing and feature details are accurate as of January 2025 (knowledge cutoff) and should be verified before implementation._

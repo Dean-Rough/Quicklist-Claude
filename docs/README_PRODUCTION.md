@@ -5,11 +5,13 @@
 ### Deploy to Vercel
 
 1. **Install Vercel CLI** (optional):
+
    ```bash
    npm i -g vercel
    ```
 
 2. **Deploy**:
+
    ```bash
    cd Quicklist-Claude
    vercel
@@ -38,6 +40,7 @@
 See `DEPLOYMENT.md` for complete list.
 
 **Required:**
+
 - `DATABASE_URL`
 - `JWT_SECRET` (32+ chars)
 - `GEMINI_API_KEY`
@@ -64,7 +67,7 @@ See `DEPLOYMENT.md` for complete list.
 ✅ SQL injection protection  
 ✅ XSS protection  
 ✅ CSRF protection ready  
-✅ Security.txt  
+✅ Security.txt
 
 ---
 
@@ -96,4 +99,3 @@ See `DEPLOYMENT.md` for complete list.
 
 **Version**: 1.0.0  
 **Last Updated**: 2025-01-27
-

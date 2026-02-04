@@ -6,4 +6,3 @@ const app = require('../server.js');
 // Export as default for Vercel serverless
 module.exports = app;
 module.exports.default = app;
-

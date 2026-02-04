@@ -40,8 +40,8 @@ async function testUpload() {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AUTH_TOKEN}`
-        }
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+        },
       }
     );
 
@@ -68,14 +68,11 @@ async function testDelete(publicId) {
     // Encode the publicId for URL (slashes need to be encoded)
     const encodedPublicId = encodeURIComponent(publicId);
 
-    const response = await axios.delete(
-      `${API_BASE_URL}/images/${encodedPublicId}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${AUTH_TOKEN}`
-        }
-      }
-    );
+    const response = await axios.delete(`${API_BASE_URL}/images/${encodedPublicId}`, {
+      headers: {
+        Authorization: `Bearer ${AUTH_TOKEN}`,
+      },
+    });
 
     console.log('✓ Delete successful!');
     console.log('Response:', JSON.stringify(response.data, null, 2));
@@ -97,8 +94,8 @@ async function testErrorCases() {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AUTH_TOKEN}`
-        }
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+        },
       }
     );
   } catch (error) {
@@ -114,8 +111,8 @@ async function testErrorCases() {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AUTH_TOKEN}`
-        }
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+        },
       }
     );
   } catch (error) {
@@ -125,14 +122,11 @@ async function testErrorCases() {
   // Test 3c: Unauthorized delete
   console.log('\nTest 3c: Unauthorized delete (wrong user)');
   try {
-    await axios.delete(
-      `${API_BASE_URL}/images/quicklist%2F999%2Ftest`,
-      {
-        headers: {
-          'Authorization': `Bearer ${AUTH_TOKEN}`
-        }
-      }
-    );
+    await axios.delete(`${API_BASE_URL}/images/quicklist%2F999%2Ftest`, {
+      headers: {
+        Authorization: `Bearer ${AUTH_TOKEN}`,
+      },
+    });
   } catch (error) {
     console.log('✓ Expected error:', error.response?.data?.error);
   }
@@ -161,7 +155,7 @@ async function runTests() {
     console.log(`    View at: https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/${publicId}`);
 
     // Wait a bit before deleting
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     await testDelete(publicId);
   }
 
@@ -174,7 +168,7 @@ async function runTests() {
 
 // Run tests if executed directly
 if (require.main === module) {
-  runTests().catch(error => {
+  runTests().catch((error) => {
     console.error('\n❌ Test suite failed:', error.message);
     process.exit(1);
   });

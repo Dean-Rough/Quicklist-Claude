@@ -60,12 +60,14 @@ PORT=4577 npm run dev
 ## 🧪 Testing
 
 ### Test Auth Config Endpoint
+
 ```bash
 curl http://localhost:4577/api/config/auth
 # Should return: {"clerk":{"enabled":true,"publishableKey":"pk_test_..."},...}
 ```
 
 ### Test Authentication Flow
+
 1. Open http://localhost:4577
 2. Click "Sign In / Sign Up"
 3. Click "Sign in with Google"
@@ -75,6 +77,7 @@ curl http://localhost:4577/api/config/auth
 ## 🔧 How It Works
 
 ### Backend Flow
+
 1. Frontend gets Clerk session token
 2. Sends token in `Authorization: Bearer <token>` header
 3. Backend verifies token with Clerk SDK
@@ -83,6 +86,7 @@ curl http://localhost:4577/api/config/auth
 6. Returns user info to frontend
 
 ### Frontend Flow
+
 1. Clerk SDK loads on page load
 2. Checks for existing session
 3. If session exists, gets token and verifies with backend
@@ -92,16 +96,19 @@ curl http://localhost:4577/api/config/auth
 ## 🐛 Troubleshooting
 
 ### Clerk Not Initializing
+
 - Check browser console for errors
 - Verify `CLERK_PUBLISHABLE_KEY` is set correctly in your `.env` file
 - Check that Clerk SDK loaded: `window.clerk` should exist
 
 ### Authentication Failing
+
 - Check server logs for Clerk errors
 - Verify `CLERK_SECRET_KEY` is correct
 - Test token verification manually
 
 ### Database Sync Issues
+
 - Ensure `clerk_id` column exists in users table
 - Check database logs for constraint violations
 - Verify user email is unique

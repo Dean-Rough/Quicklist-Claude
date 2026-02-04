@@ -24,11 +24,13 @@ After a full scan of the UI/UX, several critical inconsistencies and usability i
 ### 1. **Inconsistent User Feedback**
 
 **Problem:** The app uses THREE different feedback mechanisms inconsistently:
+
 - `alert()` - Blocking, jarring, used in 10+ places
 - `showToast()` - Non-blocking, but only accepts one parameter (message)
 - No feedback at all - Silent failures
 
 **Examples:**
+
 ```javascript
 // Line 3340: Uses alert()
 alert('Please enter email and password');
@@ -40,12 +42,14 @@ this.showToast('Listing saved!');
 this.showToast('Draft saved! Your images and settings have been saved.', 'success');
 ```
 
-**Impact:** 
+**Impact:**
+
 - Poor UX - blocking alerts interrupt workflow
 - Inconsistent experience - users don't know what to expect
 - `showToast()` doesn't support types (success/error/info) but code tries to use them
 
 **Fix Required:**
+
 - Standardize on `showToast()` for all feedback
 - Add type support (success, error, info, warning)
 - Remove all `alert()` calls
@@ -56,6 +60,7 @@ this.showToast('Draft saved! Your images and settings have been saved.', 'succes
 ### 2. **Broken Draft Loading**
 
 **Problem:** Draft loading happens in `init()` but:
+
 - Images can't be restored (only count is saved)
 - Platform/hint restore happens BEFORE DOM is ready
 - No visual indication that draft was loaded
@@ -64,22 +69,28 @@ this.showToast('Draft saved! Your images and settings have been saved.', 'succes
 **Code Location:** Lines 2140-2174
 
 **Issues:**
+
 ```javascript
 // Line 1653: Called in init() - DOM might not be ready
 this.loadDraft();
 
 // Line 2166: Shows notification even if imageCount is 0
 if (draft.imageCount > 0) {
-    this.showToast(`Draft restored: ${draft.imageCount} image(s) were saved. Upload images to continue.`, 'info');
+  this.showToast(
+    `Draft restored: ${draft.imageCount} image(s) were saved. Upload images to continue.`,
+    'info'
+  );
 }
 ```
 
 **Impact:**
+
 - Confusing user experience
 - Draft restoration doesn't actually restore images
 - Notification appears even when nothing was restored
 
 **Fix Required:**
+
 - Move draft loading to after DOM ready
 - Actually restore images (convert base64 back to File objects)
 - Only show notification if draft actually restored something useful
@@ -97,12 +108,14 @@ if (draft.imageCount > 0) {
 4. Manual `classList.add('hidden')` everywhere
 
 **Issues:**
+
 - No single source of truth
 - State can get out of sync
 - Views can be shown simultaneously
 - No proper cleanup when switching views
 
 **Example:**
+
 ```javascript
 // Line 3306: navigateToApp() hides views manually
 document.getElementById('newItemView').classList.add('hidden');
@@ -113,11 +126,13 @@ document.getElementById('settingsView').classList.add('hidden');
 ```
 
 **Impact:**
+
 - UI can show multiple views at once
 - State leaks between views
 - Hard to debug navigation issues
 
 **Fix Required:**
+
 - Create unified view state manager
 - Ensure all states are reset when switching views
 - Add view transition animations
@@ -136,6 +151,7 @@ document.getElementById('settingsView').classList.add('hidden');
 - Image processing errors - silent failures
 
 **Examples:**
+
 ```javascript
 // Line 1808: Error processing image - only toast, no retry
 this.showToast(`Failed to process ${file.name}`);
@@ -148,11 +164,13 @@ alert('Failed to save listing. Please try again.');
 ```
 
 **Impact:**
+
 - Users don't know what went wrong
 - No recovery path
 - Poor error experience
 
 **Fix Required:**
+
 - Add error state components
 - Provide retry mechanisms
 - Show helpful error messages
@@ -172,24 +190,27 @@ alert('Failed to save listing. Please try again.');
 - Form inputs lack proper labels
 
 **Examples:**
+
 ```html
 <!-- Line 984: Button with no accessible label -->
 <button class="user-profile-btn" onclick="app.signOut()">U</button>
 
 <!-- Line 1388: Input without proper label association -->
-<input type="text" class="form-input" id="outputTitle" maxlength="80">
+<input type="text" class="form-input" id="outputTitle" maxlength="80" />
 
 <!-- Line 1364: Cancel button hidden by default, no keyboard access -->
-<button id="cancelGenerationBtn" style="display: none;">
+<button id="cancelGenerationBtn" style="display: none;"></button>
 ```
 
 **Impact:**
+
 - Not accessible to screen readers
 - Keyboard users can't navigate
 - WCAG compliance failure
 - Legal risk
 
 **Fix Required:**
+
 - Add ARIA labels to all interactive elements
 - Implement keyboard navigation
 - Fix color contrast (minimum 4.5:1)
@@ -213,21 +234,23 @@ alert('Failed to save listing. Please try again.');
 **Code Location:** Lines 1275-1513
 
 **Issues:**
+
 ```css
 /* Line 1275: app-layout uses grid, but no mobile breakpoint */
 .app-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
 }
 
 /* Line 417: Image grid creates tiny thumbnails on mobile */
 .image-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
 }
 ```
 
 **Fix Required:**
+
 - Add mobile breakpoints (max-width: 768px)
 - Stack columns on mobile
 - Increase touch target sizes (min 44x44px)
@@ -246,23 +269,26 @@ alert('Failed to save listing. Please try again.');
 - Some buttons use `<a>` tags, others use `<button>`
 
 **Examples:**
+
 ```html
 <!-- Line 1312: Standard button -->
 <button class="btn btn-primary" id="generateBtn">
-
-<!-- Line 1377: Small button -->
-<button class="btn btn-secondary btn-small" onclick="app.saveListing()">
-
-<!-- Line 965: Link styled as button -->
-<a class="nav-link" onclick="app.navigateTo('photoTips')">
+  <!-- Line 1377: Small button -->
+  <button class="btn btn-secondary btn-small" onclick="app.saveListing()">
+    <!-- Line 965: Link styled as button -->
+    <a class="nav-link" onclick="app.navigateTo('photoTips')"></a>
+  </button>
+</button>
 ```
 
 **Impact:**
+
 - Inconsistent visual design
 - Hard to maintain
 - Confusing for users
 
 **Fix Required:**
+
 - Standardize button component
 - Remove inline style overrides
 - Use semantic HTML (`<button>` for actions, `<a>` for navigation)
@@ -282,15 +308,17 @@ alert('Failed to save listing. Please try again.');
 **Code Location:** Lines 2125-2155
 
 **Issues:**
+
 ```javascript
 // Line 2131: Timeouts stored but not always cleared
 if (this.state.progressTimeouts) {
-    this.state.progressTimeouts.forEach(timeout => clearTimeout(timeout));
+  this.state.progressTimeouts.forEach((timeout) => clearTimeout(timeout));
 }
 // But what if navigateToApp() is called during generation?
 ```
 
 **Fix Required:**
+
 - Always clear timeouts on view change
 - Add loading state cleanup function
 - Ensure cancel button always appears
@@ -309,6 +337,7 @@ if (this.state.progressTimeouts) {
 - Platform selection can be empty
 
 **Examples:**
+
 ```javascript
 // Line 3345: Validation only on submit
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -322,6 +351,7 @@ if (!emailRegex.test(email)) {
 ```
 
 **Fix Required:**
+
 - Add real-time validation
 - Show validation errors inline
 - Prevent form submission with errors
@@ -338,11 +368,13 @@ if (!emailRegex.test(email)) {
 - Vinted autofill (line 1507) - hidden, users don't know it exists
 
 **Impact:**
+
 - Users don't discover features
 - Confusing when features appear/disappear
 - No onboarding for platform-specific features
 
 **Fix Required:**
+
 - Add tooltips explaining platform features
 - Show feature availability in platform selector
 - Add onboarding hints
@@ -362,6 +394,7 @@ if (!emailRegex.test(email)) {
 - No call-to-action
 
 **Fix Required:**
+
 - Add illustrations or animations
 - Provide helpful suggestions
 - Add example content
@@ -379,6 +412,7 @@ if (!emailRegex.test(email)) {
 - No edit history
 
 **Fix Required:**
+
 - Add undo/redo for edits
 - Add confirmation for destructive actions
 - Implement edit history
@@ -396,6 +430,7 @@ if (!emailRegex.test(email)) {
 - No export/import settings
 
 **Fix Required:**
+
 - Add user profile section
 - Add default platform preference
 - Add default hint templates
@@ -413,6 +448,7 @@ if (!emailRegex.test(email)) {
 - No Enter to submit forms
 
 **Fix Required:**
+
 - Add keyboard shortcut system
 - Show shortcuts in tooltips
 - Add keyboard shortcut help modal
@@ -431,6 +467,7 @@ if (!emailRegex.test(email)) {
 - Blur detection is fake
 
 **Fix Required:**
+
 - Add drag-to-reorder
 - Add "Set as Primary" button
 - Add image preview modal
@@ -442,12 +479,14 @@ if (!emailRegex.test(email)) {
 ## 📊 Summary Statistics
 
 ### Issues by Category:
+
 - **Critical (P0):** 5 issues
-- **High Priority (P1):** 5 issues  
+- **High Priority (P1):** 5 issues
 - **Medium Priority (P2):** 5 issues
 - **Total:** 15 major issues
 
 ### Issues by Type:
+
 - **User Feedback:** 3 issues
 - **State Management:** 2 issues
 - **Accessibility:** 1 issue
@@ -458,6 +497,7 @@ if (!emailRegex.test(email)) {
 - **UX Polish:** 5 issues
 
 ### Code Quality Issues:
+
 - **Inconsistent patterns:** 8 instances
 - **Missing error handling:** 12 instances
 - **Accessibility violations:** 15+ instances
@@ -468,6 +508,7 @@ if (!emailRegex.test(email)) {
 ## 🎯 Recommended Fix Priority
 
 ### Week 1 (Critical):
+
 1. ✅ Fix `showToast()` to support types
 2. ✅ Remove all `alert()` calls
 3. ✅ Fix draft loading logic
@@ -475,6 +516,7 @@ if (!emailRegex.test(email)) {
 5. ✅ Fix view state management
 
 ### Week 2 (High Priority):
+
 6. ✅ Add mobile responsiveness
 7. ✅ Standardize button styles
 8. ✅ Fix loading state cleanup
@@ -482,6 +524,7 @@ if (!emailRegex.test(email)) {
 10. ✅ Improve platform feature discovery
 
 ### Week 3+ (Polish):
+
 11. ✅ Enhance empty states
 12. ✅ Add undo/redo
 13. ✅ Expand settings
@@ -512,4 +555,3 @@ if (!emailRegex.test(email)) {
 ---
 
 **End of Audit**
-

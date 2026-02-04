@@ -102,7 +102,8 @@ LOG_LEVEL=info
 PORT=3000
 ```
 
-**Important**: 
+**Important**:
+
 - Set all variables for **Production** environment
 - Use **live** Stripe keys (not test keys)
 - Set `EBAY_SANDBOX=false` for production
@@ -123,11 +124,13 @@ After first deployment:
 ## Step 5: Verify Deployment
 
 ### Health Check
+
 ```bash
 curl https://your-app.vercel.app/api/health
 ```
 
 Expected response:
+
 ```json
 {
   "status": "ok",
@@ -141,6 +144,7 @@ Expected response:
 ```
 
 ### Test Authentication
+
 1. Visit: `https://your-app.vercel.app`
 2. Sign up with test account
 3. Verify JWT token received
@@ -179,11 +183,11 @@ Add authentication to `/api/init-db` endpoint:
 
 ```javascript
 app.get('/api/init-db', authenticateToken, async (req, res) => {
-    // Only allow admin users
-    if (req.user.email !== 'admin@quicklist.ai') {
-        return res.status(403).json({ error: 'Forbidden' });
-    }
-    // ... rest of code
+  // Only allow admin users
+  if (req.user.email !== 'admin@quicklist.ai') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  // ... rest of code
 });
 ```
 
@@ -196,6 +200,7 @@ app.get('/api/init-db', authenticateToken, async (req, res) => {
 ### Database Backups
 
 Configure automated backups:
+
 - Neon: Automatic backups enabled
 - Or use pg_dump cron job
 
@@ -205,7 +210,8 @@ Configure automated backups:
 
 ### Issue: Database Connection Failed
 
-**Solution**: 
+**Solution**:
+
 - Verify `DATABASE_URL` is correct
 - Check SSL mode (`?sslmode=require`)
 - Ensure database allows Vercel IPs
@@ -213,12 +219,14 @@ Configure automated backups:
 ### Issue: CORS Errors
 
 **Solution**:
+
 - Verify `FRONTEND_URL` matches your domain
 - Check CORS configuration in `server.js`
 
 ### Issue: API Routes Not Working
 
 **Solution**:
+
 - Verify `vercel.json` configuration
 - Check route rewrites
 - Ensure `api/server.js` exists
@@ -226,6 +234,7 @@ Configure automated backups:
 ### Issue: Static Files Not Loading
 
 **Solution**:
+
 - Verify `express.static('.')` configuration
 - Check file paths are correct
 - Verify build output
@@ -235,6 +244,7 @@ Configure automated backups:
 ## Environment-Specific Configuration
 
 ### Development
+
 ```env
 NODE_ENV=development
 FRONTEND_URL=http://localhost:4577
@@ -242,6 +252,7 @@ LOG_LEVEL=debug
 ```
 
 ### Production
+
 ```env
 NODE_ENV=production
 FRONTEND_URL=https://quicklist.ai
@@ -266,6 +277,7 @@ If deployment fails:
 ### Vercel Edge Functions (Future)
 
 Consider migrating API routes to Edge Functions for:
+
 - Faster response times
 - Lower latency globally
 - Better scalability
@@ -273,6 +285,7 @@ Consider migrating API routes to Edge Functions for:
 ### CDN Configuration
 
 Vercel automatically provides:
+
 - Global CDN for static assets
 - Automatic compression
 - HTTP/2 support
@@ -283,6 +296,7 @@ Vercel automatically provides:
 ## Security Hardening
 
 ✅ **Completed**:
+
 - Helmet.js security headers
 - CORS restrictions
 - Rate limiting
@@ -291,6 +305,7 @@ Vercel automatically provides:
 - XSS protection headers
 
 **Additional Recommendations**:
+
 - Enable Vercel DDoS protection
 - Configure WAF rules
 - Set up IP allowlisting for admin endpoints
@@ -301,6 +316,7 @@ Vercel automatically provides:
 ## Support
 
 For deployment issues:
+
 - Check Vercel logs: Dashboard → Logs
 - Review error messages in browser console
 - Verify environment variables
@@ -309,4 +325,3 @@ For deployment issues:
 ---
 
 **Last Updated**: 2025-01-27
-

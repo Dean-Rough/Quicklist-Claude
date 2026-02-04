@@ -5,6 +5,7 @@ Ready-to-use content for launching Quicklist on social media.
 ## Twitter/X
 
 ### Launch Tweet
+
 ```
 📸 Turn your clutter into cash in 60 seconds
 
@@ -18,6 +19,7 @@ Try free: quicklist.it.com
 ```
 
 ### Thread (5 tweets)
+
 ```
 🧵 I built an AI that writes marketplace listings from photos. Here's how it works:
 
@@ -37,6 +39,7 @@ Try free: quicklist.it.com
 ```
 
 ### Feature Highlight Tweets
+
 ```
 🏷️ Ever spent 20 minutes trying to identify a clothing item? QuickList reads the tags for you - style codes, model numbers, everything. Just snap a photo.
 
@@ -58,6 +61,7 @@ quicklist.it.com
 ## Instagram
 
 ### Bio
+
 ```
 📸 Photo → 💰 Listing
 AI-powered marketplace listings for Vinted, eBay & Gumtree
@@ -66,6 +70,7 @@ quicklist.it.com
 ```
 
 ### Launch Post
+
 ```
 Say goodbye to hours writing listings! 👋
 
@@ -88,6 +93,7 @@ Try it FREE - link in bio 🔗
 ```
 
 ### Carousel Ideas
+
 1. Before/After: Messy pile → Organised listings
 2. Step by step: Photo → Upload → AI generates → Download
 3. Features breakdown: Each slide highlights one feature
@@ -98,6 +104,7 @@ Try it FREE - link in bio 🔗
 ### Script Ideas
 
 **Script 1: "The Pile of Shame"**
+
 ```
 [Show pile of clothes]
 This pile has been sitting here for 6 months because listing things is boring.
@@ -118,11 +125,12 @@ Link in bio if you want to try it free.
 ```
 
 **Script 2: "AI Side Hustle"**
+
 ```
 How I make an extra £300/month selling clothes with AI
 
 Step 1: Take photos of items you want to sell
-Step 2: Upload to QuickList AI  
+Step 2: Upload to QuickList AI
 Step 3: It identifies the item and writes the listing
 Step 4: Download and post to Vinted/eBay
 Step 5: Profit
@@ -135,6 +143,7 @@ Try it free - link in bio.
 ## Reddit
 
 ### r/reselling Post
+
 ```
 [Tool] Built an AI that writes marketplace listings from photos - free tier available
 
@@ -161,6 +170,7 @@ Not trying to spam - genuinely built this to solve my own problem and figured ot
 ```
 
 ### r/Vinted Post
+
 ```
 [Tool] AI that identifies items and writes Vinted listings - anyone tried this?
 
@@ -181,6 +191,7 @@ quicklist.it.com
 ## Facebook Groups
 
 ### Vinted Sellers UK
+
 ```
 🇬🇧 UK Sellers: Found this AI tool that writes listings for you
 
@@ -198,6 +209,7 @@ Has anyone else tried it? quicklist.it.com
 ## LinkedIn
 
 ### Launch Post
+
 ```
 Excited to share what I've been building 🚀
 
@@ -223,21 +235,25 @@ Try it free: quicklist.it.com
 ## Hashtag Banks
 
 ### General Reselling
+
 ```
 #reselling #reseller #resellerlife #reselleruk #ebayseller #vintedseller #poshmarkseller #depopseller #sidehustle #sideincome #passiveincome #makemoneyonline #workfromhome
 ```
 
 ### Sustainability
+
 ```
 #sustainablefashion #secondhand #secondhandfashion #thrift #thriftflip #circularfashion #slowfashion #preloved #prelovedclothing #zerowaste #ecofriendly
 ```
 
 ### UK Specific
+
 ```
 #ukreseller #ukseller #vinteduks #ebayuk #gumtree #carboot #carbootsale #depopuk #sellingonline
 ```
 
 ### AI/Tech
+
 ```
 #aitools #artificialintelligence #techstartup #saas #automation #productivityhack #efficiency #digitaltools
 ```
@@ -247,6 +263,7 @@ Try it free: quicklist.it.com
 ## Content Calendar Suggestions
 
 ### Week 1: Launch
+
 - Day 1: Launch announcement (all platforms)
 - Day 2: Feature deep-dive (photo identification)
 - Day 3: User benefit (time saved)
@@ -254,18 +271,21 @@ Try it free: quicklist.it.com
 - Day 5: Testimonial/early feedback
 
 ### Week 2: Education
+
 - "How to take photos that sell" tips
 - Price research strategies
 - Platform comparison (Vinted vs eBay vs Gumtree)
 - Common listing mistakes
 
 ### Week 3: Engagement
+
 - Before/after transformations
 - User success stories
 - Q&A / AMA
 - Poll: What's your biggest listing challenge?
 
 ### Week 4: Growth
+
 - Referral program (if applicable)
 - Feature updates
 - Community highlights
@@ -273,4 +293,4 @@ Try it free: quicklist.it.com
 
 ---
 
-*Prepared by Terry • February 2026*
+_Prepared by Terry • February 2026_

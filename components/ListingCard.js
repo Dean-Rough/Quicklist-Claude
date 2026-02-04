@@ -17,7 +17,7 @@ class ListingCard {
       showActions: true,
       showPlatformStatuses: true,
       compact: false,
-      ...options
+      ...options,
     };
   }
 
@@ -91,17 +91,21 @@ class ListingCard {
    */
   renderPlatformBadges() {
     const statuses = this.listing.platform_statuses || [];
-    const posted = statuses.filter(s => s.status === 'posted');
+    const posted = statuses.filter((s) => s.status === 'posted');
 
     if (posted.length === 0) return '';
 
     return `
       <div class="platform-badges">
-        ${posted.map(s => `
+        ${posted
+          .map(
+            (s) => `
           <span class="badge badge-${s.platform}" title="${s.platform} - ${s.views || 0} views">
             ${this.getPlatformIcon(s.platform)}
           </span>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
     `;
   }
@@ -149,18 +153,23 @@ class ListingCard {
    * Render card metadata (price, brand, condition)
    */
   renderMeta() {
-    const savings = this.listing.rrp && this.listing.rrp > this.listing.price
-      ? Math.round(((this.listing.rrp - this.listing.price) / this.listing.rrp) * 100)
-      : null;
+    const savings =
+      this.listing.rrp && this.listing.rrp > this.listing.price
+        ? Math.round(((this.listing.rrp - this.listing.price) / this.listing.rrp) * 100)
+        : null;
 
     return `
       <div class="card-meta">
         <div class="card-price-group">
           <span class="card-price">£${this.listing.price}</span>
-          ${this.listing.rrp ? `
+          ${
+            this.listing.rrp
+              ? `
             <span class="card-rrp">RRP £${this.listing.rrp}</span>
             ${savings ? `<span class="card-savings">-${savings}%</span>` : ''}
-          ` : ''}
+          `
+              : ''
+          }
         </div>
         <div class="card-info">
           <span class="card-brand">${this.escapeHtml(this.listing.brand || 'Unknown')}</span>
@@ -179,10 +188,12 @@ class ListingCard {
 
     return `
       <div class="card-platforms">
-        ${platforms.map(platform => {
-          const status = statuses.find(s => s.platform === platform);
-          return this.renderPlatformStatus(platform, status);
-        }).join('')}
+        ${platforms
+          .map((platform) => {
+            const status = statuses.find((s) => s.platform === platform);
+            return this.renderPlatformStatus(platform, status);
+          })
+          .join('')}
       </div>
     `;
   }
@@ -206,12 +217,16 @@ class ListingCard {
           <span class="platform-name">${this.capitalize(platform)}</span>
           <span class="status-label status-label-${state}">${label}</span>
         </div>
-        ${views > 0 || watchers > 0 ? `
+        ${
+          views > 0 || watchers > 0
+            ? `
           <div class="platform-stats">
             ${views > 0 ? `<span class="stat-views" title="Views">👁️ ${views}</span>` : ''}
             ${watchers > 0 ? `<span class="stat-watchers" title="Watchers">⭐ ${watchers}</span>` : ''}
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     `;
   }
@@ -220,22 +235,26 @@ class ListingCard {
    * Render action buttons
    */
   renderActions() {
-    const hasPosted = (this.listing.platform_statuses || []).some(s => s.status === 'posted');
+    const hasPosted = (this.listing.platform_statuses || []).some((s) => s.status === 'posted');
 
     return `
       <div class="card-actions">
         <button class="btn-secondary btn-sm" data-action="edit" data-listing-id="${this.listing.id}">
           ✏️ Edit
         </button>
-        ${hasPosted ? `
+        ${
+          hasPosted
+            ? `
           <button class="btn-secondary btn-sm" data-action="view-posts" data-listing-id="${this.listing.id}">
             👁️ View Posts
           </button>
-        ` : `
+        `
+            : `
           <button class="btn-primary btn-sm" data-action="post" data-listing-id="${this.listing.id}">
             📤 Post to Platforms
           </button>
-        `}
+        `
+        }
         <button class="btn-icon btn-sm" data-action="more" data-listing-id="${this.listing.id}">
           ⋯
         </button>
@@ -250,8 +269,8 @@ class ListingCard {
     try {
       const response = await fetch(`/api/listings/${this.listing.id}/platform-status`, {
         headers: {
-          'Authorization': `Bearer ${window.app?.authToken || localStorage.getItem('auth_token')}`
-        }
+          Authorization: `Bearer ${window.app?.authToken || localStorage.getItem('auth_token')}`,
+        },
       });
 
       if (response.ok) {
@@ -271,7 +290,7 @@ class ListingCard {
       ebay: '🏷️',
       vinted: '👕',
       depop: '✨',
-      facebook: '👤'
+      facebook: '👤',
     };
     return icons[platform] || '📱';
   }
@@ -284,7 +303,7 @@ class ListingCard {
       draft: 'Not Posted',
       posted: 'Live',
       sold: 'Sold',
-      delisted: 'Delisted'
+      delisted: 'Delisted',
     };
     return labels[status] || 'Unknown';
   }
@@ -351,7 +370,7 @@ class ListingCard {
     });
 
     // Platform status clicks
-    card.querySelectorAll('.platform-status').forEach(status => {
+    card.querySelectorAll('.platform-status').forEach((status) => {
       status.addEventListener('click', (e) => {
         e.stopPropagation();
         const platform = status.dataset.platform;
@@ -386,7 +405,7 @@ class ListingCard {
    */
   handleViewPosts() {
     const statuses = this.listing.platform_statuses || [];
-    const posted = statuses.filter(s => s.status === 'posted' && s.platform_url);
+    const posted = statuses.filter((s) => s.status === 'posted' && s.platform_url);
 
     if (posted.length === 0) {
       this.showToast('No active posts found', 'info');
@@ -404,7 +423,9 @@ class ListingCard {
         </div>
         <div class="modal-body">
           <div class="post-links">
-            ${posted.map(p => `
+            ${posted
+              .map(
+                (p) => `
               <a href="${p.platform_url}" target="_blank" class="post-link">
                 <span class="post-link-icon">${this.getPlatformIcon(p.platform)}</span>
                 <span class="post-link-platform">${this.capitalize(p.platform)}</span>
@@ -414,7 +435,9 @@ class ListingCard {
                 </span>
                 <span class="post-link-arrow">→</span>
               </a>
-            `).join('')}
+            `
+              )
+              .join('')}
           </div>
         </div>
       </div>
@@ -452,7 +475,7 @@ class ListingCard {
     menu.style.left = `${rect.left}px`;
 
     // Handle menu actions
-    menu.querySelectorAll('button').forEach(btn => {
+    menu.querySelectorAll('button').forEach((btn) => {
       btn.addEventListener('click', () => {
         const action = btn.dataset.action;
         this.handleContextAction(action);
@@ -506,8 +529,9 @@ class ListingCard {
   handlePlatformClick(platform, status) {
     if (status === 'posted') {
       // Find platform URL and open it
-      const platformStatus = (this.listing.platform_statuses || [])
-        .find(s => s.platform === platform);
+      const platformStatus = (this.listing.platform_statuses || []).find(
+        (s) => s.platform === platform
+      );
 
       if (platformStatus?.platform_url) {
         window.open(platformStatus.platform_url, '_blank');
@@ -606,7 +630,7 @@ class ListingGrid {
     this.options = {
       emptyMessage: 'No listings yet',
       showLoadMore: false,
-      ...options
+      ...options,
     };
   }
 
@@ -617,8 +641,8 @@ class ListingGrid {
     try {
       const response = await fetch('/api/listings-with-platforms', {
         headers: {
-          'Authorization': `Bearer ${window.app?.authToken || localStorage.getItem('auth_token')}`
-        }
+          Authorization: `Bearer ${window.app?.authToken || localStorage.getItem('auth_token')}`,
+        },
       });
 
       if (!response.ok) {

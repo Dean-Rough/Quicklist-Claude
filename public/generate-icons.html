@@ -1,205 +1,205 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PWA Icon Generator</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f3f4f6;
-            padding: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f3f4f6;
+        padding: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
 
-        .icon-container {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
+      .icon-container {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
 
-        canvas {
-            border-radius: 20%;
-            display: block;
-            margin: 10px auto;
-            cursor: pointer;
-        }
+      canvas {
+        border-radius: 20%;
+        display: block;
+        margin: 10px auto;
+        cursor: pointer;
+      }
 
-        button {
-            background: #6366f1;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin: 5px;
-        }
+      button {
+        background: #6366f1;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin: 5px;
+      }
 
-        button:hover {
-            background: #4f46e5;
-        }
+      button:hover {
+        background: #4f46e5;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="icon-container">
-        <h2>QuickList AI Icons</h2>
-        <p>Click each icon to download it</p>
+      <h2>QuickList AI Icons</h2>
+      <p>Click each icon to download it</p>
     </div>
 
     <script>
-        // Icon sizes to generate
-        const sizes = [16, 32, 72, 96, 128, 144, 152, 192, 384, 512];
+      // Icon sizes to generate
+      const sizes = [16, 32, 72, 96, 128, 144, 152, 192, 384, 512];
 
-        // Generate icon for each size
-        sizes.forEach(size => {
-            const container = document.createElement('div');
-            container.className = 'icon-container';
+      // Generate icon for each size
+      sizes.forEach((size) => {
+        const container = document.createElement('div');
+        container.className = 'icon-container';
 
-            const canvas = document.createElement('canvas');
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext('2d');
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
 
-            // Create gradient background
-            const gradient = ctx.createLinearGradient(0, 0, size, size);
-            gradient.addColorStop(0, '#6366f1');
-            gradient.addColorStop(1, '#4f46e5');
+        // Create gradient background
+        const gradient = ctx.createLinearGradient(0, 0, size, size);
+        gradient.addColorStop(0, '#6366f1');
+        gradient.addColorStop(1, '#4f46e5');
 
-            // Draw rounded square
-            const radius = size * 0.2;
-            ctx.beginPath();
-            ctx.moveTo(radius, 0);
-            ctx.lineTo(size - radius, 0);
-            ctx.quadraticCurveTo(size, 0, size, radius);
-            ctx.lineTo(size, size - radius);
-            ctx.quadraticCurveTo(size, size, size - radius, size);
-            ctx.lineTo(radius, size);
-            ctx.quadraticCurveTo(0, size, 0, size - radius);
-            ctx.lineTo(0, radius);
-            ctx.quadraticCurveTo(0, 0, radius, 0);
-            ctx.fillStyle = gradient;
-            ctx.fill();
+        // Draw rounded square
+        const radius = size * 0.2;
+        ctx.beginPath();
+        ctx.moveTo(radius, 0);
+        ctx.lineTo(size - radius, 0);
+        ctx.quadraticCurveTo(size, 0, size, radius);
+        ctx.lineTo(size, size - radius);
+        ctx.quadraticCurveTo(size, size, size - radius, size);
+        ctx.lineTo(radius, size);
+        ctx.quadraticCurveTo(0, size, 0, size - radius);
+        ctx.lineTo(0, radius);
+        ctx.quadraticCurveTo(0, 0, radius, 0);
+        ctx.fillStyle = gradient;
+        ctx.fill();
 
-            // Draw "Q" letter
-            ctx.fillStyle = 'white';
-            ctx.font = `bold ${size * 0.5}px 'Outfit', sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('Q', size / 2, size / 2);
+        // Draw "Q" letter
+        ctx.fillStyle = 'white';
+        ctx.font = `bold ${size * 0.5}px 'Outfit', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Q', size / 2, size / 2);
 
-            // Add canvas to container
-            container.appendChild(canvas);
+        // Add canvas to container
+        container.appendChild(canvas);
 
-            // Add label
-            const label = document.createElement('p');
-            label.textContent = `icon-${size}.png`;
-            label.style.margin = '5px 0';
-            label.style.fontSize = '12px';
-            label.style.color = '#6b7280';
-            container.appendChild(label);
+        // Add label
+        const label = document.createElement('p');
+        label.textContent = `icon-${size}.png`;
+        label.style.margin = '5px 0';
+        label.style.fontSize = '12px';
+        label.style.color = '#6b7280';
+        container.appendChild(label);
 
-            // Add download functionality
-            canvas.addEventListener('click', () => {
-                canvas.toBlob(blob => {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `icon-${size}.png`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                });
-            });
-
-            document.body.appendChild(container);
+        // Add download functionality
+        canvas.addEventListener('click', () => {
+          canvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `icon-${size}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+          });
         });
 
-        // Generate special icons
-        const specialIcons = [
-            { name: 'scan-96', symbol: '📷', size: 96 },
-            { name: 'list-96', symbol: '📋', size: 96 },
-            { name: 'dashboard-96', symbol: '📊', size: 96 },
-            { name: 'badge-72', symbol: 'Q', size: 72 }
-        ];
+        document.body.appendChild(container);
+      });
 
-        specialIcons.forEach(icon => {
-            const container = document.createElement('div');
-            container.className = 'icon-container';
+      // Generate special icons
+      const specialIcons = [
+        { name: 'scan-96', symbol: '📷', size: 96 },
+        { name: 'list-96', symbol: '📋', size: 96 },
+        { name: 'dashboard-96', symbol: '📊', size: 96 },
+        { name: 'badge-72', symbol: 'Q', size: 72 },
+      ];
 
-            const canvas = document.createElement('canvas');
-            canvas.width = icon.size;
-            canvas.height = icon.size;
-            const ctx = canvas.getContext('2d');
+      specialIcons.forEach((icon) => {
+        const container = document.createElement('div');
+        container.className = 'icon-container';
 
-            // Background
-            if (icon.name.includes('badge')) {
-                // Circular badge
-                ctx.beginPath();
-                ctx.arc(icon.size / 2, icon.size / 2, icon.size / 2, 0, Math.PI * 2);
-                ctx.fillStyle = '#6366f1';
-                ctx.fill();
-            } else {
-                // Rounded square
-                const radius = icon.size * 0.2;
-                ctx.beginPath();
-                ctx.moveTo(radius, 0);
-                ctx.lineTo(icon.size - radius, 0);
-                ctx.quadraticCurveTo(icon.size, 0, icon.size, radius);
-                ctx.lineTo(icon.size, icon.size - radius);
-                ctx.quadraticCurveTo(icon.size, icon.size, icon.size - radius, icon.size);
-                ctx.lineTo(radius, icon.size);
-                ctx.quadraticCurveTo(0, icon.size, 0, icon.size - radius);
-                ctx.lineTo(0, radius);
-                ctx.quadraticCurveTo(0, 0, radius, 0);
-                ctx.fillStyle = '#f3f4f6';
-                ctx.fill();
-            }
+        const canvas = document.createElement('canvas');
+        canvas.width = icon.size;
+        canvas.height = icon.size;
+        const ctx = canvas.getContext('2d');
 
-            // Draw symbol
-            ctx.font = `${icon.size * 0.5}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = icon.name.includes('badge') ? 'white' : '#6366f1';
-            ctx.fillText(icon.symbol, icon.size / 2, icon.size / 2);
+        // Background
+        if (icon.name.includes('badge')) {
+          // Circular badge
+          ctx.beginPath();
+          ctx.arc(icon.size / 2, icon.size / 2, icon.size / 2, 0, Math.PI * 2);
+          ctx.fillStyle = '#6366f1';
+          ctx.fill();
+        } else {
+          // Rounded square
+          const radius = icon.size * 0.2;
+          ctx.beginPath();
+          ctx.moveTo(radius, 0);
+          ctx.lineTo(icon.size - radius, 0);
+          ctx.quadraticCurveTo(icon.size, 0, icon.size, radius);
+          ctx.lineTo(icon.size, icon.size - radius);
+          ctx.quadraticCurveTo(icon.size, icon.size, icon.size - radius, icon.size);
+          ctx.lineTo(radius, icon.size);
+          ctx.quadraticCurveTo(0, icon.size, 0, icon.size - radius);
+          ctx.lineTo(0, radius);
+          ctx.quadraticCurveTo(0, 0, radius, 0);
+          ctx.fillStyle = '#f3f4f6';
+          ctx.fill();
+        }
 
-            container.appendChild(canvas);
+        // Draw symbol
+        ctx.font = `${icon.size * 0.5}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = icon.name.includes('badge') ? 'white' : '#6366f1';
+        ctx.fillText(icon.symbol, icon.size / 2, icon.size / 2);
 
-            const label = document.createElement('p');
-            label.textContent = `${icon.name}.png`;
-            label.style.margin = '5px 0';
-            label.style.fontSize = '12px';
-            label.style.color = '#6b7280';
-            container.appendChild(label);
+        container.appendChild(canvas);
 
-            canvas.addEventListener('click', () => {
-                canvas.toBlob(blob => {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${icon.name}.png`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                });
-            });
+        const label = document.createElement('p');
+        label.textContent = `${icon.name}.png`;
+        label.style.margin = '5px 0';
+        label.style.fontSize = '12px';
+        label.style.color = '#6b7280';
+        container.appendChild(label);
 
-            document.body.appendChild(container);
+        canvas.addEventListener('click', () => {
+          canvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${icon.name}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+          });
         });
 
-        // Download all button
-        const downloadAllBtn = document.createElement('button');
-        downloadAllBtn.textContent = 'Download All Icons';
-        downloadAllBtn.style.position = 'fixed';
-        downloadAllBtn.style.bottom = '20px';
-        downloadAllBtn.style.right = '20px';
-        downloadAllBtn.addEventListener('click', () => {
-            document.querySelectorAll('canvas').forEach(canvas => {
-                canvas.click();
-            });
+        document.body.appendChild(container);
+      });
+
+      // Download all button
+      const downloadAllBtn = document.createElement('button');
+      downloadAllBtn.textContent = 'Download All Icons';
+      downloadAllBtn.style.position = 'fixed';
+      downloadAllBtn.style.bottom = '20px';
+      downloadAllBtn.style.right = '20px';
+      downloadAllBtn.addEventListener('click', () => {
+        document.querySelectorAll('canvas').forEach((canvas) => {
+          canvas.click();
         });
-        document.body.appendChild(downloadAllBtn);
+      });
+      document.body.appendChild(downloadAllBtn);
     </script>
-</body>
+  </body>
 </html>

@@ -1,4 +1,5 @@
 # QuickList AI - Comprehensive Implementation Plan
+
 ## Three-Tier Platform Integration Strategy
 
 **Last Updated:** 2025-01-13
@@ -10,12 +11,15 @@
 ## 🎯 Executive Summary
 
 ### What We're Building
+
 Transform QuickList from a desktop-centric ZIP download tool into a mobile-first cross-posting platform that enables users to:
+
 1. **eBay**: Post directly via API (one-click automation)
 2. **Vinted/Depop/Facebook**: Copy platform-optimized text and open app (Smart Clipboard)
 3. **Desktop**: Auto-fill forms via browser extension
 
 ### What We're Keeping
+
 - ✅ Item recognition algorithm (Google Vision API)
 - ✅ Condition assessment algorithm
 - ✅ Quality scoring system
@@ -23,6 +27,7 @@ Transform QuickList from a desktop-centric ZIP download tool into a mobile-first
 - ✅ Cloudinary image hosting
 
 ### Critical Changes
+
 - ❌ Remove platform selection from upload screen
 - ✅ Generate platform-agnostic listing first
 - ✅ Platform selector AFTER generation (multi-select)
@@ -32,6 +37,7 @@ Transform QuickList from a desktop-centric ZIP download tool into a mobile-first
 ---
 
 ## 📱 Phase 1: MVP (Mobile-First Foundation)
+
 **Timeline:** 2-3 weeks
 **Priority:** Critical
 
@@ -40,6 +46,7 @@ Transform QuickList from a desktop-centric ZIP download tool into a mobile-first
 **Agent:** `database-migration-agent`
 
 #### New Table: `listing_platform_status`
+
 ```sql
 CREATE TABLE listing_platform_status (
   id SERIAL PRIMARY KEY,
@@ -65,6 +72,7 @@ CREATE INDEX idx_listing_platform_name ON listing_platform_status(platform);
 ```
 
 #### Modify Existing Tables
+
 ```sql
 -- Remove platform from listings table (keep for backward compatibility during migration)
 ALTER TABLE listings ADD COLUMN is_platform_agnostic BOOLEAN DEFAULT false;
@@ -77,6 +85,7 @@ ALTER TABLE listings ADD COLUMN target_platforms TEXT[] DEFAULT '{}';
 ```
 
 #### Migration Strategy
+
 ```javascript
 // scripts/migrate_to_platform_agnostic.js
 const migrateListings = async () => {
@@ -85,24 +94,31 @@ const migrateListings = async () => {
   for (const listing of listings) {
     // Create platform status entry for existing platform
     if (listing.platform) {
-      await db.query(`
+      await db.query(
+        `
         INSERT INTO listing_platform_status (listing_id, platform, status)
         VALUES ($1, $2, 'draft')
-      `, [listing.id, listing.platform.toLowerCase()]);
+      `,
+        [listing.id, listing.platform.toLowerCase()]
+      );
     }
 
     // Mark as migrated
-    await db.query(`
+    await db.query(
+      `
       UPDATE listings
       SET is_platform_agnostic = true,
           target_platforms = ARRAY[$1]
       WHERE id = $2
-    `, [listing.platform || 'ebay', listing.id]);
+    `,
+      [listing.platform || 'ebay', listing.id]
+    );
   }
 };
 ```
 
 **Files to Create/Modify:**
+
 - `schema_platform_agnostic.sql` (new migration)
 - `scripts/migrate_to_platform_agnostic.js` (migration script)
 - `server.js` (add new endpoints)
@@ -116,6 +132,7 @@ const migrateListings = async () => {
 #### Core Listing Endpoints (Updated)
 
 **POST `/api/listings/generate`** (Modified)
+
 ```javascript
 // Remove platform parameter, generate universal listing
 app.post('/api/listings/generate', authenticateToken, async (req, res) => {
@@ -156,6 +173,7 @@ app.post('/api/listings/generate', authenticateToken, async (req, res) => {
 #### Platform Optimization Endpoints (NEW)
 
 **GET `/api/listings/:id/platform-variations`**
+
 ```javascript
 // Generate all platform-specific variations
 app.get('/api/listings/:id/platform-variations', authenticateToken, async (req, res) => {
@@ -166,7 +184,7 @@ app.get('/api/listings/:id/platform-variations', authenticateToken, async (req, 
     ebay: await optimizeForEbay(listing),
     vinted: await optimizeForVinted(listing),
     depop: await optimizeForDepop(listing),
-    facebook: await optimizeForFacebook(listing)
+    facebook: await optimizeForFacebook(listing),
   };
 
   res.json(variations);
@@ -174,6 +192,7 @@ app.get('/api/listings/:id/platform-variations', authenticateToken, async (req, 
 ```
 
 **POST `/api/listings/:id/optimize-for-platform`**
+
 ```javascript
 // Optimize single platform on demand
 app.post('/api/listings/:id/optimize-for-platform', authenticateToken, async (req, res) => {
@@ -190,13 +209,15 @@ app.post('/api/listings/:id/optimize-for-platform', authenticateToken, async (re
 #### Platform Status Endpoints (NEW)
 
 **POST `/api/listings/:id/platform-status`**
+
 ```javascript
 // Update platform posting status
 app.post('/api/listings/:id/platform-status', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { platform, status, platformListingId, platformUrl } = req.body;
 
-  await db.query(`
+  await db.query(
+    `
     INSERT INTO listing_platform_status (listing_id, platform, status, platform_listing_id, platform_url, posted_at)
     VALUES ($1, $2, $3, $4, $5, NOW())
     ON CONFLICT (listing_id, platform)
@@ -206,30 +227,37 @@ app.post('/api/listings/:id/platform-status', authenticateToken, async (req, res
       platform_url = EXCLUDED.platform_url,
       posted_at = EXCLUDED.posted_at,
       updated_at = NOW()
-  `, [id, platform, status, platformListingId, platformUrl]);
+  `,
+    [id, platform, status, platformListingId, platformUrl]
+  );
 
   res.json({ success: true });
 });
 ```
 
 **GET `/api/listings/:id/platform-status`**
+
 ```javascript
 // Get all platform statuses for a listing
 app.get('/api/listings/:id/platform-status', authenticateToken, async (req, res) => {
   const { id } = req.params;
 
-  const statuses = await db.query(`
+  const statuses = await db.query(
+    `
     SELECT platform, status, platform_listing_id, platform_url,
            view_count, watcher_count, posted_at, sold_at, sale_price
     FROM listing_platform_status
     WHERE listing_id = $1
-  `, [id]);
+  `,
+    [id]
+  );
 
   res.json(statuses.rows);
 });
 ```
 
 **Files to Modify:**
+
 - `server.js` (add all new endpoints)
 - `utils/platformOptimizers.js` (new file for platform-specific logic)
 
@@ -262,7 +290,7 @@ ${listing.size ? `• Size: ${listing.size}` : ''}
 ${listing.color ? `• Color: ${listing.color}` : ''}
 ${listing.material ? `• Material: ${listing.material}` : ''}
 
-${listing.keywords.map(k => '#' + k).join(' ')}
+${listing.keywords.map((k) => '#' + k).join(' ')}
     `.trim(),
 
     // eBay-specific fields
@@ -272,7 +300,7 @@ ${listing.keywords.map(k => '#' + k).join(' ')}
       Type: listing.category,
       Size: listing.size,
       Color: listing.color,
-      Material: listing.material
+      Material: listing.material,
     },
 
     categoryId: await suggestEbayCategory(listing),
@@ -280,14 +308,14 @@ ${listing.keywords.map(k => '#' + k).join(' ')}
     pricing: {
       startPrice: listing.price,
       buyItNowPrice: listing.price,
-      currency: 'GBP'
+      currency: 'GBP',
     },
 
     shipping: {
       shippingType: 'Flat',
       domesticShippingCost: 3.99,
-      dispatchTimeMax: 2
-    }
+      dispatchTimeMax: 2,
+    },
   };
 }
 
@@ -311,7 +339,7 @@ ${savings ? `£${listing.price} (RRP £${listing.rrp} - save ${savings}%!)` : `�
 
 ${listing.description}
 
-${listing.keywords.map(k => '#' + k).join(' ')}
+${listing.keywords.map((k) => '#' + k).join(' ')}
     `.trim(),
 
     // Vinted clipboard format
@@ -322,12 +350,12 @@ ${sizeInfo.uk ? `Size: ${sizeInfo.uk} UK / ${sizeInfo.eu} EU / ${sizeInfo.us} US
 
 ${listing.description}
 
-${listing.keywords.map(k => '#' + k).join(' ')}`,
+${listing.keywords.map((k) => '#' + k).join(' ')}`,
 
     metadata: {
       sizeConversions: sizeInfo,
-      savingsPercent: savings
-    }
+      savingsPercent: savings,
+    },
   };
 }
 
@@ -335,7 +363,8 @@ ${listing.keywords.map(k => '#' + k).join(' ')}`,
  * Depop Optimizer - Casual tone, heavy hashtags
  */
 async function optimizeForDepop(listing) {
-  const casualDescription = listing.description.toLowerCase()
+  const casualDescription = listing.description
+    .toLowerCase()
     .replace(/excellent condition/gi, 'amazing condition!!')
     .replace(/good condition/gi, 'great condition!')
     .replace(/\./g, '!');
@@ -355,8 +384,13 @@ ${listing.size ? `size ${listing.size}` : ''}
 price: £${listing.price}${listing.rrp ? ` (rrp £${listing.rrp})` : ''}
 grab a bargain! 💫
 
-${[...listing.keywords, ...additionalHashtags, listing.brand.toLowerCase(), listing.category.toLowerCase()]
-  .map(k => '#' + k.replace(/\s+/g, ''))
+${[
+  ...listing.keywords,
+  ...additionalHashtags,
+  listing.brand.toLowerCase(),
+  listing.category.toLowerCase(),
+]
+  .map((k) => '#' + k.replace(/\s+/g, ''))
   .join(' ')}
     `.trim(),
 
@@ -371,14 +405,19 @@ ${listing.size ? `size ${listing.size}` : ''}
 price: £${listing.price}${listing.rrp ? ` (rrp £${listing.rrp})` : ''}
 grab a bargain! 💫
 
-${[...listing.keywords, ...additionalHashtags, listing.brand.toLowerCase(), listing.category.toLowerCase()]
-  .map(k => '#' + k.replace(/\s+/g, ''))
+${[
+  ...listing.keywords,
+  ...additionalHashtags,
+  listing.brand.toLowerCase(),
+  listing.category.toLowerCase(),
+]
+  .map((k) => '#' + k.replace(/\s+/g, ''))
   .join(' ')}`,
 
     metadata: {
       tone: 'casual',
-      hashtagCount: listing.keywords.length + additionalHashtags.length + 2
-    }
+      hashtagCount: listing.keywords.length + additionalHashtags.length + 2,
+    },
   };
 }
 
@@ -404,7 +443,7 @@ ${listing.color ? `Color: ${listing.color}` : ''}
 
 📍 Can meet locally or post. Message for details!
 
-${listing.keywords.map(k => '#' + k).join(' ')}
+${listing.keywords.map((k) => '#' + k).join(' ')}
     `.trim(),
 
     // Facebook clipboard format
@@ -421,31 +460,31 @@ ${listing.color ? `Color: ${listing.color}` : ''}
 
 📍 Can meet locally or post. Message for details!
 
-${listing.keywords.map(k => '#' + k).join(' ')}`,
+${listing.keywords.map((k) => '#' + k).join(' ')}`,
 
     metadata: {
       localPickup: true,
-      postingOption: true
-    }
+      postingOption: true,
+    },
   };
 }
 
 // Helper functions
 function mapConditionToEbay(condition) {
   const mapping = {
-    'New': 'New with tags',
+    New: 'New with tags',
     'Like New': 'New without tags',
-    'Excellent': 'Pre-owned',
-    'Good': 'Pre-owned',
-    'Fair': 'Pre-owned',
-    'Poor': 'For parts or not working'
+    Excellent: 'Pre-owned',
+    Good: 'Pre-owned',
+    Fair: 'Pre-owned',
+    Poor: 'For parts or not working',
   };
   return mapping[condition] || 'Pre-owned';
 }
 
 async function convertSizes(size, category) {
   // Simplified - expand with comprehensive size charts
-  const isClothing = ['clothing', 'shoes', 'sneakers'].some(cat =>
+  const isClothing = ['clothing', 'shoes', 'sneakers'].some((cat) =>
     category.toLowerCase().includes(cat)
   );
 
@@ -453,12 +492,12 @@ async function convertSizes(size, category) {
 
   // Shoe size conversions (simplified)
   const shoeChart = {
-    '6': { uk: '6', eu: '39', us: '7' },
-    '7': { uk: '7', eu: '40', us: '8' },
-    '8': { uk: '8', eu: '42', us: '9' },
-    '9': { uk: '9', eu: '43', us: '10' },
-    '10': { uk: '10', eu: '44.5', us: '11' },
-    '11': { uk: '11', eu: '46', us: '12' }
+    6: { uk: '6', eu: '39', us: '7' },
+    7: { uk: '7', eu: '40', us: '8' },
+    8: { uk: '8', eu: '42', us: '9' },
+    9: { uk: '9', eu: '43', us: '10' },
+    10: { uk: '10', eu: '44.5', us: '11' },
+    11: { uk: '11', eu: '46', us: '12' },
   };
 
   return shoeChart[size] || { uk: size, eu: null, us: null };
@@ -467,15 +506,13 @@ async function convertSizes(size, category) {
 async function suggestEbayCategory(listing) {
   // Map to eBay category IDs
   const categoryMapping = {
-    'sneakers': 15709,
-    'clothing': 11450,
-    'electronics': 293,
-    'home': 11700
+    sneakers: 15709,
+    clothing: 11450,
+    electronics: 293,
+    home: 11700,
   };
 
-  const key = Object.keys(categoryMapping).find(k =>
-    listing.category.toLowerCase().includes(k)
-  );
+  const key = Object.keys(categoryMapping).find((k) => listing.category.toLowerCase().includes(k));
 
   return categoryMapping[key] || 11450; // Default to clothing
 }
@@ -483,9 +520,10 @@ async function suggestEbayCategory(listing) {
 async function generateDepopHashtags(listing) {
   // Depop-specific trending hashtags
   const trendingTags = ['vintage', 'y2k', 'aesthetic', 'streetwear', 'rare'];
-  const matchedTags = trendingTags.filter(tag =>
-    listing.description.toLowerCase().includes(tag) ||
-    listing.keywords.some(k => k.toLowerCase().includes(tag))
+  const matchedTags = trendingTags.filter(
+    (tag) =>
+      listing.description.toLowerCase().includes(tag) ||
+      listing.keywords.some((k) => k.toLowerCase().includes(tag))
   );
   return matchedTags;
 }
@@ -494,7 +532,7 @@ module.exports = {
   optimizeForEbay,
   optimizeForVinted,
   optimizeForDepop,
-  optimizeForFacebook
+  optimizeForFacebook,
 };
 ```
 
@@ -566,7 +604,7 @@ class BottomNav {
       </button>
     `;
 
-    nav.querySelectorAll('.nav-item').forEach(btn => {
+    nav.querySelectorAll('.nav-item').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         this.navigate(e.target.closest('button').dataset.view);
       });
@@ -584,6 +622,7 @@ class BottomNav {
 ```
 
 **CSS:** `styles/mobile.css`
+
 ```css
 .bottom-nav {
   position: fixed;
@@ -596,7 +635,7 @@ class BottomNav {
   border-top: 1px solid #e5e7eb;
   padding: 8px 0;
   z-index: 1000;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .nav-item {
@@ -644,8 +683,9 @@ class ListingCard {
 
   async render() {
     // Fetch platform statuses
-    const statuses = await fetch(`/api/listings/${this.listing.id}/platform-status`)
-      .then(r => r.json());
+    const statuses = await fetch(`/api/listings/${this.listing.id}/platform-status`).then((r) =>
+      r.json()
+    );
 
     const card = document.createElement('div');
     card.className = 'listing-card';
@@ -692,14 +732,18 @@ class ListingCard {
   }
 
   renderPlatformBadges(statuses) {
-    const posted = statuses.filter(s => s.status === 'posted');
+    const posted = statuses.filter((s) => s.status === 'posted');
     if (posted.length === 0) return '';
 
     return `
       <div class="platform-badges">
-        ${posted.map(s => `
+        ${posted
+          .map(
+            (s) => `
           <span class="badge badge-${s.platform}">${s.platform}</span>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
     `;
   }
@@ -707,19 +751,21 @@ class ListingCard {
   renderPlatformStatuses(statuses) {
     const platforms = ['ebay', 'vinted', 'depop', 'facebook'];
 
-    return platforms.map(platform => {
-      const status = statuses.find(s => s.platform === platform);
-      const state = status?.status || 'draft';
-      const icon = this.getPlatformIcon(platform);
+    return platforms
+      .map((platform) => {
+        const status = statuses.find((s) => s.platform === platform);
+        const state = status?.status || 'draft';
+        const icon = this.getPlatformIcon(platform);
 
-      return `
+        return `
         <div class="platform-status platform-${platform} status-${state}">
           <span class="platform-icon">${icon}</span>
           <span class="status-text">${this.getStatusLabel(state)}</span>
           ${status?.view_count ? `<span class="views">${status.view_count} views</span>` : ''}
         </div>
       `;
-    }).join('');
+      })
+      .join('');
   }
 
   getPlatformIcon(platform) {
@@ -727,7 +773,7 @@ class ListingCard {
       ebay: '🏷️',
       vinted: '👕',
       depop: '✨',
-      facebook: '👤'
+      facebook: '👤',
     };
     return icons[platform];
   }
@@ -737,7 +783,7 @@ class ListingCard {
       draft: 'Not posted',
       posted: 'Live',
       sold: 'Sold',
-      delisted: 'Delisted'
+      delisted: 'Delisted',
     };
     return labels[status];
   }
@@ -755,13 +801,16 @@ class ListingCard {
 ```
 
 **CSS:** `styles/listing-card.css`
+
 ```css
 .listing-card {
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .listing-card:active {
@@ -794,10 +843,18 @@ class ListingCard {
   color: white;
 }
 
-.badge-ebay { background: #E53238; }
-.badge-vinted { background: #09B1BA; }
-.badge-depop { background: #FF2E2E; }
-.badge-facebook { background: #1877F2; }
+.badge-ebay {
+  background: #e53238;
+}
+.badge-vinted {
+  background: #09b1ba;
+}
+.badge-depop {
+  background: #ff2e2e;
+}
+.badge-facebook {
+  background: #1877f2;
+}
 
 .card-content {
   padding: 16px;
@@ -892,8 +949,9 @@ class PlatformSelector {
 
   async show() {
     // Fetch platform variations
-    this.variations = await fetch(`/api/listings/${this.listingId}/platform-variations`)
-      .then(r => r.json());
+    this.variations = await fetch(`/api/listings/${this.listingId}/platform-variations`).then((r) =>
+      r.json()
+    );
 
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -931,7 +989,7 @@ class PlatformSelector {
     document.body.appendChild(modal);
 
     // Attach event listeners
-    modal.querySelectorAll('.platform-option').forEach(option => {
+    modal.querySelectorAll('.platform-option').forEach((option) => {
       option.addEventListener('click', () => this.togglePlatform(option));
     });
 
@@ -945,21 +1003,21 @@ class PlatformSelector {
       ebay: '🏷️',
       vinted: '👕',
       depop: '✨',
-      facebook: '👤'
+      facebook: '👤',
     };
 
     const colors = {
       ebay: '#E53238',
       vinted: '#09B1BA',
       depop: '#FF2E2E',
-      facebook: '#1877F2'
+      facebook: '#1877F2',
     };
 
     const methods = {
       ebay: 'Direct API Post',
       vinted: 'Copy & Open App',
       depop: 'Copy & Open App',
-      facebook: 'Copy & Open App'
+      facebook: 'Copy & Open App',
     };
 
     return `
@@ -1053,8 +1111,8 @@ class PlatformSelector {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         listingId: this.listingId,
-        variation: this.variations.ebay
-      })
+        variation: this.variations.ebay,
+      }),
     });
 
     const result = await response.json();
@@ -1068,8 +1126,8 @@ class PlatformSelector {
           platform: 'ebay',
           status: 'posted',
           platformListingId: result.itemId,
-          platformUrl: result.url
-        })
+          platformUrl: result.url,
+        }),
       });
 
       window.app.showToast('Posted to eBay successfully!', 'success');
@@ -1092,7 +1150,7 @@ class PlatformSelector {
     const urls = {
       vinted: 'https://www.vinted.co.uk/items/new',
       depop: 'https://www.depop.com/sell/',
-      facebook: 'https://www.facebook.com/marketplace/create/item'
+      facebook: 'https://www.facebook.com/marketplace/create/item',
     };
 
     const instructionModal = document.createElement('div');
@@ -1150,8 +1208,8 @@ class PlatformSelector {
       body: JSON.stringify({
         platform: platform,
         status: 'draft', // User will manually mark as posted later
-        platformUrl: url
-      })
+        platformUrl: url,
+      }),
     });
 
     // Close modal
@@ -1207,7 +1265,9 @@ class SmartClipboard {
       const success = document.execCommand('copy');
       document.body.removeChild(textarea);
 
-      console.log(`${success ? '✓' : '✗'} Copied ${text.length} chars for ${platform} using fallback`);
+      console.log(
+        `${success ? '✓' : '✗'} Copied ${text.length} chars for ${platform} using fallback`
+      );
       return success;
     } catch (err) {
       console.error('Fallback copy failed:', err);
@@ -1231,6 +1291,7 @@ window.SmartClipboard = SmartClipboard;
 ```
 
 **Files to Modify:**
+
 - `index.html` (integrate new components)
 - Add new files for components and utilities
 
@@ -1243,12 +1304,14 @@ window.SmartClipboard = SmartClipboard;
 **File:** `index.html` (Modify existing upload section)
 
 **Changes:**
+
 1. Remove platform dropdown from upload screen
 2. Process images immediately on upload
 3. Auto-save listing as draft
 4. Show platform selector AFTER generation
 
 **Before:**
+
 ```html
 <select id="platformDropdown">
   <option value="ebay">eBay</option>
@@ -1258,12 +1321,14 @@ window.SmartClipboard = SmartClipboard;
 ```
 
 **After:**
+
 ```html
 <!-- Platform selector removed from upload -->
 <!-- Will be shown after listing generation -->
 ```
 
 **Updated Flow Logic:**
+
 ```javascript
 async uploadAndGenerate() {
   // Step 1: Upload photos to Cloudinary (immediate processing)
@@ -1323,6 +1388,7 @@ showListingReview(listing) {
 ---
 
 ## 🚀 Phase 2: eBay Direct API Integration
+
 **Timeline:** 1-2 weeks
 **Priority:** High
 
@@ -1331,6 +1397,7 @@ showListingReview(listing) {
 **Agent:** `ebay-oauth-agent`
 
 **Environment Variables:**
+
 ```env
 EBAY_APP_ID=DeanNewt-quickest-SBX-e6e535c40-556240b5
 EBAY_DEV_ID=your_dev_id
@@ -1353,9 +1420,10 @@ class EbayAuth {
     this.clientId = process.env.EBAY_APP_ID;
     this.clientSecret = process.env.EBAY_CERT_ID;
     this.redirectUri = process.env.EBAY_REDIRECT_URI;
-    this.baseUrl = process.env.EBAY_SANDBOX === 'true'
-      ? 'https://auth.sandbox.ebay.com/oauth2'
-      : 'https://auth.ebay.com/oauth2';
+    this.baseUrl =
+      process.env.EBAY_SANDBOX === 'true'
+        ? 'https://auth.sandbox.ebay.com/oauth2'
+        : 'https://auth.ebay.com/oauth2';
   }
 
   // Step 1: Generate authorization URL
@@ -1370,7 +1438,8 @@ class EbayAuth {
       redirect_uri: this.redirectUri,
       response_type: 'code',
       state: state,
-      scope: 'https://api.ebay.com/oauth/api_scope https://api.ebay.com/oauth/api_scope/sell.account'
+      scope:
+        'https://api.ebay.com/oauth/api_scope https://api.ebay.com/oauth/api_scope/sell.account',
     });
 
     return `${this.baseUrl}/authorize?${params.toString()}`;
@@ -1385,13 +1454,13 @@ class EbayAuth {
       new URLSearchParams({
         grant_type: 'authorization_code',
         code: code,
-        redirect_uri: this.redirectUri
+        redirect_uri: this.redirectUri,
       }),
       {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Basic ${auth}`
-        }
+          Authorization: `Basic ${auth}`,
+        },
       }
     );
 
@@ -1399,7 +1468,7 @@ class EbayAuth {
       accessToken: response.data.access_token,
       refreshToken: response.data.refresh_token,
       expiresIn: response.data.expires_in,
-      tokenType: response.data.token_type
+      tokenType: response.data.token_type,
     };
   }
 
@@ -1412,19 +1481,20 @@ class EbayAuth {
       new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: refreshToken,
-        scope: 'https://api.ebay.com/oauth/api_scope https://api.ebay.com/oauth/api_scope/sell.account'
+        scope:
+          'https://api.ebay.com/oauth/api_scope https://api.ebay.com/oauth/api_scope/sell.account',
       }),
       {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Basic ${auth}`
-        }
+          Authorization: `Basic ${auth}`,
+        },
       }
     );
 
     return {
       accessToken: response.data.access_token,
-      expiresIn: response.data.expires_in
+      expiresIn: response.data.expires_in,
     };
   }
 
@@ -1442,6 +1512,7 @@ module.exports = new EbayAuth();
 ```
 
 **Database Table for Tokens:**
+
 ```sql
 CREATE TABLE ebay_tokens (
   id SERIAL PRIMARY KEY,
@@ -1482,7 +1553,8 @@ app.get('/auth/ebay/callback', authenticateToken, async (req, res) => {
     const tokens = await ebayAuth.getAccessToken(code);
 
     // Save tokens to database
-    await db.query(`
+    await db.query(
+      `
       INSERT INTO ebay_tokens (user_id, access_token, refresh_token, expires_at)
       VALUES ($1, $2, $3, NOW() + INTERVAL '${tokens.expiresIn} seconds')
       ON CONFLICT (user_id)
@@ -1491,7 +1563,9 @@ app.get('/auth/ebay/callback', authenticateToken, async (req, res) => {
         refresh_token = EXCLUDED.refresh_token,
         expires_at = EXCLUDED.expires_at,
         updated_at = NOW()
-    `, [req.user.id, tokens.accessToken, tokens.refreshToken]);
+    `,
+      [req.user.id, tokens.accessToken, tokens.refreshToken]
+    );
 
     // Redirect back to app
     res.redirect('/?ebay=connected');
@@ -1503,11 +1577,14 @@ app.get('/auth/ebay/callback', authenticateToken, async (req, res) => {
 
 // Helper: Get valid eBay token (refresh if expired)
 async function getValidEbayToken(userId) {
-  const result = await db.query(`
+  const result = await db.query(
+    `
     SELECT access_token, refresh_token, expires_at
     FROM ebay_tokens
     WHERE user_id = $1
-  `, [userId]);
+  `,
+    [userId]
+  );
 
   if (result.rows.length === 0) {
     throw new Error('eBay not connected. Please authorize first.');
@@ -1520,13 +1597,16 @@ async function getValidEbayToken(userId) {
     // Refresh token
     const newTokens = await ebayAuth.refreshAccessToken(token.refresh_token);
 
-    await db.query(`
+    await db.query(
+      `
       UPDATE ebay_tokens
       SET access_token = $1,
           expires_at = NOW() + INTERVAL '${newTokens.expiresIn} seconds',
           updated_at = NOW()
       WHERE user_id = $2
-    `, [newTokens.accessToken, userId]);
+    `,
+      [newTokens.accessToken, userId]
+    );
 
     return newTokens.accessToken;
   }
@@ -1547,9 +1627,8 @@ const axios = require('axios');
 class EbayInventory {
   constructor(accessToken) {
     this.accessToken = accessToken;
-    this.baseUrl = process.env.EBAY_SANDBOX === 'true'
-      ? 'https://api.sandbox.ebay.com'
-      : 'https://api.ebay.com';
+    this.baseUrl =
+      process.env.EBAY_SANDBOX === 'true' ? 'https://api.sandbox.ebay.com' : 'https://api.ebay.com';
   }
 
   // Create inventory item (new eBay flow)
@@ -1557,29 +1636,25 @@ class EbayInventory {
     const inventoryItem = {
       availability: {
         shipToLocationAvailability: {
-          quantity: 1
-        }
+          quantity: 1,
+        },
       },
       condition: this.mapCondition(listing.condition),
       product: {
         title: listing.title,
         description: listing.description,
         aspects: this.buildAspects(listing),
-        imageUrls: listing.images.map(img => img.cloudinaryUrl || img.url)
-      }
+        imageUrls: listing.images.map((img) => img.cloudinaryUrl || img.url),
+      },
     };
 
-    await axios.put(
-      `${this.baseUrl}/sell/inventory/v1/inventory_item/${sku}`,
-      inventoryItem,
-      {
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json',
-          'Content-Language': 'en-GB'
-        }
-      }
-    );
+    await axios.put(`${this.baseUrl}/sell/inventory/v1/inventory_item/${sku}`, inventoryItem, {
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+        'Content-Language': 'en-GB',
+      },
+    });
 
     return sku;
   }
@@ -1596,29 +1671,25 @@ class EbayInventory {
       listingPolicies: {
         fulfillmentPolicyId: await this.getDefaultFulfillmentPolicy(),
         paymentPolicyId: await this.getDefaultPaymentPolicy(),
-        returnPolicyId: await this.getDefaultReturnPolicy()
+        returnPolicyId: await this.getDefaultReturnPolicy(),
       },
       pricingSummary: {
         price: {
           value: listing.price.toString(),
-          currency: 'GBP'
-        }
+          currency: 'GBP',
+        },
       },
       tax: {
-        applyTax: false
-      }
+        applyTax: false,
+      },
     };
 
-    const response = await axios.post(
-      `${this.baseUrl}/sell/inventory/v1/offer`,
-      offer,
-      {
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    const response = await axios.post(`${this.baseUrl}/sell/inventory/v1/offer`, offer, {
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
     return response.data.offerId;
   }
@@ -1630,27 +1701,27 @@ class EbayInventory {
       {},
       {
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`
-        }
+          Authorization: `Bearer ${this.accessToken}`,
+        },
       }
     );
 
     return {
       listingId: response.data.listingId,
       itemId: response.data.itemId,
-      url: `https://www.ebay.co.uk/itm/${response.data.listingId}`
+      url: `https://www.ebay.co.uk/itm/${response.data.listingId}`,
     };
   }
 
   // Helper: Map QuickList condition to eBay condition
   mapCondition(condition) {
     const mapping = {
-      'New': 'NEW_WITH_TAGS',
+      New: 'NEW_WITH_TAGS',
       'Like New': 'NEW_WITHOUT_TAGS',
-      'Excellent': 'VERY_GOOD',
-      'Good': 'GOOD',
-      'Fair': 'ACCEPTABLE',
-      'Poor': 'FOR_PARTS_OR_NOT_WORKING'
+      Excellent: 'VERY_GOOD',
+      Good: 'GOOD',
+      Fair: 'ACCEPTABLE',
+      Poor: 'FOR_PARTS_OR_NOT_WORKING',
     };
     return mapping[condition] || 'VERY_GOOD';
   }
@@ -1669,51 +1740,42 @@ class EbayInventory {
 
   // Get default fulfillment policy (shipping)
   async getDefaultFulfillmentPolicy() {
-    const response = await axios.get(
-      `${this.baseUrl}/sell/account/v1/fulfillment_policy`,
-      {
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`
-        },
-        params: {
-          marketplace_id: 'EBAY_GB'
-        }
-      }
-    );
+    const response = await axios.get(`${this.baseUrl}/sell/account/v1/fulfillment_policy`, {
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+      params: {
+        marketplace_id: 'EBAY_GB',
+      },
+    });
 
     return response.data.fulfillmentPolicies[0]?.fulfillmentPolicyId;
   }
 
   // Get default payment policy
   async getDefaultPaymentPolicy() {
-    const response = await axios.get(
-      `${this.baseUrl}/sell/account/v1/payment_policy`,
-      {
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`
-        },
-        params: {
-          marketplace_id: 'EBAY_GB'
-        }
-      }
-    );
+    const response = await axios.get(`${this.baseUrl}/sell/account/v1/payment_policy`, {
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+      params: {
+        marketplace_id: 'EBAY_GB',
+      },
+    });
 
     return response.data.paymentPolicies[0]?.paymentPolicyId;
   }
 
   // Get default return policy
   async getDefaultReturnPolicy() {
-    const response = await axios.get(
-      `${this.baseUrl}/sell/account/v1/return_policy`,
-      {
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`
-        },
-        params: {
-          marketplace_id: 'EBAY_GB'
-        }
-      }
-    );
+    const response = await axios.get(`${this.baseUrl}/sell/account/v1/return_policy`, {
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+      params: {
+        marketplace_id: 'EBAY_GB',
+      },
+    });
 
     return response.data.returnPolicies[0]?.returnPolicyId;
   }
@@ -1721,21 +1783,18 @@ class EbayInventory {
   // Get item analytics (views, watchers)
   async getItemAnalytics(itemId) {
     try {
-      const response = await axios.get(
-        `${this.baseUrl}/sell/analytics/v1/traffic_report`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.accessToken}`
-          },
-          params: {
-            filter: `listingIds:{${itemId}}`
-          }
-        }
-      );
+      const response = await axios.get(`${this.baseUrl}/sell/analytics/v1/traffic_report`, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+        params: {
+          filter: `listingIds:{${itemId}}`,
+        },
+      });
 
       return {
         viewCount: response.data.records[0]?.transaction?.viewCount || 0,
-        watcherCount: response.data.records[0]?.transaction?.watchCount || 0
+        watcherCount: response.data.records[0]?.transaction?.watchCount || 0,
       };
     } catch (error) {
       console.error('Failed to fetch eBay analytics:', error);
@@ -1763,9 +1822,12 @@ app.post('/api/ebay/post-listing', authenticateToken, async (req, res) => {
     const accessToken = await getValidEbayToken(req.user.id);
 
     // Get listing details
-    const listing = await db.query(`
+    const listing = await db.query(
+      `
       SELECT * FROM listings WHERE id = $1 AND user_id = $2
-    `, [listingId, req.user.id]);
+    `,
+      [listingId, req.user.id]
+    );
 
     if (listing.rows.length === 0) {
       return res.status(404).json({ error: 'Listing not found' });
@@ -1787,7 +1849,8 @@ app.post('/api/ebay/post-listing', authenticateToken, async (req, res) => {
     const published = await ebay.publishOffer(offerId);
 
     // Step 4: Update platform status
-    await db.query(`
+    await db.query(
+      `
       INSERT INTO listing_platform_status (
         listing_id, platform, status, platform_listing_id, platform_url, posted_at
       )
@@ -1799,20 +1862,21 @@ app.post('/api/ebay/post-listing', authenticateToken, async (req, res) => {
         platform_url = EXCLUDED.platform_url,
         posted_at = NOW(),
         updated_at = NOW()
-    `, [listingId, published.itemId, published.url]);
+    `,
+      [listingId, published.itemId, published.url]
+    );
 
     res.json({
       success: true,
       itemId: published.itemId,
       url: published.url,
-      listingId: published.listingId
+      listingId: published.listingId,
     });
-
   } catch (error) {
     console.error('eBay posting error:', error);
     res.status(500).json({
       error: 'Failed to post to eBay',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -1823,11 +1887,14 @@ app.get('/api/ebay/analytics/:listingId', authenticateToken, async (req, res) =>
 
   try {
     // Get eBay item ID from platform status
-    const result = await db.query(`
+    const result = await db.query(
+      `
       SELECT platform_listing_id
       FROM listing_platform_status
       WHERE listing_id = $1 AND platform = 'ebay' AND user_id = $2
-    `, [listingId, req.user.id]);
+    `,
+      [listingId, req.user.id]
+    );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'eBay listing not found' });
@@ -1843,16 +1910,18 @@ app.get('/api/ebay/analytics/:listingId', authenticateToken, async (req, res) =>
     const analytics = await ebay.getItemAnalytics(itemId);
 
     // Update database
-    await db.query(`
+    await db.query(
+      `
       UPDATE listing_platform_status
       SET view_count = $1,
           watcher_count = $2,
           updated_at = NOW()
       WHERE listing_id = $3 AND platform = 'ebay'
-    `, [analytics.viewCount, analytics.watcherCount, listingId]);
+    `,
+      [analytics.viewCount, analytics.watcherCount, listingId]
+    );
 
     res.json(analytics);
-
   } catch (error) {
     console.error('eBay analytics error:', error);
     res.status(500).json({ error: 'Failed to fetch analytics' });
@@ -1862,11 +1931,14 @@ app.get('/api/ebay/analytics/:listingId', authenticateToken, async (req, res) =>
 // Check eBay connection status
 app.get('/api/ebay/status', authenticateToken, async (req, res) => {
   try {
-    const result = await db.query(`
+    const result = await db.query(
+      `
       SELECT expires_at
       FROM ebay_tokens
       WHERE user_id = $1
-    `, [req.user.id]);
+    `,
+      [req.user.id]
+    );
 
     if (result.rows.length === 0) {
       return res.json({ connected: false });
@@ -1878,9 +1950,8 @@ app.get('/api/ebay/status', authenticateToken, async (req, res) => {
     res.json({
       connected: true,
       expired: isExpired,
-      expiresAt: expiresAt.toISOString()
+      expiresAt: expiresAt.toISOString(),
     });
-
   } catch (error) {
     res.status(500).json({ error: 'Failed to check eBay status' });
   }
@@ -1939,7 +2010,7 @@ class EbayConnection {
   }
 
   async disconnect() {
-    if (confirm('Disconnect eBay account? You won\'t be able to post directly to eBay.')) {
+    if (confirm("Disconnect eBay account? You won't be able to post directly to eBay.")) {
       await fetch('/api/ebay/disconnect', { method: 'POST' });
       location.reload();
     }
@@ -1953,6 +2024,7 @@ const ebayConnection = new EbayConnection();
 ---
 
 ## 📋 Phase 3: Smart Clipboard Refinement
+
 **Timeline:** 1 week
 **Priority:** High (User skeptical - needs proof)
 
@@ -2112,12 +2184,14 @@ const clipboardTutorial = new ClipboardTutorial();
 **Agent:** `analytics-agent`
 
 **Track clipboard usage:**
+
 - Copy success rate
 - Which platforms are used most
 - Time between copy and platform open
 - User feedback on clipboard feature
 
 **Database Table:**
+
 ```sql
 CREATE TABLE clipboard_analytics (
   id SERIAL PRIMARY KEY,
@@ -2135,14 +2209,18 @@ CREATE INDEX idx_clipboard_analytics_platform ON clipboard_analytics(platform);
 ```
 
 **API Endpoint:**
+
 ```javascript
 app.post('/api/analytics/clipboard', authenticateToken, async (req, res) => {
   const { listingId, platform, action, success, errorMessage } = req.body;
 
-  await db.query(`
+  await db.query(
+    `
     INSERT INTO clipboard_analytics (user_id, listing_id, platform, action, success, error_message)
     VALUES ($1, $2, $3, $4, $5, $6)
-  `, [req.user.id, listingId, platform, action, success, errorMessage]);
+  `,
+    [req.user.id, listingId, platform, action, success, errorMessage]
+  );
 
   res.json({ tracked: true });
 });
@@ -2151,6 +2229,7 @@ app.post('/api/analytics/clipboard', authenticateToken, async (req, res) => {
 ---
 
 ## 🖥️ Phase 4: Browser Extension (Desktop)
+
 **Timeline:** 2-3 weeks
 **Priority:** Medium
 
@@ -2187,11 +2266,7 @@ browser-extension/
   "name": "QuickList AI - Cross-Post Helper",
   "version": "1.0.0",
   "description": "Auto-fill marketplace listings from QuickList AI",
-  "permissions": [
-    "storage",
-    "activeTab",
-    "scripting"
-  ],
+  "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": [
     "https://www.ebay.co.uk/*",
     "https://www.vinted.co.uk/*",
@@ -2309,7 +2384,7 @@ function waitForElement(selector, timeout = 10000) {
 
     observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
 
     setTimeout(() => {
@@ -2322,12 +2397,12 @@ function waitForElement(selector, timeout = 10000) {
 // Helper: Map QuickList condition to eBay dropdown value
 function mapConditionToEbay(condition) {
   const mapping = {
-    'New': '1000',
+    New: '1000',
     'Like New': '1500',
-    'Excellent': '3000',
-    'Good': '4000',
-    'Fair': '5000',
-    'Poor': '7000'
+    Excellent: '3000',
+    Good: '4000',
+    Fair: '5000',
+    Poor: '7000',
   };
   return mapping[condition] || '3000';
 }
@@ -2374,6 +2449,7 @@ if (isEbayListingPage()) {
 ```
 
 **Similar files for:**
+
 - `vinted.js` (auto-fill Vinted form)
 - `depop.js` (auto-fill Depop form)
 - `facebook.js` (auto-fill Facebook Marketplace form)
@@ -2387,48 +2463,46 @@ if (isEbayListingPage()) {
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <link rel="stylesheet" href="popup.css">
-</head>
-<body>
-  <div class="popup-container">
-    <div class="popup-header">
-      <img src="../icons/icon48.png" alt="QuickList AI">
-      <h1>QuickList AI</h1>
-    </div>
-
-    <div id="authSection" style="display: none;">
-      <p>Sign in to use auto-fill</p>
-      <button id="loginBtn" class="btn-primary">Sign In</button>
-    </div>
-
-    <div id="listingsSection" style="display: none;">
-      <div class="section-header">
-        <h2>Your Listings</h2>
-        <button id="refreshBtn">🔄</button>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="popup-container">
+      <div class="popup-header">
+        <img src="../icons/icon48.png" alt="QuickList AI" />
+        <h1>QuickList AI</h1>
       </div>
 
-      <div id="listingsList"></div>
+      <div id="authSection" style="display: none;">
+        <p>Sign in to use auto-fill</p>
+        <button id="loginBtn" class="btn-primary">Sign In</button>
+      </div>
 
-      <div class="popup-footer">
-        <a href="https://quicklist-ai.com/dashboard" target="_blank">
-          Open Dashboard
-        </a>
+      <div id="listingsSection" style="display: none;">
+        <div class="section-header">
+          <h2>Your Listings</h2>
+          <button id="refreshBtn">🔄</button>
+        </div>
+
+        <div id="listingsList"></div>
+
+        <div class="popup-footer">
+          <a href="https://quicklist-ai.com/dashboard" target="_blank"> Open Dashboard </a>
+        </div>
+      </div>
+
+      <div id="fillSection" style="display: none;">
+        <div class="fill-prompt">
+          <p>Select a listing to auto-fill this page:</p>
+          <select id="listingSelect"></select>
+          <button id="fillBtn" class="btn-primary">Auto-Fill</button>
+        </div>
       </div>
     </div>
 
-    <div id="fillSection" style="display: none;">
-      <div class="fill-prompt">
-        <p>Select a listing to auto-fill this page:</p>
-        <select id="listingSelect"></select>
-        <button id="fillBtn" class="btn-primary">Auto-Fill</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="popup.js"></script>
-</body>
+    <script src="popup.js"></script>
+  </body>
 </html>
 ```
 
@@ -2480,9 +2554,9 @@ async function showFillSection() {
   // Populate listing dropdown
   const listings = await fetchListings();
   const select = document.getElementById('listingSelect');
-  select.innerHTML = listings.map(l =>
-    `<option value="${l.id}">${l.title} - £${l.price}</option>`
-  ).join('');
+  select.innerHTML = listings
+    .map((l) => `<option value="${l.id}">${l.title} - £${l.price}</option>`)
+    .join('');
 }
 
 // Detect platform from URL
@@ -2500,8 +2574,8 @@ async function fetchListings() {
 
   const response = await fetch(`${API_BASE}/listings`, {
     headers: {
-      'Authorization': `Bearer ${auth_token}`
-    }
+      Authorization: `Bearer ${auth_token}`,
+    },
   });
 
   return await response.json();
@@ -2512,7 +2586,9 @@ async function loadListings() {
   const listings = await fetchListings();
   const container = document.getElementById('listingsList');
 
-  container.innerHTML = listings.map(l => `
+  container.innerHTML = listings
+    .map(
+      (l) => `
     <div class="listing-item">
       <img src="${l.images[0]?.thumbnail_url}" alt="${l.title}">
       <div class="listing-info">
@@ -2520,7 +2596,9 @@ async function loadListings() {
         <div class="listing-price">£${l.price}</div>
       </div>
     </div>
-  `).join('');
+  `
+    )
+    .join('');
 }
 
 // Auto-fill form with selected listing
@@ -2531,7 +2609,7 @@ async function autoFillForm() {
   // Fetch full listing details
   const { auth_token } = await chrome.storage.local.get('auth_token');
   const response = await fetch(`${API_BASE}/listings/${listingId}`, {
-    headers: { 'Authorization': `Bearer ${auth_token}` }
+    headers: { Authorization: `Bearer ${auth_token}` },
   });
   const listing = await response.json();
 
@@ -2539,14 +2617,18 @@ async function autoFillForm() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   // Send message to content script
-  chrome.tabs.sendMessage(tab.id, {
-    action: 'fill_form',
-    listing: listing
-  }, (response) => {
-    if (response?.success) {
-      showSuccessMessage();
+  chrome.tabs.sendMessage(
+    tab.id,
+    {
+      action: 'fill_form',
+      listing: listing,
+    },
+    (response) => {
+      if (response?.success) {
+        showSuccessMessage();
+      }
     }
-  });
+  );
 }
 
 // Event listeners
@@ -2577,6 +2659,7 @@ document.getElementById('fillBtn')?.addEventListener('click', autoFillForm);
 ---
 
 ## 🎨 Phase 5: UI Polish & Testing
+
 **Timeline:** 1 week
 **Priority:** Medium
 
@@ -2655,33 +2738,30 @@ const urlsToCache = [
   '/styles/main.css',
   '/styles/mobile.css',
   '/app.js',
-  '/icons/icon-192.png'
+  '/icons/icon-192.png',
 ];
 
 // Install service worker
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(urlsToCache))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache)));
 });
 
 // Fetch from cache first
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => response || fetch(event.request))
+    caches.match(event.request).then((response) => response || fetch(event.request))
   );
 });
 ```
 
 **Add to HTML head:**
+
 ```html
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#6366f1">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#6366f1" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="apple-touch-icon" href="/icons/icon-192.png" />
 ```
 
 ### 5.2 Comprehensive Testing
@@ -2771,12 +2851,14 @@ self.addEventListener('fetch', (event) => {
 ## 🚧 Known Limitations & Future Work
 
 ### Limitations:
+
 1. **No Vinted/Depop Direct API** - Clipboard workaround required
 2. **eBay Policies** - Must comply with listing restrictions
 3. **Mobile Browser Clipboard** - Limited on some older browsers
 4. **Image Hosting Costs** - Scales with usage (Cloudinary)
 
 ### Future Enhancements:
+
 1. **Tier 4: Cross-listing Services** (Vendoo/SellerAider integration)
 2. **Bulk Operations** (post to 10+ platforms at once)
 3. **Sold Item Sync** (mark as sold across platforms)
@@ -2789,6 +2871,7 @@ self.addEventListener('fetch', (event) => {
 ## 🎯 Implementation Priority
 
 ### Must Have (Phase 1 + 2):
+
 - ✅ Platform-agnostic listing generation
 - ✅ Database schema for multi-platform status
 - ✅ Mobile-first UI redesign
@@ -2796,12 +2879,14 @@ self.addEventListener('fetch', (event) => {
 - ✅ Smart Clipboard for Vinted/Depop/Facebook
 
 ### Should Have (Phase 3 + 4):
+
 - ⏳ Browser extension for desktop
 - ⏳ PWA capabilities
 - ⏳ Clipboard tutorial overlay
 - ⏳ Analytics dashboard
 
 ### Nice to Have (Phase 5+):
+
 - ⏳ Cross-listing service integration
 - ⏳ Bulk operations
 - ⏳ Price optimization
@@ -2863,6 +2948,7 @@ This plan provides comprehensive technical specifications for all three implemen
 All while preserving existing item recognition and condition algorithms, and implementing mobile-first UX redesign.
 
 **Next Steps:**
+
 1. Review this plan
 2. Approve/modify priorities
 3. Begin Phase 1 implementation

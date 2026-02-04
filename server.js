@@ -303,11 +303,10 @@ app.post('/api/stripe/webhook', stripeWebhookMiddleware, async (req, res) => {
   try {
     // Check for duplicate event (idempotency)
     if (pool) {
-      const existingEvent = await pool.query(
-        'SELECT id FROM webhook_events WHERE event_id = $1',
-        [event.id]
-      ).catch(() => ({ rows: [] })); // Ignore if table doesn't exist yet
-      
+      const existingEvent = await pool
+        .query('SELECT id FROM webhook_events WHERE event_id = $1', [event.id])
+        .catch(() => ({ rows: [] })); // Ignore if table doesn't exist yet
+
       if (existingEvent.rows.length > 0) {
         logger.info('Webhook event already processed, skipping', { eventId: event.id });
         return res.json({ received: true, duplicate: true });
@@ -337,10 +336,12 @@ app.post('/api/stripe/webhook', stripeWebhookMiddleware, async (req, res) => {
 
     // Record processed event for idempotency
     if (pool) {
-      await pool.query(
-        'INSERT INTO webhook_events (event_id, event_type) VALUES ($1, $2) ON CONFLICT (event_id) DO NOTHING',
-        [event.id, event.type]
-      ).catch((err) => logger.warn('Failed to record webhook event:', { error: err.message }));
+      await pool
+        .query(
+          'INSERT INTO webhook_events (event_id, event_type) VALUES ($1, $2) ON CONFLICT (event_id) DO NOTHING',
+          [event.id, event.type]
+        )
+        .catch((err) => logger.warn('Failed to record webhook event:', { error: err.message }));
     }
 
     res.json({ received: true });
@@ -1132,25 +1133,28 @@ app.post('/api/stripe/create-checkout-session', authenticateToken, async (req, r
 
     // Create checkout session with idempotency key to prevent duplicates
     const idempotencyKey = `checkout_${userId}_${priceId}_${Math.floor(Date.now() / 60000)}`; // 1-minute window
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
+    const session = await stripe.checkout.sessions.create(
+      {
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
+        success_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/payment/cancel`,
+        metadata: {
+          user_id: userId.toString(),
+          plan_type: planType,
         },
-      ],
-      mode: 'subscription',
-      success_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:4577'}/payment/cancel`,
-      metadata: {
-        user_id: userId.toString(),
-        plan_type: planType,
       },
-    }, {
-      idempotencyKey: idempotencyKey
-    });
+      {
+        idempotencyKey: idempotencyKey,
+      }
+    );
 
     logger.info('Stripe checkout session created:', { userId: req.user.id, sessionId: session.id });
     res.json({ sessionId: session.id, url: session.url });

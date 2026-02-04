@@ -3,7 +3,7 @@
  * Injected into marketplace pages
  */
 
- .quicklist-overlay {
+.quicklist-overlay {
   position: fixed;
   top: 20px;
   right: 20px;
@@ -116,9 +116,17 @@
 }
 
 @keyframes quicklist-loading {
-  0%, 20% { content: '.'; }
-  40% { content: '..'; }
-  60%, 100% { content: '...'; }
+  0%,
+  20% {
+    content: '.';
+  }
+  40% {
+    content: '..';
+  }
+  60%,
+  100% {
+    content: '...';
+  }
 }
 
 /* Highlight effect for auto-filled fields */
@@ -128,7 +136,8 @@
 }
 
 @keyframes quicklist-highlight {
-  0%, 100% {
+  0%,
+  100% {
     background-color: transparent;
   }
   50% {

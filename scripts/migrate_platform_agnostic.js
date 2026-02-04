@@ -204,7 +204,10 @@ async function runMigration() {
 
     log('\nNext steps:', 'cyan');
     log('  1. Restart your server to load the new API endpoints', 'blue');
-    log('  2. Test platform variation generation: GET /api/listings/:id/platform-variations', 'blue');
+    log(
+      '  2. Test platform variation generation: GET /api/listings/:id/platform-variations',
+      'blue'
+    );
     log('  3. Test platform status tracking: POST /api/listings/:id/platform-status', 'blue');
     log('  4. Update frontend to use new mobile-first UI components', 'blue');
     log('\n');

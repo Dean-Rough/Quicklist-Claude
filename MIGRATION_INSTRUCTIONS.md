@@ -17,6 +17,7 @@ This document provides step-by-step instructions for migrating from base64 image
      ```
 
 2. **Database Backup**
+
    ```bash
    # Create backup before migration
    pg_dump $DATABASE_URL > backup_before_cloudinary_$(date +%Y%m%d_%H%M%S).sql
@@ -35,6 +36,7 @@ This document provides step-by-step instructions for migrating from base64 image
 **Impact:** None - adds nullable columns only
 
 1. **Review the migration file:**
+
    ```bash
    cat schema_cloudinary_migration.sql
    ```
@@ -42,11 +44,13 @@ This document provides step-by-step instructions for migrating from base64 image
 2. **Run Phase 1 migration:**
 
    **Option A: Via psql command line**
+
    ```bash
    psql $DATABASE_URL -f schema_cloudinary_migration.sql
    ```
 
    **Option B: Via application endpoint** (if you implement it)
+
    ```bash
    curl -X POST http://localhost:4577/api/admin/run-migration \
      -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -55,6 +59,7 @@ This document provides step-by-step instructions for migrating from base64 image
    ```
 
 3. **Verify schema changes:**
+
    ```bash
    psql $DATABASE_URL -c "\\d images"
    ```
@@ -170,7 +175,6 @@ async function migrateImages() {
     console.log(`Total: ${totalImages}`);
     console.log(`Migrated: ${migrated}`);
     console.log(`Failed: ${failed}`);
-
   } catch (error) {
     console.error('Migration failed:', error);
     throw error;
@@ -187,24 +191,19 @@ async function migrateImage(image, retryCount = 0) {
     const publicId = `quicklist/${user_id}/${listing_id}/${id}`;
 
     // Upload to Cloudinary
-    const uploadResult = await cloudinary.uploader.upload(
-      `data:image/jpeg;base64,${image_data}`,
-      {
-        public_id: publicId,
-        folder: 'quicklist',
-        resource_type: 'image',
-        transformation: [
-          { quality: 'auto', fetch_format: 'auto' }
-        ]
-      }
-    );
+    const uploadResult = await cloudinary.uploader.upload(`data:image/jpeg;base64,${image_data}`, {
+      public_id: publicId,
+      folder: 'quicklist',
+      resource_type: 'image',
+      transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+    });
 
     // Generate thumbnail URL with Cloudinary transformations
     const thumbnailUrl = cloudinary.url(publicId, {
       transformation: [
         { width: 300, height: 300, crop: 'fill' },
-        { quality: 'auto', fetch_format: 'auto' }
-      ]
+        { quality: 'auto', fetch_format: 'auto' },
+      ],
     });
 
     // Update database with Cloudinary URLs
@@ -219,11 +218,10 @@ async function migrateImage(image, retryCount = 0) {
        WHERE id = $4`,
       [uploadResult.secure_url, thumbnailUrl, publicId, id]
     );
-
   } catch (error) {
     if (retryCount < MAX_RETRIES) {
       console.log(`Retrying image ${id} (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
       return migrateImage(image, retryCount + 1);
     }
     throw error;
@@ -251,6 +249,7 @@ watch -n 10 "psql $DATABASE_URL -c \"SELECT COUNT(*) as total, COUNT(CASE WHEN m
 Add migration logic to your server that processes images gradually:
 
 1. Add route to trigger migration:
+
    ```javascript
    app.post('/api/admin/migrate-batch', authenticateAdmin, async (req, res) => {
      const batchSize = req.body.batchSize || 10;
@@ -270,6 +269,7 @@ Add migration logic to your server that processes images gradually:
 **Impact:** None - read-only queries
 
 1. **Verify all images migrated:**
+
    ```sql
    -- Should return 0
    SELECT COUNT(*) as unmigrated_images
@@ -278,6 +278,7 @@ Add migration logic to your server that processes images gradually:
    ```
 
 2. **Check for migration errors:**
+
    ```sql
    SELECT id, listing_id, migration_error
    FROM images
@@ -285,6 +286,7 @@ Add migration logic to your server that processes images gradually:
    ```
 
 3. **Verify data integrity:**
+
    ```sql
    -- Should return 0
    SELECT COUNT(*) as incomplete_migrations
@@ -294,6 +296,7 @@ Add migration logic to your server that processes images gradually:
    ```
 
 4. **Test a sample image:**
+
    ```sql
    SELECT
        id,
@@ -311,6 +314,7 @@ Add migration logic to your server that processes images gradually:
 5. **Update application code** to use `image_url` instead of `image_data`:
 
    In `server.js`, update image queries:
+
    ```javascript
    // OLD
    const images = await pool.query(
@@ -339,16 +343,19 @@ Add migration logic to your server that processes images gradually:
 **Recommended wait:** 30 days after Phase 3
 
 1. **Final backup before cleanup:**
+
    ```bash
    pg_dump $DATABASE_URL > backup_before_cleanup_$(date +%Y%m%d_%H%M%S).sql
    ```
 
 2. **Check database size before cleanup:**
+
    ```sql
    SELECT pg_size_pretty(pg_total_relation_size('images')) as total_size;
    ```
 
 3. **Run cleanup (UNCOMMENT Phase 4 in migration file):**
+
    ```bash
    # Edit schema_cloudinary_migration.sql
    # Uncomment the Phase 4 section
@@ -356,12 +363,14 @@ Add migration logic to your server that processes images gradually:
    ```
 
 4. **Verify cleanup:**
+
    ```sql
    -- Should NOT show image_data column
    \d images
    ```
 
 5. **Check space savings:**
+
    ```sql
    SELECT pg_size_pretty(pg_total_relation_size('images')) as total_size;
    ```
@@ -379,6 +388,7 @@ If issues are found before dropping `image_data`:
 2. **Deploy reverted code**
 
 3. **Optional: Clean up Cloudinary images** (to free storage):
+
    ```javascript
    // scripts/cleanup_cloudinary.js
    const images = await pool.query(
@@ -410,6 +420,7 @@ If issues are found before dropping `image_data`:
 If issues are found after dropping `image_data`:
 
 1. **Restore from backup:**
+
    ```bash
    psql $DATABASE_URL < backup_before_cleanup_YYYYMMDD_HHMMSS.sql
    ```
@@ -419,30 +430,35 @@ If issues are found after dropping `image_data`:
 ## Time Estimates by Database Size
 
 ### Small Database (< 100 images)
+
 - Phase 1: < 1 second
 - Phase 2: 2-3 minutes
 - Phase 3: 2 minutes
 - **Total: ~5 minutes**
 
 ### Medium Database (100-1,000 images)
+
 - Phase 1: < 1 second
 - Phase 2: 20-30 minutes
 - Phase 3: 5 minutes
 - **Total: ~35 minutes**
 
 ### Large Database (1,000-10,000 images)
+
 - Phase 1: < 1 second
 - Phase 2: 3-5 hours
 - Phase 3: 10 minutes
 - **Total: ~5 hours**
 
 ### Very Large Database (> 10,000 images)
+
 - Phase 1: < 1 second
 - Phase 2: 1-2 days (run over weekend)
 - Phase 3: 15 minutes
 - **Total: ~2 days**
 
 **Note:** Times assume:
+
 - Cloudinary upload: ~1-2 seconds per image
 - Network latency: 100-500ms
 - Batch processing: 10 images at a time
@@ -505,6 +521,7 @@ LIMIT 5;
 ### Issue: "Rate limit exceeded" from Cloudinary
 
 **Solution:**
+
 - Free tier: 500 uploads/hour limit
 - Add delay between batches: `setTimeout(5000)` after each batch
 - Upgrade to paid plan for higher limits
@@ -513,6 +530,7 @@ LIMIT 5;
 ### Issue: "Request timeout" errors
 
 **Solution:**
+
 - Reduce batch size: `BATCH_SIZE = 5`
 - Increase timeout in Cloudinary config: `timeout: 60000`
 - Check network connectivity
@@ -521,6 +539,7 @@ LIMIT 5;
 ### Issue: Images not displaying after migration
 
 **Solution:**
+
 - Verify Cloudinary URLs are public
 - Check CORS settings in Cloudinary dashboard
 - Test URL directly in browser
@@ -529,6 +548,7 @@ LIMIT 5;
 ### Issue: Migration script crashes mid-way
 
 **Solution:**
+
 - Script is resumable - just run again
 - Tracks progress via `migrated_to_cloudinary` flag
 - Already migrated images are skipped
@@ -537,6 +557,7 @@ LIMIT 5;
 ## Post-Migration Best Practices
 
 1. **Set up Cloudinary webhook** for deletion sync:
+
    ```javascript
    // In server.js
    app.post('/api/webhooks/cloudinary', (req, res) => {
@@ -559,12 +580,13 @@ LIMIT 5;
    - Monitor storage usage
 
 5. **Update image upload flow** to go directly to Cloudinary:
+
    ```javascript
    // In server.js - new image upload
    app.post('/api/listings/:id/images', async (req, res) => {
      const result = await cloudinary.uploader.upload(req.body.image, {
        folder: 'quicklist',
-       public_id: `quicklist/${userId}/${listingId}/${imageId}`
+       public_id: `quicklist/${userId}/${listingId}/${imageId}`,
      });
 
      await pool.query(
@@ -577,6 +599,7 @@ LIMIT 5;
 ## Support
 
 For issues or questions:
+
 1. Check migration error logs: `SELECT * FROM images WHERE migration_error IS NOT NULL`
 2. Review Cloudinary dashboard: https://cloudinary.com/console
 3. Consult Cloudinary docs: https://cloudinary.com/documentation

@@ -5,6 +5,7 @@
 ## Pre-Deployment
 
 ### Security
+
 - [x] All environment variables validated
 - [x] JWT_SECRET is strong (32+ chars in production)
 - [x] Helmet.js security headers configured
@@ -16,6 +17,7 @@
 - [x] Security.txt file created
 
 ### Configuration
+
 - [x] vercel.json configured
 - [x] API routes configured for Vercel
 - [x] Environment variable template created
@@ -23,6 +25,7 @@
 - [x] Frontend API URL auto-detection
 
 ### Code Quality
+
 - [x] All console.log removed (server-side)
 - [x] Error handling comprehensive
 - [x] Logging structured with request IDs
@@ -30,6 +33,7 @@
 - [x] Usage tracking implemented
 
 ### Performance
+
 - [x] Compression middleware added
 - [x] Database connection pooling configured
 - [x] Pagination implemented
@@ -37,6 +41,7 @@
 - [x] Health check optimized
 
 ### Documentation
+
 - [x] API documentation created
 - [x] Deployment guide created
 - [x] Environment setup documented
@@ -47,6 +52,7 @@
 ## Deployment Steps
 
 ### 1. Environment Setup
+
 ```bash
 # Generate secure JWT_SECRET
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
@@ -55,12 +61,14 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
 ### 2. Database Setup
+
 - [ ] Create Neon PostgreSQL database (or use existing)
 - [ ] Set DATABASE_URL in Vercel
 - [ ] Test connection
 - [ ] Initialize schema via `/api/init-db`
 
 ### 3. Vercel Deployment
+
 - [ ] Connect GitHub repository
 - [ ] Configure project settings
 - [ ] Set environment variables
@@ -68,6 +76,7 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 - [ ] Verify deployment
 
 ### 4. Post-Deployment
+
 - [ ] Test health check endpoint
 - [ ] Test authentication flow
 - [ ] Test listing generation
@@ -76,6 +85,7 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 - [ ] Monitor logs
 
 ### 5. Security Hardening
+
 - [ ] Restrict `/api/init-db` endpoint
 - [ ] Set ALLOW_DB_INIT=false in production
 - [ ] Verify security headers
@@ -83,6 +93,7 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 - [ ] Verify CORS restrictions
 
 ### 6. Monitoring Setup
+
 - [ ] Set up error tracking (optional)
 - [ ] Configure uptime monitoring
 - [ ] Set up log aggregation
@@ -93,6 +104,7 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ## Production Environment Variables
 
 ### Required
+
 ```env
 DATABASE_URL=postgresql://...
 JWT_SECRET=<64-char-random-string>
@@ -102,12 +114,14 @@ FRONTEND_URL=https://your-app.vercel.app
 ```
 
 ### Recommended
+
 ```env
 LOG_LEVEL=info
 ALLOW_DB_INIT=false
 ```
 
 ### Optional
+
 ```env
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
@@ -120,37 +134,46 @@ EBAY_APP_ID=...
 ## Verification Tests
 
 ### 1. Health Check
+
 ```bash
 curl https://your-app.vercel.app/api/health
 ```
+
 Expected: `{"status":"ok",...}`
 
 ### 2. Authentication
+
 ```bash
 curl -X POST https://your-app.vercel.app/api/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"test123456"}'
 ```
+
 Expected: User object + token
 
 ### 3. Protected Endpoint
+
 ```bash
 curl https://your-app.vercel.app/api/listings \
   -H "Authorization: Bearer <token>"
 ```
+
 Expected: Listings array or empty array
 
 ### 4. Rate Limiting
+
 ```bash
 # Make 6 rapid signup requests
 # 6th should return 429
 ```
 
 ### 5. CORS
+
 ```bash
 curl -H "Origin: https://evil.com" \
   https://your-app.vercel.app/api/listings
 ```
+
 Expected: CORS error or 403
 
 ---

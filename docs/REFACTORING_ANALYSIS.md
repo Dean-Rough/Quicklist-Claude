@@ -16,6 +16,7 @@
 ## Current State Assessment
 
 ### File Statistics
+
 - **Total Lines:** 6,505 (up from 5,414 originally)
 - **File Size:** 292KB
 - **Functions/Variables:** 482
@@ -28,6 +29,7 @@
 ### Code Organization Score: 4/10
 
 **Strengths:**
+
 - ✅ Everything in one file (zero build complexity)
 - ✅ Fast initial development velocity
 - ✅ No module bundler required
@@ -35,6 +37,7 @@
 - ✅ Easy to debug (all code in one place)
 
 **Weaknesses:**
+
 - ❌ **6,505 lines is unmaintainable long-term**
 - ❌ Difficult to find specific functions
 - ❌ High risk of merge conflicts with multiple developers
@@ -48,21 +51,22 @@
 
 ## Comparison to Industry Standards
 
-| Metric | QuickList AI | Industry Best Practice | Status |
-|--------|--------------|----------------------|--------|
-| **File Size** | 292KB | <100KB per file | 🔴 POOR |
-| **Lines per File** | 6,505 | <500 recommended | 🔴 POOR |
-| **Functions per File** | 482 | <50 recommended | 🔴 POOR |
-| **Modularity** | Single file | Modular components | 🔴 POOR |
-| **Build Process** | None | Webpack/Vite | 🟡 NEUTRAL |
-| **Type Safety** | None | TypeScript | 🔴 POOR |
-| **Testing** | None | Unit + E2E tests | 🔴 POOR |
+| Metric                 | QuickList AI | Industry Best Practice | Status     |
+| ---------------------- | ------------ | ---------------------- | ---------- |
+| **File Size**          | 292KB        | <100KB per file        | 🔴 POOR    |
+| **Lines per File**     | 6,505        | <500 recommended       | 🔴 POOR    |
+| **Functions per File** | 482          | <50 recommended        | 🔴 POOR    |
+| **Modularity**         | Single file  | Modular components     | 🔴 POOR    |
+| **Build Process**      | None         | Webpack/Vite           | 🟡 NEUTRAL |
+| **Type Safety**        | None         | TypeScript             | 🔴 POOR    |
+| **Testing**            | None         | Unit + E2E tests       | 🔴 POOR    |
 
 ---
 
 ## When to Refactor: Decision Matrix
 
 ### ✅ **Continue Current Architecture If:**
+
 1. Solo developer or very small team (1-2 people)
 2. Rapid feature development is priority
 3. < 10,000 total lines of code
@@ -70,6 +74,7 @@
 5. Pre-product-market-fit stage
 
 ### 🔴 **Refactor NOW If:**
+
 1. Team size > 3 developers
 2. Experiencing frequent merge conflicts
 3. Performance issues on mobile (>5s load time)
@@ -77,6 +82,7 @@
 5. Hiring external developers
 
 ### 🟡 **Plan Refactor Soon If:**
+
 1. File exceeds 10,000 lines (currently 6,505)
 2. Load time > 3 seconds on 4G
 3. Adding 5+ more major features
@@ -90,6 +96,7 @@
 ### **Timeline: Week 4-5 (After Feature Implementation)**
 
 **Rationale:**
+
 - Let Team Alpha finish features 3-7 first
 - Let Team Beta complete PWA setup (Phase 2)
 - Then refactor with all features in place
@@ -148,6 +155,7 @@
 ```
 
 **Benefits:**
+
 - Each file < 500 lines
 - Easy to find and modify code
 - Better code organization
@@ -157,6 +165,7 @@
 - Better Git diffs
 
 **Build Process:**
+
 - Vite (recommended - fast, modern) or Webpack
 - Development: `npm run dev` (hot reload)
 - Production: `npm run build` (minified, optimized)
@@ -167,6 +176,7 @@
 ### **Option 2: TypeScript Migration (Best Long-Term)**
 
 **Additional Benefits:**
+
 - Type safety catches bugs before runtime
 - Better IDE autocomplete
 - Self-documenting code
@@ -220,6 +230,7 @@ customElements.define('listing-card', ListingCard);
 ```
 
 **Benefits:**
+
 - Native browser support (no framework)
 - Scoped CSS (no conflicts)
 - Reusable across projects
@@ -232,15 +243,17 @@ customElements.define('listing-card', ListingCard);
 These can be done NOW without breaking changes:
 
 ### 1. **Extract CSS to Separate File** (1 hour)
+
 ```html
 <!-- index.html -->
-<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/styles.css" />
 ```
 
 **Saves:** ~1,200 lines from index.html
 **Benefit:** Cacheable, easier to edit styles
 
 ### 2. **Extract JavaScript to Separate File** (1 hour)
+
 ```html
 <!-- index.html -->
 <script src="/app.js" type="module"></script>
@@ -250,6 +263,7 @@ These can be done NOW without breaking changes:
 **Benefit:** Cacheable, syntax highlighting in IDE
 
 ### 3. **Add JSDoc Comments** (2 hours)
+
 ```javascript
 /**
  * Resize image to max dimension while maintaining aspect ratio
@@ -265,6 +279,7 @@ async resizeImage(file, maxDimension = 2400) {
 **Benefit:** Better IDE autocomplete, self-documenting
 
 ### 4. **Split app object into modules** (4 hours)
+
 ```javascript
 // Instead of one giant app object:
 const app = {
@@ -286,12 +301,14 @@ const mobileModule = { ... };
 ## Recommended Refactoring Plan
 
 ### **Phase 1: Extract Assets (Week 4, Day 1-2)**
+
 - [ ] Move CSS to `/public/styles.css`
 - [ ] Move JavaScript to `/public/app.js`
 - [ ] Test that everything still works
 - **Impact:** Reduce index.html from 6,505 to ~1,500 lines
 
 ### **Phase 2: Modularize JavaScript (Week 4, Day 3-5)**
+
 - [ ] Split app.js into:
   - `services/api.js`
   - `services/camera.js`
@@ -304,6 +321,7 @@ const mobileModule = { ... };
 - **Impact:** 10-15 files, each 200-500 lines
 
 ### **Phase 3: CSS Organization (Week 5, Day 1-2)**
+
 - [ ] Split styles.css into:
   - `variables.css` (colors, spacing)
   - `base.css` (resets, typography)
@@ -313,6 +331,7 @@ const mobileModule = { ... };
 - **Impact:** ~25% CSS reduction, easier to maintain
 
 ### **Phase 4: Build Process Setup (Week 5, Day 3-4)**
+
 - [ ] Install Vite: `npm install -D vite`
 - [ ] Create `vite.config.js`
 - [ ] Update npm scripts
@@ -321,6 +340,7 @@ const mobileModule = { ... };
 - **Impact:** Faster dev experience, optimized production bundle
 
 ### **Phase 5: Testing & QA (Week 5, Day 5)**
+
 - [ ] Full regression testing
 - [ ] Performance benchmarking
 - [ ] Mobile device testing
@@ -332,12 +352,14 @@ const mobileModule = { ... };
 ## Cost-Benefit Analysis
 
 ### **Costs of Refactoring:**
+
 - **Time:** 2-3 weeks development time
 - **Risk:** Potential bugs introduced during refactor
 - **Learning Curve:** Team needs to learn new structure
 - **Complexity:** Build process adds moving parts
 
 ### **Benefits of Refactoring:**
+
 - **Maintainability:** 10x easier to find and fix bugs
 - **Performance:** 30-50% faster page loads (code splitting)
 - **Scalability:** Can grow to 50,000+ lines without issues
@@ -349,11 +371,13 @@ const mobileModule = { ... };
 ### **ROI Calculation:**
 
 **Current State (Months 1-6):**
+
 - Development velocity: Fast initially, slowing down
 - Bug fix time: Increasing (hard to find code)
 - New feature time: Increasing (fear of breaking things)
 
 **After Refactor (Months 7-12):**
+
 - Development velocity: Consistently fast
 - Bug fix time: Decreasing (modular, testable)
 - New feature time: Decreasing (clear patterns)
@@ -365,26 +389,34 @@ const mobileModule = { ... };
 ## Immediate Recommendation
 
 ### **For This Week (Week 2):**
+
 ✅ **Continue with current architecture**
+
 - Implement features 3-5 (Image Quality, eBay Pricing, Predictive Pricing)
 - Complete Team Beta Phase 2 (PWA setup)
 - Don't refactor yet - velocity is more important
 
 ### **For Week 3:**
+
 ✅ **Continue with current architecture**
+
 - Implement features 6-7 (Damage Detection, Barcode Scanner)
 - Complete Team Beta Phase 3 (Mobile features)
 - Start planning refactor
 
 ### **For Week 4-5:**
+
 🔄 **Execute Refactor**
+
 - Extract CSS and JS (Quick wins)
 - Modularize codebase
 - Set up build process
 - Comprehensive testing
 
 ### **For Week 6+:**
+
 🚀 **Scale with Confidence**
+
 - Add new features easily
 - Onboard developers quickly
 - Write automated tests
@@ -412,6 +444,7 @@ npm run build → Generates production/ folder
 ```
 
 **Benefits:**
+
 - Best of both worlds
 - Fast development
 - Optimized production
@@ -423,15 +456,15 @@ npm run build → Generates production/ folder
 
 Track these to know when refactor is urgent:
 
-| Metric | Current | Threshold | Status |
-|--------|---------|-----------|--------|
-| **File Size** | 292KB | 500KB | 🟢 OK |
-| **Total Lines** | 6,505 | 10,000 | 🟡 Warning |
-| **Functions** | 482 | 750 | 🟢 OK |
-| **Load Time (4G)** | ~1.5s | 3s | 🟢 OK |
-| **Time to Find Code** | ~2 min | 5 min | 🟡 Warning |
-| **Bug Fix Time** | ~30 min | 60 min | 🟢 OK |
-| **Merge Conflicts** | Low | High | 🟢 OK |
+| Metric                | Current | Threshold | Status     |
+| --------------------- | ------- | --------- | ---------- |
+| **File Size**         | 292KB   | 500KB     | 🟢 OK      |
+| **Total Lines**       | 6,505   | 10,000    | 🟡 Warning |
+| **Functions**         | 482     | 750       | 🟢 OK      |
+| **Load Time (4G)**    | ~1.5s   | 3s        | 🟢 OK      |
+| **Time to Find Code** | ~2 min  | 5 min     | 🟡 Warning |
+| **Bug Fix Time**      | ~30 min | 60 min    | 🟢 OK      |
+| **Merge Conflicts**   | Low     | High      | 🟢 OK      |
 
 **When 2+ metrics hit red:** Refactor becomes urgent
 
@@ -470,16 +503,19 @@ Do you have time for 2-3 week refactor?
 **Answer: Yes, index.html needs refactoring, but timing matters.**
 
 **Recommended Plan:**
+
 1. **Week 2-3:** Build remaining features (velocity > code quality)
 2. **Week 4-5:** Execute refactor (before scaling)
 3. **Week 6+:** Scale confidently with clean architecture
 
 **Quick Win (Do This Week):**
+
 - Extract CSS to `/public/styles.css` (1 hour)
 - Extract JS to `/public/app.js` (1 hour)
 - **Result:** index.html drops from 6,505 → 1,500 lines
 
 **Full Refactor (Week 4-5):**
+
 - Modular architecture (10-15 files)
 - Build process (Vite)
 - Type safety (optional TypeScript)

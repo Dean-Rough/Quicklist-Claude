@@ -192,7 +192,7 @@ class SmartClipboard {
       isIOS: this.isIOS(),
       isAndroid: this.isAndroid(),
       supportsClipboardAPI: this.supportsClipboardAPI,
-      userAgent: ua
+      userAgent: ua,
     };
   }
 
@@ -207,7 +207,7 @@ class SmartClipboard {
       clipboardAPISupported: this.supportsClipboardAPI,
       copySuccess: false,
       readSuccess: false,
-      error: null
+      error: null,
     };
 
     try {
@@ -251,16 +251,14 @@ class PlatformClipboardFormatter {
       listing.title + ' 🔥',
       '',
       sizeInfo ? `Size: ${sizeInfo}` : '',
-      savings
-        ? `£${listing.price} (RRP £${listing.rrp} - save ${savings}%!)`
-        : `£${listing.price}`,
+      savings ? `£${listing.price} (RRP £${listing.rrp} - save ${savings}%!)` : `£${listing.price}`,
       '',
       listing.description,
       '',
-      (listing.keywords || []).map(k => '#' + k.toLowerCase()).join(' ')
+      (listing.keywords || []).map((k) => '#' + k.toLowerCase()).join(' '),
     ];
 
-    return parts.filter(p => p !== '').join('\n');
+    return parts.filter((p) => p !== '').join('\n');
   }
 
   /**
@@ -274,13 +272,9 @@ class PlatformClipboardFormatter {
       .replace(/good condition/gi, 'good condition!')
       .replace(/\./g, '!');
 
-    const hashtags = [
-      ...(listing.keywords || []),
-      listing.brand,
-      listing.category
-    ]
+    const hashtags = [...(listing.keywords || []), listing.brand, listing.category]
       .filter(Boolean)
-      .map(k => '#' + k.toLowerCase().replace(/\s+/g, ''))
+      .map((k) => '#' + k.toLowerCase().replace(/\s+/g, ''))
       .join(' ');
 
     const parts = [
@@ -294,10 +288,10 @@ class PlatformClipboardFormatter {
       `price: £${listing.price}${listing.rrp ? ` (rrp £${listing.rrp})` : ''}`,
       'grab a bargain! 💫',
       '',
-      hashtags
+      hashtags,
     ];
 
-    return parts.filter(p => p !== '').join('\n');
+    return parts.filter((p) => p !== '').join('\n');
   }
 
   /**
@@ -319,10 +313,10 @@ class PlatformClipboardFormatter {
       '',
       '📍 Can meet locally or post. Message for details!',
       '',
-      (listing.keywords || []).map(k => '#' + k.toLowerCase()).join(' ')
+      (listing.keywords || []).map((k) => '#' + k.toLowerCase()).join(' '),
     ];
 
-    return parts.filter(p => p !== '').join('\n');
+    return parts.filter((p) => p !== '').join('\n');
   }
 
   /**
@@ -342,10 +336,10 @@ class PlatformClipboardFormatter {
       listing.color ? `• Color: ${listing.color}` : '',
       listing.material ? `• Material: ${listing.material}` : '',
       '',
-      (listing.keywords || []).map(k => '#' + k).join(' ')
+      (listing.keywords || []).map((k) => '#' + k).join(' '),
     ];
 
-    return parts.filter(p => p !== '').join('\n');
+    return parts.filter((p) => p !== '').join('\n');
   }
 
   /**
@@ -381,6 +375,6 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     SmartClipboard,
-    PlatformClipboardFormatter
+    PlatformClipboardFormatter,
   };
 }

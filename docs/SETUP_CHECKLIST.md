@@ -5,6 +5,7 @@
 ## ✅ What You Have (Environment Variables)
 
 Based on your `.env` file, you have:
+
 - ✅ Server configuration (PORT, NODE_ENV, FRONTEND_URL)
 - ✅ Database connection (DATABASE_URL)
 - ✅ Authentication (JWT_SECRET, Neon Auth vars)
@@ -39,6 +40,7 @@ To enable Google OAuth via Neon Auth:
    - Copy **App ID** and **API Key**
 
 2. **Add to `.env`:**
+
    ```env
    NEON_AUTH_APP_ID=your_app_id_from_neon_console
    NEON_AUTH_API_KEY=your_api_key_from_neon_console
@@ -72,23 +74,28 @@ npm install
 ```
 
 This installs:
+
 - ✅ Express, PostgreSQL, Neon Auth SDK
 - ✅ All required packages
 
 ### 5. **Test the Setup**
 
 1. **Start server:**
+
    ```bash
    npm start
    ```
 
 2. **Check health:**
+
    ```bash
    curl http://localhost:3000/api/health
    ```
+
    Should return: `{"status":"ok",...}`
 
 3. **Open app:**
+
    ```
    http://localhost:4577
    ```
@@ -117,12 +124,14 @@ console.log('✅ All required env vars set');
 ## 🎯 What's Working vs What Needs Setup
 
 ### ✅ Already Working (No Setup Needed)
+
 - Core app functionality
 - AI listing generation (if GEMINI_API_KEY set)
 - Database queries (if DATABASE_URL set)
 - Legacy email/password auth (if JWT_SECRET set)
 
 ### ⚙️ Needs Configuration
+
 - **Neon Auth** → Enable in Neon Console, add credentials
 - **Google OAuth** → Configure in Neon Console (if using Neon Auth)
 - **Stripe** → Add keys if using payments
@@ -163,6 +172,7 @@ Before deploying to production:
 ## 📚 Next Steps
 
 Once basic setup is complete, you can:
+
 1. ✅ Test listing generation
 2. ✅ Test saving/loading listings
 3. ✅ Configure Stripe (if using payments)
@@ -172,6 +182,7 @@ Once basic setup is complete, you can:
 ---
 
 **Need help?** Check:
+
 - [NEON_AUTH_SETUP.md](./NEON_AUTH_SETUP.md) - Neon Auth details
 - [DEPLOYMENT.md](./DEPLOYMENT.md) - Production deployment
 - [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) - API reference

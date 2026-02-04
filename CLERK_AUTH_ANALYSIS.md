@@ -48,12 +48,14 @@ QuickList AI implements a **hybrid authentication system** that supports both **
 ### Environment Variables
 
 **Clerk (Recommended)**:
+
 ```env
 CLERK_SECRET_KEY=sk_test_...
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 ```
 
 **Legacy JWT (Fallback)**:
+
 ```env
 JWT_SECRET=your_secure_random_secret_here
 ```
@@ -63,17 +65,18 @@ JWT_SECRET=your_secure_random_secret_here
 Location: [server.js:36-45](server.js#L36-L45)
 
 ```javascript
-const isClerkEnabled = !!(process.env.CLERK_SECRET_KEY &&
-                          process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+const isClerkEnabled = !!(
+  process.env.CLERK_SECRET_KEY && process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+);
 
 if (isClerkEnabled) {
-    logger.info('Clerk authentication enabled');
+  logger.info('Clerk authentication enabled');
 } else {
-    logger.warn('Clerk not configured, using legacy JWT auth');
-    if (!process.env.JWT_SECRET) {
-        logger.error('JWT_SECRET required when Clerk is not configured');
-        process.exit(1);
-    }
+  logger.warn('Clerk not configured, using legacy JWT auth');
+  if (!process.env.JWT_SECRET) {
+    logger.error('JWT_SECRET required when Clerk is not configured');
+    process.exit(1);
+  }
 }
 ```
 
@@ -86,6 +89,7 @@ Location: [server.js:181-205](server.js#L181-L205)
 **Endpoint**: `GET /api/config/auth`
 
 **Response**:
+
 ```json
 {
   "clerk": {
@@ -98,7 +102,7 @@ Location: [server.js:181-205](server.js#L181-L205)
     "baseUrl": "https://auth.neon.tech",
     "enabled": false
   },
-  "authProvider": "clerk"  // or "jwt" or "neon"
+  "authProvider": "clerk" // or "jwt" or "neon"
 }
 ```
 
@@ -117,19 +121,21 @@ const config = await response.json();
 
 // 2. Initialize Clerk if enabled
 if (config.clerk && config.clerk.enabled && config.clerk.publishableKey) {
-    window.clerk = new Clerk(publishableKey);
-    await window.clerk.load();
+  window.clerk = new Clerk(publishableKey);
+  await window.clerk.load();
 
-    // 3. Listen for auth state changes
-    window.clerk.addListener(({ user, session }) => {
-        if (user && session) {
-            window.dispatchEvent(new CustomEvent('clerkSignedIn', {
-                detail: { user, session }
-            }));
-        } else {
-            window.dispatchEvent(new CustomEvent('clerkSignedOut'));
-        }
-    });
+  // 3. Listen for auth state changes
+  window.clerk.addListener(({ user, session }) => {
+    if (user && session) {
+      window.dispatchEvent(
+        new CustomEvent('clerkSignedIn', {
+          detail: { user, session },
+        })
+      );
+    } else {
+      window.dispatchEvent(new CustomEvent('clerkSignedOut'));
+    }
+  });
 }
 
 // 4. Signal that auth system is ready
@@ -191,12 +197,12 @@ async signInWithClerk(provider = 'google') {
 
 ```html
 <button
-    class="btn btn-secondary clerk-oauth-btn"
-    data-provider="google"
-    onclick="app.signInWithClerk('google')"
+  class="btn btn-secondary clerk-oauth-btn"
+  data-provider="google"
+  onclick="app.signInWithClerk('google')"
 >
-    <svg><!-- Google logo --></svg>
-    Sign in with Google
+  <svg><!-- Google logo --></svg>
+  Sign in with Google
 </button>
 ```
 
@@ -263,51 +269,52 @@ This is the **core authentication middleware** used by all protected routes.
 
 ```javascript
 const authenticateToken = async (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1];
+  const token = req.headers['authorization']?.split(' ')[1];
 
-    if (!token) {
-        return res.status(401).json({ error: 'Access token required' });
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  // ========== CLERK PATH ==========
+  if (isClerkEnabled) {
+    try {
+      const { verifyToken } = require('@clerk/clerk-sdk-node');
+      const session = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY,
+      });
+
+      if (session && session.sub) {
+        // Get full user from Clerk API
+        const user = await clerkClient.users.getUser(session.sub);
+
+        // Set req.user for downstream handlers
+        req.user = {
+          id: user.id,
+          email: user.emailAddresses[0]?.emailAddress,
+          name: user.firstName + ' ' + user.lastName,
+          clerkId: user.id,
+        };
+        return next();
+      }
+    } catch (clerkError) {
+      logger.debug('Clerk auth failed, trying JWT fallback');
+      // Fall through to JWT
     }
+  }
 
-    // ========== CLERK PATH ==========
-    if (isClerkEnabled) {
-        try {
-            const { verifyToken } = require('@clerk/clerk-sdk-node');
-            const session = await verifyToken(token, {
-                secretKey: process.env.CLERK_SECRET_KEY
-            });
-
-            if (session && session.sub) {
-                // Get full user from Clerk API
-                const user = await clerkClient.users.getUser(session.sub);
-
-                // Set req.user for downstream handlers
-                req.user = {
-                    id: user.id,
-                    email: user.emailAddresses[0]?.emailAddress,
-                    name: user.firstName + ' ' + user.lastName,
-                    clerkId: user.id
-                };
-                return next();
-            }
-        } catch (clerkError) {
-            logger.debug('Clerk auth failed, trying JWT fallback');
-            // Fall through to JWT
-        }
+  // ========== JWT FALLBACK ==========
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
     }
-
-    // ========== JWT FALLBACK ==========
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.status(403).json({ error: 'Invalid or expired token' });
-        }
-        req.user = user;
-        next();
-    });
+    req.user = user;
+    next();
+  });
 };
 ```
 
 **Key Features**:
+
 1. **Try Clerk first** if enabled
 2. **Graceful fallback** to JWT if Clerk fails
 3. **Consistent req.user** interface for downstream handlers
@@ -323,50 +330,52 @@ Location: [server.js:456-522](server.js#L456-L522)
 
 ```javascript
 app.get('/api/auth/verify', authenticateToken, async (req, res) => {
-    // If using Clerk, sync user to database
-    if (isClerkEnabled && req.user.clerkId) {
-        // Check if user exists in database
-        const existingUser = await safeQuery(
-            'SELECT * FROM users WHERE clerk_id = $1 OR email = $2',
-            [req.user.clerkId, req.user.email]
-        );
+  // If using Clerk, sync user to database
+  if (isClerkEnabled && req.user.clerkId) {
+    // Check if user exists in database
+    const existingUser = await safeQuery('SELECT * FROM users WHERE clerk_id = $1 OR email = $2', [
+      req.user.clerkId,
+      req.user.email,
+    ]);
 
-        if (existingUser.rows.length === 0 && req.user.email) {
-            // Create user in database
-            await safeQuery(
-                `INSERT INTO users (email, clerk_id, auth_provider, name, password_hash)
+    if (existingUser.rows.length === 0 && req.user.email) {
+      // Create user in database
+      await safeQuery(
+        `INSERT INTO users (email, clerk_id, auth_provider, name, password_hash)
                  VALUES ($1, $2, 'clerk', $3, NULL)
                  ON CONFLICT (email) DO UPDATE
                  SET clerk_id = EXCLUDED.clerk_id,
                      auth_provider = 'clerk',
                      name = EXCLUDED.name`,
-                [req.user.email, req.user.clerkId, req.user.name]
-            );
+        [req.user.email, req.user.clerkId, req.user.name]
+      );
 
-            // Create free tier subscription for new user
-            // ...
-        } else if (existingUser.rows[0] && !existingUser.rows[0].clerk_id) {
-            // Migrate existing JWT user to Clerk
-            await safeQuery(
-                'UPDATE users SET clerk_id = $1, auth_provider = $2 WHERE id = $3',
-                [req.user.clerkId, 'clerk', existingUser.rows[0].id]
-            );
-        }
-
-        // Get database user ID
-        const dbUser = await safeQuery(
-            'SELECT id, email, name, clerk_id FROM users WHERE clerk_id = $1',
-            [req.user.clerkId]
-        );
-
-        req.user.id = dbUser.rows[0].id;
+      // Create free tier subscription for new user
+      // ...
+    } else if (existingUser.rows[0] && !existingUser.rows[0].clerk_id) {
+      // Migrate existing JWT user to Clerk
+      await safeQuery('UPDATE users SET clerk_id = $1, auth_provider = $2 WHERE id = $3', [
+        req.user.clerkId,
+        'clerk',
+        existingUser.rows[0].id,
+      ]);
     }
 
-    res.json({ user: req.user });
+    // Get database user ID
+    const dbUser = await safeQuery(
+      'SELECT id, email, name, clerk_id FROM users WHERE clerk_id = $1',
+      [req.user.clerkId]
+    );
+
+    req.user.id = dbUser.rows[0].id;
+  }
+
+  res.json({ user: req.user });
 });
 ```
 
 **Critical Function**: This endpoint handles **automatic user migration** from JWT to Clerk:
+
 - **New Clerk users** → Created in database
 - **Existing users** → Linked with `clerk_id`
 
@@ -387,6 +396,7 @@ Location: [server.js:341-445](server.js#L341-L445)
    - Returns JWT token
 
 **Important**: These endpoints are **not disabled** when Clerk is enabled. They coexist to support:
+
 - Users who signed up before Clerk migration
 - Fallback if Clerk service is down
 - Testing without Clerk credentials
@@ -427,11 +437,11 @@ CREATE INDEX IF NOT EXISTS idx_users_clerk_id ON users(clerk_id);
 
 ### Auth Provider States
 
-| auth_provider | password_hash | clerk_id | google_id | Description |
-|--------------|---------------|----------|-----------|-------------|
-| `'email'` | ✓ | NULL | NULL | Legacy JWT user |
-| `'clerk'` | NULL | ✓ | NULL | Clerk user (email or OAuth) |
-| `'google'` | NULL | NULL | ✓ | Legacy Google OAuth user |
+| auth_provider | password_hash | clerk_id | google_id | Description                 |
+| ------------- | ------------- | -------- | --------- | --------------------------- |
+| `'email'`     | ✓             | NULL     | NULL      | Legacy JWT user             |
+| `'clerk'`     | NULL          | ✓        | NULL      | Clerk user (email or OAuth) |
+| `'google'`    | NULL          | NULL     | ✓         | Legacy Google OAuth user    |
 
 ## Authentication Flows
 
@@ -600,13 +610,14 @@ CREATE INDEX IF NOT EXISTS idx_users_clerk_id ON users(clerk_id);
    - Reduces attack surface
 
 2. **Priority 2: Token Storage**
+
    ```javascript
    // Instead of localStorage, use httpOnly cookie for JWT
    res.cookie('token', token, {
-       httpOnly: true,
-       secure: isProduction,
-       sameSite: 'strict',
-       maxAge: 7 * 24 * 60 * 60 * 1000
+     httpOnly: true,
+     secure: isProduction,
+     sameSite: 'strict',
+     maxAge: 7 * 24 * 60 * 60 * 1000,
    });
    ```
 
@@ -644,29 +655,30 @@ CREATE INDEX IF NOT EXISTS idx_users_clerk_id ON users(clerk_id);
 ```javascript
 // Example test structure (not implemented)
 describe('Authentication', () => {
-    describe('Clerk Auth', () => {
-        it('should authenticate with valid Clerk token');
-        it('should reject invalid Clerk token');
-        it('should sync Clerk user to database');
-        it('should migrate JWT user to Clerk');
-    });
+  describe('Clerk Auth', () => {
+    it('should authenticate with valid Clerk token');
+    it('should reject invalid Clerk token');
+    it('should sync Clerk user to database');
+    it('should migrate JWT user to Clerk');
+  });
 
-    describe('JWT Auth', () => {
-        it('should issue JWT on signup');
-        it('should verify JWT on protected routes');
-        it('should reject expired JWT');
-    });
+  describe('JWT Auth', () => {
+    it('should issue JWT on signup');
+    it('should verify JWT on protected routes');
+    it('should reject expired JWT');
+  });
 
-    describe('Middleware', () => {
-        it('should try Clerk before JWT');
-        it('should fallback to JWT if Clerk fails');
-    });
+  describe('Middleware', () => {
+    it('should try Clerk before JWT');
+    it('should fallback to JWT if Clerk fails');
+  });
 });
 ```
 
 ## Migration Guide
 
 ### Current State
+
 - Clerk is **partially implemented**
 - JWT is **fully functional**
 - Both coexist
@@ -674,6 +686,7 @@ describe('Authentication', () => {
 ### Recommended Migration Path
 
 **Phase 1: Enable Clerk (Current State)**
+
 - [x] Install `@clerk/clerk-sdk-node`
 - [x] Add Clerk env vars
 - [x] Implement Clerk frontend SDK
@@ -682,17 +695,20 @@ describe('Authentication', () => {
 - [x] Implement auto-migration in `/api/auth/verify`
 
 **Phase 2: Promote Clerk (Recommended Next Step)**
+
 - [ ] Update UI to prioritize Clerk OAuth buttons
 - [ ] Add banner encouraging existing users to "Sign in with Google"
 - [ ] Monitor usage: track `auth_provider` distribution
 
 **Phase 3: Deprecate JWT (Future)**
+
 - [ ] Announce deprecation date (e.g., 90 days)
 - [ ] Email users to migrate to Clerk
 - [ ] Disable JWT signup (keep signin for existing users)
 - [ ] Monitor: ensure no new JWT users
 
 **Phase 4: Remove JWT (Final)**
+
 - [ ] Disable JWT signin endpoint
 - [ ] Remove JWT code from `authenticateToken`
 - [ ] Remove `password_hash` column from database
@@ -702,6 +718,7 @@ describe('Authentication', () => {
 ## Configuration Examples
 
 ### Development (.env)
+
 ```env
 # Clerk (recommended)
 CLERK_SECRET_KEY=sk_test_abcd1234...
@@ -720,6 +737,7 @@ NODE_ENV=development
 ```
 
 ### Production (.env)
+
 ```env
 # Clerk (primary)
 CLERK_SECRET_KEY=sk_live_abcd1234...
@@ -739,6 +757,7 @@ FRONTEND_URL=https://quicklist.ai
 ```
 
 ### Testing without Clerk
+
 ```env
 # Disable Clerk, use JWT only
 # CLERK_SECRET_KEY=  # commented out
@@ -751,40 +770,50 @@ DATABASE_URL=postgresql://...
 ## Troubleshooting
 
 ### Issue: "Clerk not initialized"
+
 **Symptom**: Button click shows toast error
 **Cause**: Clerk publishable key missing or invalid
 **Fix**:
+
 1. Check `/api/config/auth` returns valid publishable key
 2. Check browser console for Clerk load errors
 3. Verify `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` in env vars
 
 ### Issue: "Invalid or expired token"
+
 **Symptom**: API returns 403
 **Cause**: JWT expired (7 days) or invalid
 **Fix**:
+
 1. Clear localStorage: `localStorage.removeItem('quicklist-token')`
 2. Sign in again
 3. Check token expiry: decode JWT at jwt.io
 
 ### Issue: Clerk user not syncing to database
+
 **Symptom**: User authenticated but has no listings
 **Cause**: `/api/auth/verify` not called or DB sync failed
 **Fix**:
+
 1. Check browser network tab: verify `/api/auth/verify` called
 2. Check server logs for database errors
 3. Manually query database: `SELECT * FROM users WHERE email = '...'`
 
 ### Issue: Rate limit on auth endpoints
+
 **Symptom**: "Too many authentication attempts"
 **Cause**: 5 requests in 15 minutes exceeded
 **Fix**:
+
 1. Wait 15 minutes
 2. For development, increase limit in [server.js:97-103](server.js#L97-L103)
 
 ### Issue: Duplicate users (JWT and Clerk)
+
 **Symptom**: Same email has 2 accounts
 **Cause**: User signed up with JWT, then signed up (not signed in) with Clerk
 **Fix**:
+
 1. Manually merge in database
 2. Update listings: `UPDATE listings SET user_id = <clerk_user_id> WHERE user_id = <jwt_user_id>`
 3. Delete old user: `DELETE FROM users WHERE id = <jwt_user_id>`
@@ -792,7 +821,9 @@ DATABASE_URL=postgresql://...
 ## Summary
 
 ### Current Implementation Status
+
 ✅ **Implemented**:
+
 - Clerk SDK integration (frontend & backend)
 - Hybrid authentication middleware
 - Automatic user migration (JWT → Clerk)
@@ -800,10 +831,12 @@ DATABASE_URL=postgresql://...
 - Dynamic auth config endpoint
 
 ⚠️ **Partially Complete**:
+
 - UI still shows email/password forms (should prioritize Clerk)
 - JWT still fully functional (good for now, deprecate later)
 
 ❌ **Not Implemented**:
+
 - Token revocation
 - CSRF protection
 - Audit logging

@@ -5,6 +5,7 @@
 ## Current State
 
 ### ✅ What's Working
+
 1. **Legacy JWT Auth** - Email/password signup and signin
    - Endpoints: `/api/auth/signup`, `/api/auth/signin`
    - Uses JWT tokens stored in localStorage
@@ -70,12 +71,14 @@ Frontend calls POST /api/auth/neon/callback { code }
 ## Environment Variables Needed
 
 ### For Legacy JWT Auth (Currently Working)
+
 ```env
 JWT_SECRET=your_secure_random_secret_here
 DATABASE_URL=postgresql://...
 ```
 
 ### For Neon Auth (NOT CONFIGURED)
+
 ```env
 # Option 1: New naming convention (preferred)
 STACK_PROJECT_ID=your_neon_auth_project_id
@@ -104,6 +107,7 @@ NEON_AUTH_URL=https://auth.neon.tech  # Default, usually fine
 4. All API endpoints work with JWT tokens
 
 **To use this:**
+
 - Just use the email/password form in the auth modal
 - No Neon Auth configuration needed
 
@@ -160,24 +164,23 @@ npm install @neondatabase/stack-js
 
 // Neon Auth callback endpoint
 app.post('/api/auth/neon/callback', async (req, res) => {
-    try {
-        const { code } = req.body;
-        
-        if (!code) {
-            return res.status(400).json({ error: 'Authorization code required' });
-        }
+  try {
+    const { code } = req.body;
 
-        // TODO: Exchange code with Neon Auth API
-        // This requires the Neon Auth SDK or direct API calls
-        // Using STACK_SECRET_SERVER_KEY to verify
-        
-        // For now, this is a placeholder - needs implementation
-        res.status(501).json({ error: 'Neon Auth callback not yet implemented' });
-        
-    } catch (error) {
-        logger.error('Neon Auth callback error:', { error: error.message });
-        res.status(500).json({ error: 'Authentication failed' });
+    if (!code) {
+      return res.status(400).json({ error: 'Authorization code required' });
     }
+
+    // TODO: Exchange code with Neon Auth API
+    // This requires the Neon Auth SDK or direct API calls
+    // Using STACK_SECRET_SERVER_KEY to verify
+
+    // For now, this is a placeholder - needs implementation
+    res.status(501).json({ error: 'Neon Auth callback not yet implemented' });
+  } catch (error) {
+    logger.error('Neon Auth callback error:', { error: error.message });
+    res.status(500).json({ error: 'Authentication failed' });
+  }
 });
 ```
 
@@ -186,6 +189,7 @@ app.post('/api/auth/neon/callback', async (req, res) => {
 ## Code Locations
 
 ### Frontend Auth Code
+
 - **Legacy Sign In:** `index.html` line ~4934 (`signIn()`)
 - **Legacy Sign Up:** `index.html` line ~4900 (`signUp()`)
 - **Neon Auth Sign In:** `index.html` line ~5004 (`signInWithNeonAuth()`)
@@ -193,6 +197,7 @@ app.post('/api/auth/neon/callback', async (req, res) => {
 - **Auth Check:** `index.html` line ~2248 (`checkAuth()`)
 
 ### Backend Auth Code
+
 - **Config Endpoint:** `server.js` line 168 (`/api/config/neon-auth`)
 - **Sign Up:** `server.js` line 276 (`POST /api/auth/signup`)
 - **Sign In:** `server.js` line 333 (`POST /api/auth/signin`)
@@ -229,6 +234,7 @@ If you want Google OAuth via Neon Auth:
 ## Testing Current Auth
 
 ### Test Legacy JWT Auth
+
 ```bash
 # Sign up
 curl -X POST http://localhost:4577/api/auth/signup \
@@ -246,6 +252,7 @@ curl http://localhost:4577/api/auth/verify \
 ```
 
 ### Test Neon Auth Config
+
 ```bash
 curl http://localhost:4577/api/config/neon-auth
 # Should return: {"enabled": false} if not configured
@@ -256,16 +263,19 @@ curl http://localhost:4577/api/config/neon-auth
 ## Summary
 
 **Current Situation:**
+
 - ✅ Legacy JWT auth works perfectly
 - ❌ Neon Auth is not configured (`enabled: false`)
 - ❌ Neon Auth callback endpoint is missing
 - ❌ Frontend expects Neon Auth but backend doesn't support it
 
 **What You Need:**
+
 1. **For immediate use:** Just use email/password auth (already works)
 2. **For Neon Auth:** Get credentials + implement missing endpoint + install SDK
 
 **Next Steps:**
+
 1. Decide: Legacy auth (works now) or Neon Auth (needs work)
 2. If Neon Auth: Get credentials from Neon Console
 3. If Neon Auth: Implement `/api/auth/neon/callback` endpoint

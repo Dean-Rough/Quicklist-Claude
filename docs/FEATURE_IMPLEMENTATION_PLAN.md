@@ -22,16 +22,19 @@ This document outlines the implementation plan for 7 high-priority features iden
 ## Implementation Timeline
 
 ### **Week 1: Foundation & Quick Wins**
+
 - [x] Research completed
 - [ ] Enhanced SEO prompts (2-3 days)
 - [ ] Image quality scoring (2-3 days)
 - [ ] Batch upload with auto-resize (3-4 days)
 
 ### **Week 2: Market Intelligence**
+
 - [ ] eBay Finding API integration (3-4 days)
 - [ ] Predictive pricing engine (3-4 days)
 
 ### **Week 3-4: Advanced Features**
+
 - [ ] AI damage detection (5-7 days)
 - [ ] Barcode scanner mobile integration (5-7 days)
 
@@ -45,10 +48,13 @@ This document outlines the implementation plan for 7 high-priority features iden
 **Cost Impact:** Reduces Gemini API costs by ~60-70%
 
 ### Problem Statement
+
 Currently, images are uploaded and sent to Gemini at full resolution, consuming excessive tokens and increasing API costs.
 
 ### Solution
+
 Implement client-side image resizing before upload:
+
 - Resize to 2400px longest side (Gemini's sweet spot for detail vs cost)
 - Maintain aspect ratio
 - Queue processing for 10-50 images
@@ -57,6 +63,7 @@ Implement client-side image resizing before upload:
 ### Technical Implementation
 
 #### 1. Image Resize Utility Function
+
 ```javascript
 // Add to app object in index.html
 async resizeImage(file, maxDimension = 2400) {
@@ -106,6 +113,7 @@ async resizeImage(file, maxDimension = 2400) {
 ```
 
 #### 2. Update processFiles Method
+
 ```javascript
 // Modify existing processFiles function
 async processFiles(files) {
@@ -140,6 +148,7 @@ async processFiles(files) {
 ```
 
 #### 3. Batch Processing UI Enhancement
+
 ```javascript
 // Add batch processing indicator
 renderBatchProgress() {
@@ -165,12 +174,15 @@ renderBatchProgress() {
 ```
 
 ### Database Schema Changes
+
 No changes required - works with existing schema.
 
 ### API Changes
+
 No backend changes required - optimization is client-side only.
 
 ### Testing Checklist
+
 - [ ] Upload single image (verify resize to 2400px)
 - [ ] Upload 10 images batch (verify queue processing)
 - [ ] Upload 50 images batch (stress test)
@@ -181,6 +193,7 @@ No backend changes required - optimization is client-side only.
 - [ ] Measure token reduction in Gemini API calls
 
 ### Success Metrics
+
 - Image file sizes reduced by 60-80%
 - Gemini API costs reduced by 60-70%
 - Upload processing time < 2 seconds per image
@@ -196,14 +209,17 @@ No backend changes required - optimization is client-side only.
 **Cost Impact:** $0 (uses existing Gemini API)
 
 ### Problem Statement
+
 Current AI-generated listings lack SEO optimization, missing high-value keywords and marketplace-specific formatting.
 
 ### Solution
+
 Enhance Gemini prompts to inject platform-specific SEO strategies, keyword research, and structured formatting.
 
 ### Technical Implementation
 
 #### 1. SEO-Enhanced Prompt Template
+
 ```javascript
 // Update generateListing method in server.js
 const seoEnhancedPrompt = `
@@ -273,6 +289,7 @@ Be thorough, honest, and optimize for search visibility.
 ```
 
 #### 2. SEO Score Calculator (Client-side feedback)
+
 ```javascript
 // Add to app object
 calculateSEOScore(listing) {
@@ -357,30 +374,28 @@ calculateKeywordDensity(text, keywords) {
 ```
 
 #### 3. UI Enhancement - SEO Score Display
+
 ```html
 <!-- Add to listing results display -->
 <div class="seo-score-card">
-    <div class="seo-score-header">
-        <h4>SEO Score</h4>
-        <div class="score-badge grade-${seoScore.grade}">
-            ${seoScore.score}/100 (${seoScore.grade})
-        </div>
+  <div class="seo-score-header">
+    <h4>SEO Score</h4>
+    <div class="score-badge grade-${seoScore.grade}">${seoScore.score}/100 (${seoScore.grade})</div>
+  </div>
+  <div class="seo-feedback">
+    ${seoScore.feedback.map(item => `
+    <div class="feedback-item">
+      <span class="feedback-icon">⚠️</span>
+      ${item}
     </div>
-    <div class="seo-feedback">
-        ${seoScore.feedback.map(item => `
-            <div class="feedback-item">
-                <span class="feedback-icon">⚠️</span>
-                ${item}
-            </div>
-        `).join('')}
-    </div>
-    <button class="btn btn-secondary" onclick="app.optimizeForSEO()">
-        Auto-Optimize SEO
-    </button>
+    `).join('')}
+  </div>
+  <button class="btn btn-secondary" onclick="app.optimizeForSEO()">Auto-Optimize SEO</button>
 </div>
 ```
 
 ### Testing Checklist
+
 - [ ] Generate listing and check title keyword placement
 - [ ] Verify description has bullet points
 - [ ] Check keyword count (5-15 range)
@@ -389,6 +404,7 @@ calculateKeywordDensity(text, keywords) {
 - [ ] Test on different platforms (eBay, Vinted, Gumtree)
 
 ### Success Metrics
+
 - SEO scores average 70+ (vs current ~40-50 estimated)
 - Keyword count increases from 3-5 to 8-12
 - Descriptions include 3+ bullet points
@@ -404,18 +420,21 @@ calculateKeywordDensity(text, keywords) {
 **Cost Impact:** Minimal (uses existing Gemini Vision)
 
 ### Problem Statement
+
 Users upload poor-quality images (blurry, dark, cluttered backgrounds) without realizing it, leading to lower sales.
 
 ### Solution
+
 Use Gemini Vision to analyze image quality and provide actionable feedback before listing.
 
 ### Technical Implementation
 
 #### 1. Image Quality Analysis Prompt
+
 ```javascript
 // Add new method to server.js
 async function analyzeImageQuality(imageBase64) {
-    const prompt = `
+  const prompt = `
 Analyze this product image for marketplace listing quality.
 
 Evaluate on these criteria (score 0-10 for each):
@@ -470,21 +489,22 @@ Return JSON:
 }
 `;
 
-    const response = await callGeminiVision(imageBase64, prompt);
-    return JSON.parse(response);
+  const response = await callGeminiVision(imageBase64, prompt);
+  return JSON.parse(response);
 }
 ```
 
 #### 2. Quality Gating System
+
 ```javascript
 // Add to app.processFiles after blur detection
 const qualityAnalysis = await fetch('/api/analyze-image-quality', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.state.user.token}`
-    },
-    body: JSON.stringify({image: imageData.data})
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${this.state.user.token}`,
+  },
+  body: JSON.stringify({ image: imageData.data }),
 });
 
 const quality = await qualityAnalysis.json();
@@ -495,11 +515,12 @@ imageData.qualityRecommendations = quality.recommendations;
 
 // Warn if below threshold
 if (quality.overallScore < 60) {
-    this.showQualityWarning(imageData, quality);
+  this.showQualityWarning(imageData, quality);
 }
 ```
 
 #### 3. Quality Warning Modal
+
 ```javascript
 showQualityWarning(imageData, quality) {
     const modal = `
@@ -563,27 +584,29 @@ showQualityWarning(imageData, quality) {
 ```
 
 ### Backend Changes (server.js)
+
 ```javascript
 // Add new endpoint
 app.post('/api/analyze-image-quality', requireAuth, async (req, res) => {
-    try {
-        const { image } = req.body;
+  try {
+    const { image } = req.body;
 
-        if (!image) {
-            return res.status(400).json({ error: 'Image required' });
-        }
-
-        const quality = await analyzeImageQuality(image);
-
-        res.json(quality);
-    } catch (error) {
-        console.error('Image quality analysis error:', error);
-        res.status(500).json({ error: 'Failed to analyze image quality' });
+    if (!image) {
+      return res.status(400).json({ error: 'Image required' });
     }
+
+    const quality = await analyzeImageQuality(image);
+
+    res.json(quality);
+  } catch (error) {
+    console.error('Image quality analysis error:', error);
+    res.status(500).json({ error: 'Failed to analyze image quality' });
+  }
 });
 ```
 
 ### Testing Checklist
+
 - [ ] Upload high-quality image (expect score 80+)
 - [ ] Upload blurry image (expect sharpness < 5)
 - [ ] Upload dark image (expect lighting < 5)
@@ -594,6 +617,7 @@ app.post('/api/analyze-image-quality', requireAuth, async (req, res) => {
 - [ ] Test "Use Anyway" override
 
 ### Success Metrics
+
 - Average image quality score improves from ~50 to 70+
 - Users retake 20-30% of poor-quality photos
 - Listings with quality score 70+ sell 25% faster (track over time)
@@ -608,253 +632,266 @@ app.post('/api/analyze-image-quality', requireAuth, async (req, res) => {
 **Cost Impact:** $0 (eBay API is free)
 
 ### Problem Statement
+
 Current pricing relies on Gemini's web research, which is:
+
 - Inconsistent
 - Not real-time
 - Doesn't show sold vs unsold items
 - No predictive analysis
 
 ### Solution
+
 Integrate eBay Finding API to fetch real sold listings data and build ML-based price prediction engine.
 
 ### Technical Implementation
 
 #### 1. eBay Finding API Setup
+
 ```javascript
 // Add to server.js
 const ebay = require('ebay-api');
 
 const ebayFindingAPI = new ebay({
-    clientID: process.env.EBAY_APP_ID,
-    env: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
+  clientID: process.env.EBAY_APP_ID,
+  env: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
 });
 
 async function getEbayPricingIntelligence(title, category) {
-    try {
-        // Search for completed listings (sold + unsold)
-        const completedListings = await ebayFindingAPI.findCompletedItems({
-            keywords: title,
-            categoryId: category,
-            itemFilter: [
-                { name: 'ListingType', value: 'All' },
-                { name: 'Condition', value: 'Used' }
-            ],
-            sortOrder: 'EndTimeSoonest',
-            paginationInput: { entriesPerPage: 50 }
-        });
+  try {
+    // Search for completed listings (sold + unsold)
+    const completedListings = await ebayFindingAPI.findCompletedItems({
+      keywords: title,
+      categoryId: category,
+      itemFilter: [
+        { name: 'ListingType', value: 'All' },
+        { name: 'Condition', value: 'Used' },
+      ],
+      sortOrder: 'EndTimeSoonest',
+      paginationInput: { entriesPerPage: 50 },
+    });
 
-        // Separate sold from unsold
-        const soldItems = completedListings.filter(item => item.sellingStatus.sellingState === 'EndedWithSales');
-        const unsoldItems = completedListings.filter(item => item.sellingStatus.sellingState !== 'EndedWithSales');
+    // Separate sold from unsold
+    const soldItems = completedListings.filter(
+      (item) => item.sellingStatus.sellingState === 'EndedWithSales'
+    );
+    const unsoldItems = completedListings.filter(
+      (item) => item.sellingStatus.sellingState !== 'EndedWithSales'
+    );
 
-        // Calculate statistics
-        const soldPrices = soldItems.map(item => parseFloat(item.sellingStatus.currentPrice.value));
-        const unsoldPrices = unsoldItems.map(item => parseFloat(item.sellingStatus.currentPrice.value));
+    // Calculate statistics
+    const soldPrices = soldItems.map((item) => parseFloat(item.sellingStatus.currentPrice.value));
+    const unsoldPrices = unsoldItems.map((item) =>
+      parseFloat(item.sellingStatus.currentPrice.value)
+    );
 
-        return {
-            totalResults: completedListings.length,
-            soldCount: soldItems.length,
-            unsoldCount: unsoldItems.length,
-            soldPrices: {
-                average: calculateAverage(soldPrices),
-                median: calculateMedian(soldPrices),
-                min: Math.min(...soldPrices),
-                max: Math.max(...soldPrices),
-                priceDistribution: calculateDistribution(soldPrices)
-            },
-            unsoldPrices: {
-                average: calculateAverage(unsoldPrices),
-                median: calculateMedian(unsoldPrices)
-            },
-            pricePoints: [
-                { price: calculatePercentile(soldPrices, 25), sellProbability: 0.85, label: 'Quick sale' },
-                { price: calculatePercentile(soldPrices, 50), sellProbability: 0.70, label: 'Balanced' },
-                { price: calculatePercentile(soldPrices, 75), sellProbability: 0.45, label: 'Premium' }
-            ],
-            soldExamples: soldItems.slice(0, 5).map(item => ({
-                title: item.title,
-                price: item.sellingStatus.currentPrice.value,
-                endDate: item.listingInfo.endTime,
-                url: item.viewItemURL
-            }))
-        };
-    } catch (error) {
-        console.error('eBay pricing intelligence error:', error);
-        return null;
-    }
+    return {
+      totalResults: completedListings.length,
+      soldCount: soldItems.length,
+      unsoldCount: unsoldItems.length,
+      soldPrices: {
+        average: calculateAverage(soldPrices),
+        median: calculateMedian(soldPrices),
+        min: Math.min(...soldPrices),
+        max: Math.max(...soldPrices),
+        priceDistribution: calculateDistribution(soldPrices),
+      },
+      unsoldPrices: {
+        average: calculateAverage(unsoldPrices),
+        median: calculateMedian(unsoldPrices),
+      },
+      pricePoints: [
+        { price: calculatePercentile(soldPrices, 25), sellProbability: 0.85, label: 'Quick sale' },
+        { price: calculatePercentile(soldPrices, 50), sellProbability: 0.7, label: 'Balanced' },
+        { price: calculatePercentile(soldPrices, 75), sellProbability: 0.45, label: 'Premium' },
+      ],
+      soldExamples: soldItems.slice(0, 5).map((item) => ({
+        title: item.title,
+        price: item.sellingStatus.currentPrice.value,
+        endDate: item.listingInfo.endTime,
+        url: item.viewItemURL,
+      })),
+    };
+  } catch (error) {
+    console.error('eBay pricing intelligence error:', error);
+    return null;
+  }
 }
 
 function calculateAverage(arr) {
-    return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+  return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 }
 
 function calculateMedian(arr) {
-    if (!arr.length) return 0;
-    const sorted = [...arr].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  if (!arr.length) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
 function calculatePercentile(arr, percentile) {
-    if (!arr.length) return 0;
-    const sorted = [...arr].sort((a, b) => a - b);
-    const index = Math.ceil((percentile / 100) * sorted.length) - 1;
-    return sorted[index];
+  if (!arr.length) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const index = Math.ceil((percentile / 100) * sorted.length) - 1;
+  return sorted[index];
 }
 
 function calculateDistribution(prices) {
-    const buckets = [0, 20, 40, 60, 80, 100, 150, 200, 300, 500, 1000];
-    const distribution = {};
+  const buckets = [0, 20, 40, 60, 80, 100, 150, 200, 300, 500, 1000];
+  const distribution = {};
 
-    buckets.forEach((bucket, i) => {
-        const next = buckets[i + 1] || Infinity;
-        const count = prices.filter(p => p >= bucket && p < next).length;
-        distribution[`${bucket}-${next === Infinity ? '+' : next}`] = count;
-    });
+  buckets.forEach((bucket, i) => {
+    const next = buckets[i + 1] || Infinity;
+    const count = prices.filter((p) => p >= bucket && p < next).length;
+    distribution[`${bucket}-${next === Infinity ? '+' : next}`] = count;
+  });
 
-    return distribution;
+  return distribution;
 }
 ```
 
 #### 2. Predictive Pricing Engine
+
 ```javascript
 async function predictOptimalPrice(listing, ebayData) {
-    // Features for prediction
-    const features = {
-        soldCount: ebayData.soldCount,
-        unsoldCount: ebayData.unsoldCount,
-        sellThroughRate: ebayData.soldCount / (ebayData.soldCount + ebayData.unsoldCount),
-        medianSoldPrice: ebayData.soldPrices.median,
-        avgSoldPrice: ebayData.soldPrices.average,
-        priceSpread: ebayData.soldPrices.max - ebayData.soldPrices.min,
+  // Features for prediction
+  const features = {
+    soldCount: ebayData.soldCount,
+    unsoldCount: ebayData.unsoldCount,
+    sellThroughRate: ebayData.soldCount / (ebayData.soldCount + ebayData.unsoldCount),
+    medianSoldPrice: ebayData.soldPrices.median,
+    avgSoldPrice: ebayData.soldPrices.average,
+    priceSpread: ebayData.soldPrices.max - ebayData.soldPrices.min,
 
-        // Listing quality factors
-        imageCount: listing.images?.length || 1,
-        imageQuality: listing.qualityScore || 70,
-        descriptionLength: listing.description?.length || 0,
-        keywordCount: listing.keywords?.length || 0,
+    // Listing quality factors
+    imageCount: listing.images?.length || 1,
+    imageQuality: listing.qualityScore || 70,
+    descriptionLength: listing.description?.length || 0,
+    keywordCount: listing.keywords?.length || 0,
 
-        // Condition factor
-        conditionMultiplier: getConditionMultiplier(listing.condition)
-    };
+    // Condition factor
+    conditionMultiplier: getConditionMultiplier(listing.condition),
+  };
 
-    // Simple ML-based prediction (can be replaced with trained model later)
-    let predictedPrice = features.medianSoldPrice;
+  // Simple ML-based prediction (can be replaced with trained model later)
+  let predictedPrice = features.medianSoldPrice;
 
-    // Adjust based on condition
-    predictedPrice *= features.conditionMultiplier;
+  // Adjust based on condition
+  predictedPrice *= features.conditionMultiplier;
 
-    // Adjust based on listing quality
-    const qualityFactor = (features.imageQuality / 100) * 1.1; // Up to 10% premium for great images
-    predictedPrice *= qualityFactor;
+  // Adjust based on listing quality
+  const qualityFactor = (features.imageQuality / 100) * 1.1; // Up to 10% premium for great images
+  predictedPrice *= qualityFactor;
 
-    // Market demand adjustment
-    if (features.sellThroughRate > 0.7) {
-        predictedPrice *= 1.05; // High demand, can price higher
-    } else if (features.sellThroughRate < 0.3) {
-        predictedPrice *= 0.95; // Low demand, price competitively
-    }
+  // Market demand adjustment
+  if (features.sellThroughRate > 0.7) {
+    predictedPrice *= 1.05; // High demand, can price higher
+  } else if (features.sellThroughRate < 0.3) {
+    predictedPrice *= 0.95; // Low demand, price competitively
+  }
 
-    // Calculate confidence based on data quality
-    const confidence = Math.min(
-        (features.soldCount / 20) * 100, // More sold items = more confidence
-        100
-    );
+  // Calculate confidence based on data quality
+  const confidence = Math.min(
+    (features.soldCount / 20) * 100, // More sold items = more confidence
+    100
+  );
 
-    return {
-        recommendedPrice: Math.round(predictedPrice * 100) / 100,
-        priceRange: {
-            min: Math.round(predictedPrice * 0.85 * 100) / 100,
-            max: Math.round(predictedPrice * 1.15 * 100) / 100
-        },
-        confidence: confidence,
-        reasoning: [
-            `Based on ${features.soldCount} sold listings`,
-            `Median sold price: £${features.medianSoldPrice}`,
-            `Sell-through rate: ${(features.sellThroughRate * 100).toFixed(0)}%`,
-            features.sellThroughRate > 0.7 ? 'High demand - can price premium' : 'Competitive pricing recommended',
-            `Adjusted for ${listing.condition} condition`,
-            `Image quality bonus: +${((qualityFactor - 1) * 100).toFixed(0)}%`
-        ],
-        marketInsights: {
-            demand: features.sellThroughRate > 0.7 ? 'HIGH' : features.sellThroughRate > 0.4 ? 'MEDIUM' : 'LOW',
-            competition: features.unsoldCount > features.soldCount ? 'HIGH' : 'MODERATE',
-            trend: 'STABLE', // Would require time-series data
-            recommendedAction: features.sellThroughRate > 0.6 ? 'List now - high demand' : 'Consider waiting or bundling'
-        }
-    };
+  return {
+    recommendedPrice: Math.round(predictedPrice * 100) / 100,
+    priceRange: {
+      min: Math.round(predictedPrice * 0.85 * 100) / 100,
+      max: Math.round(predictedPrice * 1.15 * 100) / 100,
+    },
+    confidence: confidence,
+    reasoning: [
+      `Based on ${features.soldCount} sold listings`,
+      `Median sold price: £${features.medianSoldPrice}`,
+      `Sell-through rate: ${(features.sellThroughRate * 100).toFixed(0)}%`,
+      features.sellThroughRate > 0.7
+        ? 'High demand - can price premium'
+        : 'Competitive pricing recommended',
+      `Adjusted for ${listing.condition} condition`,
+      `Image quality bonus: +${((qualityFactor - 1) * 100).toFixed(0)}%`,
+    ],
+    marketInsights: {
+      demand:
+        features.sellThroughRate > 0.7 ? 'HIGH' : features.sellThroughRate > 0.4 ? 'MEDIUM' : 'LOW',
+      competition: features.unsoldCount > features.soldCount ? 'HIGH' : 'MODERATE',
+      trend: 'STABLE', // Would require time-series data
+      recommendedAction:
+        features.sellThroughRate > 0.6 ? 'List now - high demand' : 'Consider waiting or bundling',
+    },
+  };
 }
 
 function getConditionMultiplier(condition) {
-    const multipliers = {
-        'New': 1.0,
-        'Like New': 0.90,
-        'Excellent': 0.85,
-        'Very Good': 0.75,
-        'Good': 0.65,
-        'Fair': 0.50,
-        'Poor': 0.35
-    };
-    return multipliers[condition] || 0.70;
+  const multipliers = {
+    New: 1.0,
+    'Like New': 0.9,
+    Excellent: 0.85,
+    'Very Good': 0.75,
+    Good: 0.65,
+    Fair: 0.5,
+    Poor: 0.35,
+  };
+  return multipliers[condition] || 0.7;
 }
 ```
 
 #### 3. Update /api/generate Endpoint
+
 ```javascript
 // Modify generate endpoint to include pricing intelligence
 app.post('/api/generate', requireAuth, rateLimiters.generate, async (req, res) => {
-    try {
-        const { image, platform, hint } = req.body;
+  try {
+    const { image, platform, hint } = req.body;
 
-        // ... existing validation ...
+    // ... existing validation ...
 
-        // Generate base listing with Gemini
-        const geminiResult = await callGeminiAPI(image, platform, hint);
+    // Generate base listing with Gemini
+    const geminiResult = await callGeminiAPI(image, platform, hint);
 
-        // ENHANCEMENT: Get eBay pricing intelligence
-        let pricingIntelligence = null;
-        let predictedPrice = null;
+    // ENHANCEMENT: Get eBay pricing intelligence
+    let pricingIntelligence = null;
+    let predictedPrice = null;
 
-        if (platform === 'ebay' || platform === 'all') {
-            try {
-                pricingIntelligence = await getEbayPricingIntelligence(
-                    geminiResult.title,
-                    geminiResult.category
-                );
+    if (platform === 'ebay' || platform === 'all') {
+      try {
+        pricingIntelligence = await getEbayPricingIntelligence(
+          geminiResult.title,
+          geminiResult.category
+        );
 
-                if (pricingIntelligence) {
-                    predictedPrice = await predictOptimalPrice(
-                        geminiResult,
-                        pricingIntelligence
-                    );
-                }
-            } catch (error) {
-                console.error('Pricing intelligence error:', error);
-                // Continue without pricing data
-            }
+        if (pricingIntelligence) {
+          predictedPrice = await predictOptimalPrice(geminiResult, pricingIntelligence);
         }
-
-        // Merge results
-        const result = {
-            ...geminiResult,
-            pricing: {
-                geminiSuggestion: geminiResult.price,
-                ebayData: pricingIntelligence,
-                prediction: predictedPrice,
-                recommendedPrice: predictedPrice?.recommendedPrice || geminiResult.price
-            }
-        };
-
-        res.json(result);
-
-    } catch (error) {
-        console.error('Generation error:', error);
-        res.status(500).json({ error: 'Failed to generate listing' });
+      } catch (error) {
+        console.error('Pricing intelligence error:', error);
+        // Continue without pricing data
+      }
     }
+
+    // Merge results
+    const result = {
+      ...geminiResult,
+      pricing: {
+        geminiSuggestion: geminiResult.price,
+        ebayData: pricingIntelligence,
+        prediction: predictedPrice,
+        recommendedPrice: predictedPrice?.recommendedPrice || geminiResult.price,
+      },
+    };
+
+    res.json(result);
+  } catch (error) {
+    console.error('Generation error:', error);
+    res.status(500).json({ error: 'Failed to generate listing' });
+  }
 });
 ```
 
 #### 4. Frontend UI for Pricing Intelligence
+
 ```javascript
 // Add to displayResults in index.html
 displayPricingIntelligence(pricing) {
@@ -935,6 +972,7 @@ displayPricingIntelligence(pricing) {
 ```
 
 ### Database Schema Enhancement
+
 ```sql
 -- Add pricing intelligence to listings table
 ALTER TABLE listings ADD COLUMN ebay_pricing_data JSONB;
@@ -959,6 +997,7 @@ ALTER TABLE listings ADD COLUMN price_confidence DECIMAL;
 ```
 
 ### Testing Checklist
+
 - [ ] Test eBay API connection
 - [ ] Verify sold vs unsold item separation
 - [ ] Check price calculation accuracy
@@ -969,6 +1008,7 @@ ALTER TABLE listings ADD COLUMN price_confidence DECIMAL;
 - [ ] Test price selection (alternative strategies)
 
 ### Success Metrics
+
 - Pricing accuracy within 10% of actual sale price
 - Confidence scores average 70%+
 - Users select recommended price 60%+ of time
@@ -984,22 +1024,26 @@ ALTER TABLE listings ADD COLUMN price_confidence DECIMAL;
 **Cost Impact:** Marginal (enhanced Gemini Vision prompts)
 
 ### Problem Statement
+
 AI often misses product flaws (stains, tears, wear), leading to:
+
 - Inaccurate condition ratings
 - Customer complaints
 - Returns
 - Negative reviews
 
 ### Solution
+
 Use computer vision to systematically inspect products for damage and defects across multiple images.
 
 ### Technical Implementation
 
 #### 1. Damage Detection Prompt
+
 ```javascript
 // Add to server.js
 async function detectDamage(images) {
-    const prompt = `
+  const prompt = `
 You are a professional product inspector analyzing images for defects and damage.
 
 ANALYZE ALL ${images.length} IMAGE(S) SYSTEMATICALLY:
@@ -1063,34 +1107,36 @@ Return JSON:
 BE THOROUGH. Better to over-report minor issues than miss major ones.
 `;
 
-    const response = await callGeminiVisionMultiImage(images, prompt);
-    return JSON.parse(response);
+  const response = await callGeminiVisionMultiImage(images, prompt);
+  return JSON.parse(response);
 }
 ```
 
 #### 2. Multi-Image Analysis Function
+
 ```javascript
 // Enhanced Gemini call for multiple images
 async function callGeminiVisionMultiImage(images, prompt) {
-    const imageParts = images.map(img => ({
-        inlineData: {
-            data: img.replace(/^data:image\/\w+;base64,/, ''),
-            mimeType: 'image/jpeg'
-        }
-    }));
+  const imageParts = images.map((img) => ({
+    inlineData: {
+      data: img.replace(/^data:image\/\w+;base64,/, ''),
+      mimeType: 'image/jpeg',
+    },
+  }));
 
-    const response = await geminiModel.generateContent([
-        {
-            text: prompt
-        },
-        ...imageParts
-    ]);
+  const response = await geminiModel.generateContent([
+    {
+      text: prompt,
+    },
+    ...imageParts,
+  ]);
 
-    return response.response.text();
+  return response.response.text();
 }
 ```
 
 #### 3. Damage Visualization UI
+
 ```javascript
 // Add to index.html app object
 displayDamageAnalysis(damageData) {
@@ -1205,38 +1251,40 @@ addDisclosuresToDescription() {
 ```
 
 #### 4. Update /api/generate to Include Damage Detection
+
 ```javascript
 // After basic listing generation
 let damageAnalysis = null;
 
 if (images.length > 0) {
-    try {
-        damageAnalysis = await detectDamage(images);
+  try {
+    damageAnalysis = await detectDamage(images);
 
-        // Update condition based on damage detection
-        if (damageAnalysis.overallCondition) {
-            result.condition = damageAnalysis.overallCondition;
-        }
-
-        // Add defect disclosures to description
-        if (damageAnalysis.suggestedDisclosures.length > 0) {
-            result.description += '\n\n**Condition Notes:**\n' +
-                damageAnalysis.suggestedDisclosures.map(d => `• ${d}`).join('\n');
-        }
-
-    } catch (error) {
-        console.error('Damage detection error:', error);
-        // Continue without damage analysis
+    // Update condition based on damage detection
+    if (damageAnalysis.overallCondition) {
+      result.condition = damageAnalysis.overallCondition;
     }
+
+    // Add defect disclosures to description
+    if (damageAnalysis.suggestedDisclosures.length > 0) {
+      result.description +=
+        '\n\n**Condition Notes:**\n' +
+        damageAnalysis.suggestedDisclosures.map((d) => `• ${d}`).join('\n');
+    }
+  } catch (error) {
+    console.error('Damage detection error:', error);
+    // Continue without damage analysis
+  }
 }
 
 const result = {
-    ...geminiResult,
-    damageAnalysis: damageAnalysis
+  ...geminiResult,
+  damageAnalysis: damageAnalysis,
 };
 ```
 
 ### Database Schema
+
 ```sql
 -- Add damage analysis to listings table
 ALTER TABLE listings ADD COLUMN damage_analysis JSONB;
@@ -1262,6 +1310,7 @@ ALTER TABLE listings ADD COLUMN damage_analysis JSONB;
 ```
 
 ### Testing Checklist
+
 - [ ] Test with pristine item (no defects)
 - [ ] Test with obvious stain
 - [ ] Test with tear/hole
@@ -1272,6 +1321,7 @@ ALTER TABLE listings ADD COLUMN damage_analysis JSONB;
 - [ ] Verify image index references correct photo
 
 ### Success Metrics
+
 - Defect detection accuracy: 85%+ (vs manual inspection)
 - Condition ratings within 1 grade of expert assessment
 - Disclosure inclusion rate: 80%+ of listings with defects
@@ -1288,14 +1338,17 @@ ALTER TABLE listings ADD COLUMN damage_analysis JSONB;
 **Cost Impact:** Varies ($0-$50/month depending on API choice)
 
 ### Problem Statement
+
 Listing branded items (electronics, books, toys, beauty products) requires manual research for specs, even though UPC/EAN contains all product data.
 
 ### Solution
+
 Mobile camera barcode scanner that instantly populates listing with product data from UPC databases.
 
 ### Technical Implementation
 
 #### 1. Barcode Scanner Library (Frontend)
+
 ```javascript
 // Add to index.html
 // Use QuaggaJS for barcode scanning
@@ -1409,169 +1462,160 @@ calculateUsedPrice(rrp) {
 ```
 
 #### 2. Barcode Lookup Backend (server.js)
+
 ```javascript
 // Multiple barcode API options
 
 // OPTION 1: UPC Database (Free tier: 100 requests/day)
 const upcDatabaseAPI = async (barcode) => {
-    const response = await fetch(
-        `https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`,
-        {
-            headers: {
-                'user_key': process.env.UPC_DATABASE_API_KEY
-            }
-        }
-    );
+  const response = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`, {
+    headers: {
+      user_key: process.env.UPC_DATABASE_API_KEY,
+    },
+  });
 
-    const data = await response.json();
+  const data = await response.json();
 
-    if (data.items && data.items.length > 0) {
-        const item = data.items[0];
-        return {
-            found: true,
-            barcode: barcode,
-            title: item.title,
-            brand: item.brand,
-            category: item.category,
-            description: item.description,
-            images: item.images || [],
-            rrp: item.msrp || null,
-            specifications: {
-                'EAN': item.ean,
-                'UPC': item.upc,
-                'Model': item.model || 'N/A',
-                'Size': item.size || 'N/A',
-                'Color': item.color || 'N/A'
-            }
-        };
-    }
+  if (data.items && data.items.length > 0) {
+    const item = data.items[0];
+    return {
+      found: true,
+      barcode: barcode,
+      title: item.title,
+      brand: item.brand,
+      category: item.category,
+      description: item.description,
+      images: item.images || [],
+      rrp: item.msrp || null,
+      specifications: {
+        EAN: item.ean,
+        UPC: item.upc,
+        Model: item.model || 'N/A',
+        Size: item.size || 'N/A',
+        Color: item.color || 'N/A',
+      },
+    };
+  }
 
-    return { found: false };
+  return { found: false };
 };
 
 // OPTION 2: Barcode Spider (More reliable, paid)
 const barcodeSpiderAPI = async (barcode) => {
-    const response = await fetch(
-        `https://api.barcodespider.com/v1/lookup?upc=${barcode}&token=${process.env.BARCODE_SPIDER_TOKEN}`
-    );
+  const response = await fetch(
+    `https://api.barcodespider.com/v1/lookup?upc=${barcode}&token=${process.env.BARCODE_SPIDER_TOKEN}`
+  );
 
-    const data = await response.json();
+  const data = await response.json();
 
-    if (data.item_found) {
-        return {
-            found: true,
-            barcode: barcode,
-            title: data.item_attributes.title,
-            brand: data.item_attributes.brand,
-            category: data.item_attributes.category,
-            description: data.item_attributes.description,
-            images: [data.item_attributes.image],
-            rrp: data.item_attributes.msrp,
-            specifications: {
-                'UPC': barcode,
-                'ASIN': data.item_attributes.asin || 'N/A',
-                'Model': data.item_attributes.model || 'N/A'
-            }
-        };
-    }
+  if (data.item_found) {
+    return {
+      found: true,
+      barcode: barcode,
+      title: data.item_attributes.title,
+      brand: data.item_attributes.brand,
+      category: data.item_attributes.category,
+      description: data.item_attributes.description,
+      images: [data.item_attributes.image],
+      rrp: data.item_attributes.msrp,
+      specifications: {
+        UPC: barcode,
+        ASIN: data.item_attributes.asin || 'N/A',
+        Model: data.item_attributes.model || 'N/A',
+      },
+    };
+  }
 
-    return { found: false };
+  return { found: false };
 };
 
 // OPTION 3: Open Food Facts (Free, for food/grocery items)
 const openFoodFactsAPI = async (barcode) => {
-    const response = await fetch(
-        `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`
-    );
+  const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
 
-    const data = await response.json();
+  const data = await response.json();
 
-    if (data.status === 1) {
-        const product = data.product;
-        return {
-            found: true,
-            barcode: barcode,
-            title: product.product_name,
-            brand: product.brands,
-            category: product.categories,
-            description: `${product.product_name} - ${product.generic_name || ''}`,
-            images: [product.image_url],
-            rrp: null, // Not available
-            specifications: {
-                'Ingredients': product.ingredients_text || 'N/A',
-                'Quantity': product.quantity || 'N/A'
-            }
-        };
-    }
+  if (data.status === 1) {
+    const product = data.product;
+    return {
+      found: true,
+      barcode: barcode,
+      title: product.product_name,
+      brand: product.brands,
+      category: product.categories,
+      description: `${product.product_name} - ${product.generic_name || ''}`,
+      images: [product.image_url],
+      rrp: null, // Not available
+      specifications: {
+        Ingredients: product.ingredients_text || 'N/A',
+        Quantity: product.quantity || 'N/A',
+      },
+    };
+  }
 
-    return { found: false };
+  return { found: false };
 };
 
 // Main lookup endpoint
 app.post('/api/lookup-barcode', requireAuth, async (req, res) => {
-    try {
-        const { barcode } = req.body;
+  try {
+    const { barcode } = req.body;
 
-        if (!barcode) {
-            return res.status(400).json({ error: 'Barcode required' });
-        }
-
-        // Try multiple sources in order
-        let result = await upcDatabaseAPI(barcode);
-
-        if (!result.found) {
-            result = await barcodeSpiderAPI(barcode);
-        }
-
-        if (!result.found && barcode.length === 13) {
-            // Try Open Food Facts for groceries
-            result = await openFoodFactsAPI(barcode);
-        }
-
-        res.json(result);
-
-    } catch (error) {
-        console.error('Barcode lookup error:', error);
-        res.status(500).json({ error: 'Barcode lookup failed', found: false });
+    if (!barcode) {
+      return res.status(400).json({ error: 'Barcode required' });
     }
+
+    // Try multiple sources in order
+    let result = await upcDatabaseAPI(barcode);
+
+    if (!result.found) {
+      result = await barcodeSpiderAPI(barcode);
+    }
+
+    if (!result.found && barcode.length === 13) {
+      // Try Open Food Facts for groceries
+      result = await openFoodFactsAPI(barcode);
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Barcode lookup error:', error);
+    res.status(500).json({ error: 'Barcode lookup failed', found: false });
+  }
 });
 ```
 
 #### 3. Barcode Scanner UI (Mobile View)
+
 ```html
 <!-- Add to index.html -->
 <div id="barcodeScannerModal" class="modal hidden">
-    <div class="modal-content scanner-modal">
-        <div class="scanner-header">
-            <h3>Scan Product Barcode</h3>
-            <button class="btn-close" onclick="app.closeBarcodeScanner()">×</button>
-        </div>
-
-        <div id="barcodeScannerView" class="scanner-viewport"></div>
-
-        <div class="scanner-instructions">
-            <p>Position barcode within the frame</p>
-            <p class="help-text">Works with UPC, EAN, Code128, Code39</p>
-        </div>
-
-        <div class="scanner-actions">
-            <button class="btn btn-secondary" onclick="app.manualBarcodeEntry()">
-                Enter Manually
-            </button>
-            <button class="btn btn-primary" onclick="app.closeBarcodeScanner()">
-                Cancel
-            </button>
-        </div>
+  <div class="modal-content scanner-modal">
+    <div class="scanner-header">
+      <h3>Scan Product Barcode</h3>
+      <button class="btn-close" onclick="app.closeBarcodeScanner()">×</button>
     </div>
+
+    <div id="barcodeScannerView" class="scanner-viewport"></div>
+
+    <div class="scanner-instructions">
+      <p>Position barcode within the frame</p>
+      <p class="help-text">Works with UPC, EAN, Code128, Code39</p>
+    </div>
+
+    <div class="scanner-actions">
+      <button class="btn btn-secondary" onclick="app.manualBarcodeEntry()">Enter Manually</button>
+      <button class="btn btn-primary" onclick="app.closeBarcodeScanner()">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <!-- Add button to main listing form -->
-<button class="btn btn-secondary" onclick="app.showBarcodeScanner()">
-    📷 Scan Barcode
-</button>
+<button class="btn btn-secondary" onclick="app.showBarcodeScanner()">📷 Scan Barcode</button>
 ```
 
 #### 4. Manual Barcode Entry (Fallback)
+
 ```javascript
 manualBarcodeEntry() {
     const barcode = prompt('Enter barcode number (UPC or EAN):');
@@ -1586,16 +1630,17 @@ manualBarcodeEntry() {
 
 ### API Cost Comparison
 
-| Service | Free Tier | Paid Plan | Database Size | Notes |
-|---------|-----------|-----------|---------------|-------|
-| **UPC Database** | 100/day | $20/month (10K) | 1B+ items | Best free option |
-| **Barcode Spider** | None | $15/month (5K) | 500M+ items | Most reliable |
-| **Open Food Facts** | Unlimited | Free (open source) | 2M+ food items | Food/grocery only |
-| **Amazon Product API** | Free | Free (with Associate) | All Amazon products | Requires approval |
+| Service                | Free Tier | Paid Plan             | Database Size       | Notes             |
+| ---------------------- | --------- | --------------------- | ------------------- | ----------------- |
+| **UPC Database**       | 100/day   | $20/month (10K)       | 1B+ items           | Best free option  |
+| **Barcode Spider**     | None      | $15/month (5K)        | 500M+ items         | Most reliable     |
+| **Open Food Facts**    | Unlimited | Free (open source)    | 2M+ food items      | Food/grocery only |
+| **Amazon Product API** | Free      | Free (with Associate) | All Amazon products | Requires approval |
 
 **Recommendation:** Start with UPC Database free tier (100/day = 3,000/month). Upgrade to Barcode Spider ($15/month) if demand exceeds free tier.
 
 ### Testing Checklist
+
 - [ ] Test camera permissions (allow/deny)
 - [ ] Scan EAN-13 barcode (European products)
 - [ ] Scan UPC-A barcode (US products)
@@ -1608,6 +1653,7 @@ manualBarcodeEntry() {
 - [ ] Test on multiple mobile devices (iOS, Android)
 
 ### Success Metrics
+
 - Barcode recognition success rate: 90%+
 - Product match rate: 70%+ (depends on database coverage)
 - Time to list branded item: Reduced from 5-10 min to <2 min
@@ -1624,6 +1670,7 @@ See separate document: [MOBILE_FIRST_DESIGN_PLAN.md](./MOBILE_FIRST_DESIGN_PLAN.
 ## Summary & Next Steps
 
 ### Priority Order (Recommended)
+
 1. **Week 1:** Batch upload with auto-resize (saves costs immediately)
 2. **Week 1:** Enhanced SEO prompts (quick win, $0 cost)
 3. **Week 1:** Image quality scoring (quick win, uses existing API)
@@ -1633,18 +1680,21 @@ See separate document: [MOBILE_FIRST_DESIGN_PLAN.md](./MOBILE_FIRST_DESIGN_PLAN.
 7. **Week 3-4:** Barcode scanner (high value for branded items)
 
 ### Resource Requirements
+
 - **Development Time:** 3-4 weeks full-time
 - **API Costs:** $15-50/month (eBay free, barcode $15/month, image quality included)
 - **Testing Time:** 1 week for all features
 - **Documentation:** Update API docs, user guides
 
 ### Risk Mitigation
+
 - Start with free API tiers where available
 - Build graceful fallbacks for all AI features
 - Extensive mobile testing (70%+ traffic is mobile)
 - A/B test pricing recommendations before full rollout
 
 ### Success Tracking
+
 - Monitor API costs daily
 - Track user adoption of each feature
 - Measure listing quality improvements (SEO scores, image quality)

@@ -1,263 +1,315 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Clipboard Test - QuickList AI</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding: 20px;
-            background: #f5f5f5;
-            max-width: 600px;
-            margin: 0 auto;
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        padding: 20px;
+        background: #f5f5f5;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .container {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      h1 {
+        font-size: 24px;
+        margin-bottom: 8px;
+        color: #333;
+      }
+      h2 {
+        font-size: 18px;
+        margin: 20px 0 12px;
+        color: #6366f1;
+      }
+      p {
+        color: #666;
+        margin-bottom: 16px;
+        line-height: 1.5;
+      }
+      .listing-preview {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        font-family: monospace;
+        font-size: 13px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+      .btn {
+        background: #6366f1;
+        color: white;
+        border: none;
+        padding: 14px 24px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        margin-bottom: 12px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .btn:hover {
+        background: #4f46e5;
+        transform: translateY(-1px);
+      }
+      .btn:active {
+        transform: translateY(0);
+      }
+      .btn.success {
+        background: #10b981;
+        animation: pulse 0.5s;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
         }
-        .container {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+        50% {
+          transform: scale(1.05);
         }
-        h1 { font-size: 24px; margin-bottom: 8px; color: #333; }
-        h2 { font-size: 18px; margin: 20px 0 12px; color: #6366f1; }
-        p { color: #666; margin-bottom: 16px; line-height: 1.5; }
-        .listing-preview {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 16px;
-            font-family: monospace;
-            font-size: 13px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-        .btn {
-            background: #6366f1;
-            color: white;
-            border: none;
-            padding: 14px 24px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            margin-bottom: 12px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .btn:hover { background: #4f46e5; transform: translateY(-1px); }
-        .btn:active { transform: translateY(0); }
-        .btn.success {
-            background: #10b981;
-            animation: pulse 0.5s;
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        .btn.secondary {
-            background: #f3f4f6;
-            color: #374151;
-        }
-        .btn.secondary:hover { background: #e5e7eb; }
-        .platform-btn {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            background: #f9fafb;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .platform-btn:hover {
-            border-color: #6366f1;
-            background: #f5f3ff;
-        }
-        .platform-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            background: white;
-            border: 1px solid #e5e7eb;
-        }
-        .platform-info { flex: 1; }
-        .platform-name {
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 2px;
-        }
-        .platform-desc {
-            font-size: 13px;
-            color: #6b7280;
-        }
-        .status {
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            text-align: center;
-            margin-top: 12px;
-        }
-        .status.success {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #10b981;
-        }
-        .status.info {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #3b82f6;
-        }
-        .instruction {
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 12px;
-        }
-        .instruction-title {
-            font-weight: 600;
-            color: #92400e;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .instruction-text {
-            font-size: 14px;
-            color: #78350f;
-            line-height: 1.5;
-        }
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .badge.api { background: #d1fae5; color: #065f46; }
-        .badge.clipboard { background: #dbeafe; color: #1e40af; }
-        code {
-            background: #f3f4f6;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 13px;
-            color: #dc2626;
-        }
+      }
+      .btn.secondary {
+        background: #f3f4f6;
+        color: #374151;
+      }
+      .btn.secondary:hover {
+        background: #e5e7eb;
+      }
+      .platform-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: #f9fafb;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .platform-btn:hover {
+        border-color: #6366f1;
+        background: #f5f3ff;
+      }
+      .platform-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        background: white;
+        border: 1px solid #e5e7eb;
+      }
+      .platform-info {
+        flex: 1;
+      }
+      .platform-name {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 2px;
+      }
+      .platform-desc {
+        font-size: 13px;
+        color: #6b7280;
+      }
+      .status {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        text-align: center;
+        margin-top: 12px;
+      }
+      .status.success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #10b981;
+      }
+      .status.info {
+        background: #dbeafe;
+        color: #1e40af;
+        border: 1px solid #3b82f6;
+      }
+      .instruction {
+        background: #fef3c7;
+        border: 1px solid #f59e0b;
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 12px;
+      }
+      .instruction-title {
+        font-weight: 600;
+        color: #92400e;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .instruction-text {
+        font-size: 14px;
+        color: #78350f;
+        line-height: 1.5;
+      }
+      .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .badge.api {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .badge.clipboard {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      code {
+        background: #f3f4f6;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #dc2626;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>🧪 Smart Clipboard Test</h1>
-        <p>Testing platform-specific clipboard formatting for QuickList AI</p>
+      <h1>🧪 Smart Clipboard Test</h1>
+      <p>Testing platform-specific clipboard formatting for QuickList AI</p>
     </div>
 
     <div class="container">
-        <h2>📦 Sample Listing</h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;">
-            <div>
-                <strong>Title:</strong><br>Nike Air Max 90 - UK Size 10
-            </div>
-            <div>
-                <strong>Price:</strong><br>£80 (RRP £120)
-            </div>
-            <div>
-                <strong>Brand:</strong><br>Nike
-            </div>
-            <div>
-                <strong>Condition:</strong><br>Excellent
-            </div>
-        </div>
-        <p><strong>Description:</strong><br>Classic Nike Air Max 90 in excellent condition. Only worn twice! Iconic colorway, super comfortable. Includes spare laces. No box.</p>
-        <p><strong>Keywords:</strong><br>#nike #airmax #sneakers #trainers #size10</p>
+      <h2>📦 Sample Listing</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px">
+        <div><strong>Title:</strong><br />Nike Air Max 90 - UK Size 10</div>
+        <div><strong>Price:</strong><br />£80 (RRP £120)</div>
+        <div><strong>Brand:</strong><br />Nike</div>
+        <div><strong>Condition:</strong><br />Excellent</div>
+      </div>
+      <p>
+        <strong>Description:</strong><br />Classic Nike Air Max 90 in excellent condition. Only worn
+        twice! Iconic colorway, super comfortable. Includes spare laces. No box.
+      </p>
+      <p><strong>Keywords:</strong><br />#nike #airmax #sneakers #trainers #size10</p>
     </div>
 
     <div class="container">
-        <h2>🎯 Choose Platform</h2>
+      <h2>🎯 Choose Platform</h2>
 
-        <div class="platform-btn" onclick="copyForEbay()">
-            <div class="platform-icon">🏷️</div>
-            <div class="platform-info">
-                <div class="platform-name">eBay</div>
-                <div class="platform-desc">Professional format • <span class="badge api">Direct API</span></div>
-            </div>
+      <div class="platform-btn" onclick="copyForEbay()">
+        <div class="platform-icon">🏷️</div>
+        <div class="platform-info">
+          <div class="platform-name">eBay</div>
+          <div class="platform-desc">
+            Professional format • <span class="badge api">Direct API</span>
+          </div>
         </div>
+      </div>
 
-        <div class="platform-btn" onclick="copyForVinted()">
-            <div class="platform-icon">👕</div>
-            <div class="platform-info">
-                <div class="platform-name">Vinted</div>
-                <div class="platform-desc">Size conversions • <span class="badge clipboard">Smart Clipboard</span></div>
-            </div>
+      <div class="platform-btn" onclick="copyForVinted()">
+        <div class="platform-icon">👕</div>
+        <div class="platform-info">
+          <div class="platform-name">Vinted</div>
+          <div class="platform-desc">
+            Size conversions • <span class="badge clipboard">Smart Clipboard</span>
+          </div>
         </div>
+      </div>
 
-        <div class="platform-btn" onclick="copyForDepop()">
-            <div class="platform-icon">✨</div>
-            <div class="platform-info">
-                <div class="platform-name">Depop</div>
-                <div class="platform-desc">Casual tone • <span class="badge clipboard">Smart Clipboard</span></div>
-            </div>
+      <div class="platform-btn" onclick="copyForDepop()">
+        <div class="platform-icon">✨</div>
+        <div class="platform-info">
+          <div class="platform-name">Depop</div>
+          <div class="platform-desc">
+            Casual tone • <span class="badge clipboard">Smart Clipboard</span>
+          </div>
         </div>
+      </div>
 
-        <div class="platform-btn" onclick="copyForFacebook()">
-            <div class="platform-icon">👤</div>
-            <div class="platform-info">
-                <div class="platform-name">Facebook Marketplace</div>
-                <div class="platform-desc">Local buyers • <span class="badge clipboard">Smart Clipboard</span></div>
-            </div>
+      <div class="platform-btn" onclick="copyForFacebook()">
+        <div class="platform-icon">👤</div>
+        <div class="platform-info">
+          <div class="platform-name">Facebook Marketplace</div>
+          <div class="platform-desc">
+            Local buyers • <span class="badge clipboard">Smart Clipboard</span>
+          </div>
         </div>
+      </div>
 
-        <div id="statusArea"></div>
+      <div id="statusArea"></div>
     </div>
 
-    <div class="container" id="previewArea" style="display: none;">
-        <h2>📋 Copied to Clipboard</h2>
-        <div class="listing-preview" id="clipboardPreview"></div>
-        <button class="btn secondary" onclick="testPaste()">📝 Test Paste Here</button>
-        <textarea id="pasteTest" style="width: 100%; height: 150px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-family: inherit; margin-top: 12px; display: none;"></textarea>
+    <div class="container" id="previewArea" style="display: none">
+      <h2>📋 Copied to Clipboard</h2>
+      <div class="listing-preview" id="clipboardPreview"></div>
+      <button class="btn secondary" onclick="testPaste()">📝 Test Paste Here</button>
+      <textarea
+        id="pasteTest"
+        style="
+          width: 100%;
+          height: 150px;
+          padding: 12px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          font-family: inherit;
+          margin-top: 12px;
+          display: none;
+        "
+      ></textarea>
     </div>
 
     <script>
-        const listing = {
-            title: "Nike Air Max 90 - UK Size 10",
-            price: 80,
-            rrp: 120,
-            brand: "Nike",
-            category: "Sneakers",
-            condition: "Excellent",
-            size: "10",
-            sizeEU: "44.5",
-            sizeUS: "11",
-            description: "Classic Nike Air Max 90 in excellent condition. Only worn twice! Iconic colorway, super comfortable. Includes spare laces. No box.",
-            keywords: ["nike", "airmax", "sneakers", "trainers", "size10"],
-            color: "White/Red",
-            material: "Leather/Mesh"
-        };
+      const listing = {
+        title: 'Nike Air Max 90 - UK Size 10',
+        price: 80,
+        rrp: 120,
+        brand: 'Nike',
+        category: 'Sneakers',
+        condition: 'Excellent',
+        size: '10',
+        sizeEU: '44.5',
+        sizeUS: '11',
+        description:
+          'Classic Nike Air Max 90 in excellent condition. Only worn twice! Iconic colorway, super comfortable. Includes spare laces. No box.',
+        keywords: ['nike', 'airmax', 'sneakers', 'trainers', 'size10'],
+        color: 'White/Red',
+        material: 'Leather/Mesh',
+      };
 
-        function showStatus(message, type = 'success') {
-            const statusArea = document.getElementById('statusArea');
-            statusArea.innerHTML = `
+      function showStatus(message, type = 'success') {
+        const statusArea = document.getElementById('statusArea');
+        statusArea.innerHTML = `
                 <div class="status ${type}">
                     ${message}
                 </div>
             `;
-        }
+      }
 
-        function showInstructions(platform, url) {
-            const statusArea = document.getElementById('statusArea');
-            statusArea.innerHTML += `
+      function showInstructions(platform, url) {
+        const statusArea = document.getElementById('statusArea');
+        statusArea.innerHTML += `
                 <div class="instruction">
                     <div class="instruction-title">
                         ℹ️ Next Steps for ${platform}
@@ -273,51 +325,53 @@
                 </div>
                 <button class="btn" onclick="openPlatform('${url}')">Open ${platform}</button>
             `;
+      }
+
+      async function copyToClipboard(text, platform) {
+        try {
+          // Use modern Clipboard API
+          await navigator.clipboard.writeText(text);
+
+          // Show preview
+          document.getElementById('previewArea').style.display = 'block';
+          document.getElementById('clipboardPreview').textContent = text;
+
+          // Show success
+          showStatus(`✓ Copied for ${platform}! Ready to paste.`, 'success');
+
+          // Scroll to preview
+          document
+            .getElementById('previewArea')
+            .scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+          return true;
+        } catch (err) {
+          // Fallback for older browsers
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+
+          try {
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            document.getElementById('previewArea').style.display = 'block';
+            document.getElementById('clipboardPreview').textContent = text;
+            showStatus(`✓ Copied for ${platform}! Ready to paste.`, 'success');
+            return true;
+          } catch (err2) {
+            document.body.removeChild(textarea);
+            showStatus(`❌ Clipboard access denied. Please enable in settings.`, 'error');
+            return false;
+          }
         }
+      }
 
-        async function copyToClipboard(text, platform) {
-            try {
-                // Use modern Clipboard API
-                await navigator.clipboard.writeText(text);
-
-                // Show preview
-                document.getElementById('previewArea').style.display = 'block';
-                document.getElementById('clipboardPreview').textContent = text;
-
-                // Show success
-                showStatus(`✓ Copied for ${platform}! Ready to paste.`, 'success');
-
-                // Scroll to preview
-                document.getElementById('previewArea').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-                return true;
-            } catch (err) {
-                // Fallback for older browsers
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                textarea.style.position = 'fixed';
-                textarea.style.opacity = '0';
-                document.body.appendChild(textarea);
-                textarea.select();
-
-                try {
-                    document.execCommand('copy');
-                    document.body.removeChild(textarea);
-
-                    document.getElementById('previewArea').style.display = 'block';
-                    document.getElementById('clipboardPreview').textContent = text;
-                    showStatus(`✓ Copied for ${platform}! Ready to paste.`, 'success');
-                    return true;
-                } catch (err2) {
-                    document.body.removeChild(textarea);
-                    showStatus(`❌ Clipboard access denied. Please enable in settings.`, 'error');
-                    return false;
-                }
-            }
-        }
-
-        function copyForEbay() {
-            const text = `${listing.title}
+      function copyForEbay() {
+        const text = `${listing.title}
 
 Price: £${listing.price}
 Condition: ${listing.condition}
@@ -333,29 +387,29 @@ Item Specifics:
 • Material: ${listing.material}
 • Condition: ${listing.condition}
 
-${listing.keywords.map(k => '#' + k).join(' ')}`;
+${listing.keywords.map((k) => '#' + k).join(' ')}`;
 
-            copyToClipboard(text, 'eBay');
-            showInstructions('eBay', 'https://www.ebay.co.uk/sl/sell');
-        }
+        copyToClipboard(text, 'eBay');
+        showInstructions('eBay', 'https://www.ebay.co.uk/sl/sell');
+      }
 
-        function copyForVinted() {
-            const savings = Math.round(((listing.rrp - listing.price) / listing.rrp) * 100);
-            const text = `${listing.title} 🔥
+      function copyForVinted() {
+        const savings = Math.round(((listing.rrp - listing.price) / listing.rrp) * 100);
+        const text = `${listing.title} 🔥
 
 Size: ${listing.size} UK / ${listing.sizeEU} EU / ${listing.sizeUS} US
 £${listing.price} (RRP £${listing.rrp} - save ${savings}%!)
 
 ${listing.description}
 
-${listing.keywords.map(k => '#' + k).join(' ')}`;
+${listing.keywords.map((k) => '#' + k).join(' ')}`;
 
-            copyToClipboard(text, 'Vinted');
-            showInstructions('Vinted', 'https://www.vinted.co.uk/items/new');
-        }
+        copyToClipboard(text, 'Vinted');
+        showInstructions('Vinted', 'https://www.vinted.co.uk/items/new');
+      }
 
-        function copyForDepop() {
-            const text = `${listing.title.toUpperCase()} ✨
+      function copyForDepop() {
+        const text = `${listing.title.toUpperCase()} ✨
 
 only worn twice!! 😍
 condition: ${listing.condition.toLowerCase()}
@@ -366,14 +420,14 @@ ${listing.description.toLowerCase()}
 price: £${listing.price} (rrp £${listing.rrp})
 grab a bargain! 💫
 
-${listing.keywords.map(k => '#' + k).join(' ')} #${listing.brand.toLowerCase()} #${listing.category.toLowerCase()}`;
+${listing.keywords.map((k) => '#' + k).join(' ')} #${listing.brand.toLowerCase()} #${listing.category.toLowerCase()}`;
 
-            copyToClipboard(text, 'Depop');
-            showInstructions('Depop', 'https://www.depop.com/sell/');
-        }
+        copyToClipboard(text, 'Depop');
+        showInstructions('Depop', 'https://www.depop.com/sell/');
+      }
 
-        function copyForFacebook() {
-            const text = `${listing.title}
+      function copyForFacebook() {
+        const text = `${listing.title}
 
 💰 Price: £${listing.price} (retail £${listing.rrp})
 📦 Condition: ${listing.condition}
@@ -386,31 +440,34 @@ Color: ${listing.color}
 
 Can meet locally or post. Message for details!
 
-${listing.keywords.map(k => '#' + k).join(' ')}`;
+${listing.keywords.map((k) => '#' + k).join(' ')}`;
 
-            copyToClipboard(text, 'Facebook');
-            showInstructions('Facebook', 'https://www.facebook.com/marketplace/create/item');
-        }
+        copyToClipboard(text, 'Facebook');
+        showInstructions('Facebook', 'https://www.facebook.com/marketplace/create/item');
+      }
 
-        function testPaste() {
-            const textarea = document.getElementById('pasteTest');
-            textarea.style.display = 'block';
-            textarea.focus();
-            showStatus('📝 Now paste (Ctrl/Cmd+V or long-press → Paste)', 'info');
-        }
+      function testPaste() {
+        const textarea = document.getElementById('pasteTest');
+        textarea.style.display = 'block';
+        textarea.focus();
+        showStatus('📝 Now paste (Ctrl/Cmd+V or long-press → Paste)', 'info');
+      }
 
-        function openPlatform(url) {
-            // On mobile, this will open the app if installed, otherwise browser
-            window.open(url, '_blank');
-            showStatus('✓ Platform opened! Paste your listing there.', 'success');
-        }
+      function openPlatform(url) {
+        // On mobile, this will open the app if installed, otherwise browser
+        window.open(url, '_blank');
+        showStatus('✓ Platform opened! Paste your listing there.', 'success');
+      }
 
-        // Auto-paste detection
-        document.getElementById('pasteTest').addEventListener('paste', function(e) {
-            setTimeout(() => {
-                showStatus('✅ Paste works! This is exactly how it works in Vinted/Depop/Facebook.', 'success');
-            }, 100);
-        });
+      // Auto-paste detection
+      document.getElementById('pasteTest').addEventListener('paste', function (e) {
+        setTimeout(() => {
+          showStatus(
+            '✅ Paste works! This is exactly how it works in Vinted/Depop/Facebook.',
+            'success'
+          );
+        }, 100);
+      });
     </script>
-</body>
+  </body>
 </html>

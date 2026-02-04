@@ -5,25 +5,32 @@
 Your QuickList application requires these environment variables to be set in Vercel:
 
 ### 1. Database (PostgreSQL - Neon)
+
 ```
 DATABASE_URL=postgresql://username:password@host.neon.tech/quicklist?sslmode=require
 ```
+
 Get from: https://neon.tech dashboard
 
 ### 2. AI (Google Gemini)
+
 ```
 GEMINI_API_KEY=your_gemini_api_key
 ```
+
 Get from: https://aistudio.google.com/app/apikey
 
 ### 3. Authentication (Clerk)
+
 ```
 CLERK_SECRET_KEY=sk_test_your_clerk_secret_key
 CLERK_PUBLISHABLE_KEY=pk_test_your_clerk_publishable_key
 ```
+
 Get from: https://dashboard.clerk.com → Your App → API Keys
 
 ### 4. Optional: Payments (Stripe)
+
 ```
 STRIPE_SECRET_KEY=sk_test_your_stripe_key
 STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key
@@ -32,9 +39,11 @@ STRIPE_PRICE_CASUAL=price_xxxxx
 STRIPE_PRICE_PRO=price_xxxxx
 STRIPE_PRICE_MAX=price_xxxxx
 ```
+
 Get from: https://dashboard.stripe.com/test/apikeys
 
 ### 5. Optional: eBay Integration
+
 ```
 EBAY_APP_ID=your_ebay_app_id
 EBAY_DEV_ID=your_ebay_dev_id
@@ -42,9 +51,11 @@ EBAY_CERT_ID=your_ebay_cert_id
 EBAY_SITE_ID=3
 EBAY_SANDBOX=true
 ```
+
 Get from: https://developer.ebay.com/my/keys
 
 ### 6. Production Domain Configuration
+
 ```
 FRONTEND_URL=https://quicklist.it.com
 NODE_ENV=production
@@ -52,6 +63,7 @@ LOG_LEVEL=info
 ```
 
 **Important**: `FRONTEND_URL` must match your actual production domain. This is used for:
+
 - Stripe checkout redirect URLs
 - CORS configuration
 - OAuth callbacks
@@ -128,15 +140,19 @@ vercel env pull production
 After adding environment variables and redeploying, test that they're working:
 
 1. **Check API health endpoint**:
+
    ```bash
    curl https://quicklist.it.com/api/health
    ```
+
    Should return: `{"status":"ok","timestamp":"..."}`
 
 2. **Check auth config endpoint**:
+
    ```bash
    curl https://quicklist.it.com/api/config/auth
    ```
+
    Should return Clerk configuration with publishable key
 
 3. **Check database connection**:
@@ -147,29 +163,37 @@ After adding environment variables and redeploying, test that they're working:
 ## Common Issues
 
 ### "Authentication system not ready"
+
 **Cause**: Clerk environment variables not set or incorrect
 **Fix**:
+
 1. Verify `CLERK_SECRET_KEY` and `CLERK_PUBLISHABLE_KEY` are set in Vercel
 2. Check that keys start with `sk_test_` and `pk_test_`
 3. Redeploy after adding variables
 
 ### "Database connection failed"
+
 **Cause**: DATABASE_URL not set or incorrect
 **Fix**:
+
 1. Copy connection string from Neon dashboard
 2. Ensure it includes `?sslmode=require`
 3. Make sure to select all environments (Production, Preview, Development)
 
 ### "Failed to initialize auth"
+
 **Cause**: Frontend can't reach `/api/config/auth`
 **Fix**:
+
 1. Check that API rewrites are working: `curl https://quicklist.it.com/api/config/auth`
 2. Verify vercel.json has the rewrites configuration
 3. Check Vercel deployment logs for errors
 
 ### Environment variables not updating
+
 **Cause**: Vercel caches builds
 **Fix**:
+
 1. After changing env vars, go to Deployments tab
 2. Click the three dots on latest deployment
 3. Click **Redeploy**
@@ -198,6 +222,7 @@ After adding environment variables and redeploying, test that they're working:
 Add these records in your domain registrar (e.g., GoDaddy, Namecheap, Cloudflare):
 
 **Option A: A Records (Recommended)**
+
 ```
 Type: A
 Name: @ (or leave blank for root domain)
@@ -209,6 +234,7 @@ Value: cname.vercel-dns.com
 ```
 
 **Option B: CNAME Record**
+
 ```
 Type: CNAME
 Name: @ (or quicklist.it.com)

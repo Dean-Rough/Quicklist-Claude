@@ -2,6 +2,7 @@
 
 **Date:** 2026-02-03  
 **Sources Reviewed:**
+
 - Live site: https://quicklist.it.com
 - Local file: `/home/dean/clawd/projects/Quicklist-Claude/index.html`
 
@@ -12,13 +13,13 @@
 The QuickList landing page copy is relatively clean but contains several AI-sounding patterns that weaken its impact. Main issues include:
 
 - Promotional language and adjective stacking
-- Rule of three overuse  
+- Rule of three overuse
 - Vague claims without attribution
 - Generic benefit statements
 - AI vocabulary words ("advanced," "optimized")
 - Some copywriting clichés
 
-The copy isn't *obviously* AI-generated, but it lacks personality and specificity. It reads like professional marketing copy that's trying too hard to sound impressive.
+The copy isn't _obviously_ AI-generated, but it lacks personality and specificity. It reads like professional marketing copy that's trying too hard to sound impressive.
 
 **Overall Grade:** B-  
 **Human-sounding Rating:** 6.5/10
@@ -32,21 +33,25 @@ The copy isn't *obviously* AI-generated, but it lacks personality and specificit
 **Location:** Hero section, How It Works
 
 **Original:**
+
 > Three simple steps from photo to professional listing. No writing, no research, no hassle.
 
 **Issue:** Classic rule-of-three pattern. The second sentence feels forced and artificial.
 
 **Suggested Revision:**
+
 > Three simple steps from photo to professional listing. You don't need to write anything or spend time researching prices.
 
 ---
 
 **Original:**
+
 > Our AI reads labels, tags, and codes automatically.
 
 **Issue:** Another rule of three. Not terrible, but contributes to the pattern.
 
 **Suggested Revision:**
+
 > Our AI reads labels and product codes automatically.
 
 ---
@@ -56,57 +61,69 @@ The copy isn't *obviously* AI-generated, but it lacks personality and specificit
 **Location:** Features section
 
 **Original:**
+
 > Everything You Need to Sell Successfully
 
 **Issue:** Generic benefit statement. Empty promise that doesn't say anything specific.
 
 **Suggested Revision:**
+
 > What You Get
 
-*Or go more specific:*
+_Or go more specific:_
+
 > The Tools That Make Selling Easier
 
 ---
 
 **Original:**
+
 > Get compelling, marketplace-ready descriptions that actually sell.
 
 **Issue:** "Compelling" is promotional fluff. "Actually sell" is a hedge that undermines confidence.
 
 **Suggested Revision:**
+
 > Get marketplace-ready descriptions written in a style that matches what buyers are looking for.
 
 ---
 
 **Original:**
+
 > Professional-grade tools that make selling effortless. Used by thousands of sellers across the UK.
 
 **Issue:** "Professional-grade" and "effortless" are promotional buzzwords. "Thousands of sellers" is a vague claim without attribution.
 
 **Suggested Revision:**
+
 > Tools that save you time. Currently used by 1,200+ UK sellers.
 
-*Or if you don't have the exact number:*
+_Or if you don't have the exact number:_
+
 > Tools that save you time. Free to start, no credit card required.
 
 ---
 
 **Original:**
+
 > Perfect titles and categories for maximum visibility.
 
 **Issue:** "Perfect" and "maximum visibility" are promotional exaggerations.
 
 **Suggested Revision:**
+
 > Titles and categories optimized for how buyers search.
 
 ---
 
 **Original:**
+
 > Boost your listing's reach with optimized keywords.
 
 **Issue:** "Boost" and "optimized" are marketing speak.
 
 **Suggested Revision:**
+
 > Keywords and hashtags that help buyers find your items.
 
 ---
@@ -116,15 +133,18 @@ The copy isn't *obviously* AI-generated, but it lacks personality and specificit
 **Location:** How It Works section
 
 **Original:**
+
 > Our advanced AI identifies your product, writes compelling descriptions, suggests competitive prices, and finds the perfect keywords. All in seconds.
 
 **Issue:** Multiple problems:
+
 - "Advanced AI" - unnecessary qualifier
 - "Compelling" - promotional
 - "Perfect" - promotional exaggeration
 - Long sentence with four clauses
 
 **Suggested Revision:**
+
 > Our AI identifies your product, writes the description, suggests a price based on similar listings, and picks relevant keywords. Takes about 10 seconds.
 
 ---
@@ -134,11 +154,13 @@ The copy isn't *obviously* AI-generated, but it lacks personality and specificit
 **Location:** Features section
 
 **Original:**
+
 > Smart price suggestions based on real market data.
 
 **Issue:** "Real market data" is vague. What data? From where?
 
 **Suggested Revision:**
+
 > Price suggestions based on recent sold listings on eBay, Vinted, and Gumtree.
 
 ---
@@ -148,27 +170,33 @@ The copy isn't *obviously* AI-generated, but it lacks personality and specificit
 **Location:** Final CTA section
 
 **Original:**
+
 > Ready to Turn Clutter into Cash?
 
 **Issue:** This headline is fine on its own, but it's repeated twice on the page (hero + CTA). Repetition makes it feel formulaic.
 
 **Suggested Revision (for CTA section):**
+
 > Start Listing in 60 Seconds
 
-*Or:*
+_Or:_
+
 > See What QuickList Generates for Your First Item
 
 ---
 
 **Original:**
+
 > Join thousands of sellers using QuickList AI to create professional listings in seconds. Start your first listing in under 60 seconds.
 
-**Issue:** 
+**Issue:**
+
 - "Join thousands" is vague and hype-y
 - "Professional listings in seconds" + "in under 60 seconds" is repetitive
 - Generic call to action
 
 **Suggested Revision:**
+
 > Upload a photo and see what our AI generates for your first item. Takes about a minute to try.
 
 ---
@@ -178,11 +206,13 @@ The copy isn't *obviously* AI-generated, but it lacks personality and specificit
 **Location:** Features section
 
 **Original:**
+
 > Get compelling, marketplace-ready descriptions that actually sell.
 
 **Issue:** Using "Get" instead of simple "AI writes descriptions that..."
 
 **Suggested Revision:**
+
 > The AI writes descriptions in the style that works on Vinted, eBay, and Gumtree.
 
 ---
@@ -192,21 +222,25 @@ The copy isn't *obviously* AI-generated, but it lacks personality and specificit
 **Location:** Target Audience section
 
 **Original:**
+
 > Whether you're decluttering your wardrobe or running a resale business, QuickList AI saves you time and helps you sell more.
 
 **Issue:** Generic benefit statement. Everyone says they "save you time."
 
 **Suggested Revision:**
+
 > Whether you're clearing out your wardrobe or running an eBay business, QuickList handles the tedious part: writing descriptions, finding prices, and picking keywords.
 
 ---
 
 **Original:**
+
 > Perfect For Every Type of Seller
 
-**Issue:** Exaggerated claim. Nothing is perfect for *every* type of seller.
+**Issue:** Exaggerated claim. Nothing is perfect for _every_ type of seller.
 
 **Suggested Revision:**
+
 > Who Uses QuickList
 
 ---
@@ -216,21 +250,25 @@ The copy isn't *obviously* AI-generated, but it lacks personality and specificit
 **Location:** FAQ section
 
 **Original:**
+
 > Yes! We offer a free tier with generous limits.
 
 **Issue:** "Generous limits" is promotional self-praise.
 
 **Suggested Revision:**
+
 > Yes. The free tier includes 5 listings per month.
 
 ---
 
 **Original:**
+
 > Very! But you can always edit any field before posting your listing.
 
 **Issue:** "Very!" as a one-word sentence reads like chatbot enthusiasm.
 
 **Suggested Revision:**
+
 > Our accuracy depends on photo quality and how common the item is. You can always edit anything before posting.
 
 ---
@@ -241,6 +279,7 @@ The copy isn't *obviously* AI-generated, but it lacks personality and specificit
 
 **Original:**
 The features are presented as 8 short benefit statements, each starting with a positive action verb:
+
 - "Get compelling..."
 - "Perfect titles..."
 - "Smart price..."
@@ -254,6 +293,7 @@ The features are presented as 8 short benefit statements, each starting with a p
 
 **Suggested Revision:**
 Vary the structure. Some should be statements, some questions, some specifics:
+
 - "AI writes your description"
 - "Suggests titles and categories"
 - "Pricing based on recent sales"
@@ -272,11 +312,13 @@ Vary the structure. Some should be statements, some questions, some specifics:
 Examples of where personality could help:
 
 **Original (Hero):**
+
 > Stop staring at that overflowing drawer.
 
 **This line is actually good!** It's conversational and relatable. More of this.
 
 **Original (How It Works):**
+
 > No need for perfect lighting or backgrounds.
 
 **Also good.** This acknowledges real user concerns.
@@ -286,9 +328,11 @@ Examples of where personality could help:
 The features section is a list of benefits with no character. Compare:
 
 **Generic:**
+
 > Smart price suggestions based on real market data.
 
 **With personality:**
+
 > We check what similar items actually sold for (not just what people are asking).
 
 ---
@@ -322,7 +366,7 @@ The features section is a list of benefits with no character. Compare:
 
 4. **Vary sentence structure:** The features section is too uniform. Mix up the format.
 
-5. **Add a real user quote:** If you have any positive feedback from actual users, use it. Even one line like *"Saved me 2 hours yesterday" - Sarah, London* adds credibility.
+5. **Add a real user quote:** If you have any positive feedback from actual users, use it. Even one line like _"Saved me 2 hours yesterday" - Sarah, London_ adds credibility.
 
 ---
 

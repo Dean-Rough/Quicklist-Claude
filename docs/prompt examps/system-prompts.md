@@ -33,6 +33,7 @@ Your entire response MUST be a single, valid JSON object. Do not include any tex
 ```
 
 **`userInfoHint` (if provided):**
+
 ```
 The user has provided extra information about the item and its condition: "${userTitle}". You MUST incorporate this information into your generated description and condition report where relevant. For example, if they mention 'original packaging', ensure it's in the description. If they mention a specific flaw, detail it in the condition section. This information is a direct instruction.
 ```
@@ -90,11 +91,13 @@ Create a professional e-commerce hero image from the provided photo. Place the i
 This prompt enhances and/or resizes an image. The prompt is constructed dynamically.
 
 **Base parts:**
+
 - **Enhance:** `Gently auto-improve this image. Adjust brightness, contrast, and color balance for a more natural and clear look.`
 - **Resize:** `Resize the image so its longest edge is 2400 pixels while maintaining the original aspect ratio. Do not crop the image. The main subject should be fully visible and centered.`
 - **Suffix:** `Preserve all original details and flaws of the item itself. The goal is a professional, ready-to-list e-commerce photo.`
 
 **Example combined prompt:**
+
 ```
 Gently auto-improve this image. Adjust brightness, contrast, and color balance for a more natural and clear look. Resize the image so its longest edge is 2400 pixels while maintaining the original aspect ratio. Do not crop the image. The main subject should be fully visible and centered. Preserve all original details and flaws of the item itself. The goal is a professional, ready-to-list e-commerce photo.
 ```

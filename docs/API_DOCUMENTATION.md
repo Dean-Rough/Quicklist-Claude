@@ -13,9 +13,11 @@ Authorization: Bearer <clerk_session_token>
 ```
 
 ### GET `/api/config/auth`
+
 Returns feature flags and the Clerk publishable key so the frontend can bootstrap the SDK.
 
 **Response:**
+
 ```json
 {
   "clerk": {
@@ -27,14 +29,17 @@ Returns feature flags and the Clerk publishable key so the frontend can bootstra
 ```
 
 ### GET `/api/auth/verify`
+
 Validates the Clerk token, syncs the user into Postgres, and returns the canonical user record.
 
 **Headers:**
+
 ```
 Authorization: Bearer <clerk_session_token>
 ```
 
 **Response:**
+
 ```json
 {
   "user": {
@@ -55,14 +60,17 @@ Authorization: Bearer <clerk_session_token>
 ### Listings
 
 #### POST `/api/listings`
+
 Create a new listing.
 
 **Headers:**
+
 ```
 Authorization: Bearer <token>
 ```
 
 **Request Body:**
+
 ```json
 {
   "title": "Nike Tech Fleece Jacket",
@@ -73,7 +81,7 @@ Authorization: Bearer <token>
   "rrp": "£120",
   "price": "£80",
   "keywords": ["nike", "tech fleece", "jacket"],
-  "sources": [{"url": "https://...", "title": "..."}],
+  "sources": [{ "url": "https://...", "title": "..." }],
   "platform": "ebay",
   "images": [
     {
@@ -85,6 +93,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "listing": {
@@ -98,18 +107,22 @@ Authorization: Bearer <token>
 ---
 
 #### GET `/api/listings`
+
 Get all user's listings.
 
 **Headers:**
+
 ```
 Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Items per page (default: 20)
 
 **Response:**
+
 ```json
 {
   "listings": [...],
@@ -125,14 +138,17 @@ Authorization: Bearer <token>
 ---
 
 #### GET `/api/listings/:id`
+
 Get specific listing.
 
 **Headers:**
+
 ```
 Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "listing": {
@@ -146,9 +162,11 @@ Authorization: Bearer <token>
 ---
 
 #### PUT `/api/listings/:id`
+
 Update listing.
 
 **Headers:**
+
 ```
 Authorization: Bearer <token>
 ```
@@ -160,14 +178,17 @@ Authorization: Bearer <token>
 ---
 
 #### DELETE `/api/listings/:id`
+
 Delete listing.
 
 **Headers:**
+
 ```
 Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Listing deleted successfully"
@@ -179,30 +200,33 @@ Authorization: Bearer <token>
 ### AI Generation
 
 #### POST `/api/generate`
+
 Generate listing from images.
 
 **Headers:**
+
 ```
 Authorization: Bearer <token>
 ```
 
 **Request Body:**
+
 ```json
 {
-  "images": [
-    "data:image/jpeg;base64,..."
-  ],
+  "images": ["data:image/jpeg;base64,..."],
   "platform": "ebay",
   "hint": "Optional user hint about the item"
 }
 ```
 
 **Constraints:**
+
 - Maximum 10 images
 - Maximum 5MB per image
 - Plan limits enforced (free: 5/month, starter: 50/month, etc.)
 
 **Response:**
+
 ```json
 {
   "listing": {
@@ -229,14 +253,17 @@ Authorization: Bearer <token>
 ### Subscriptions
 
 #### GET `/api/subscription/status`
+
 Get user's subscription status and usage.
 
 **Headers:**
+
 ```
 Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "user": {...},
@@ -257,14 +284,17 @@ Authorization: Bearer <token>
 ---
 
 #### GET `/api/usage`
+
 Get detailed usage tracking.
 
 **Headers:**
+
 ```
 Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "listingsCreated": 3,
@@ -278,14 +308,17 @@ Authorization: Bearer <token>
 ### Stripe (Payment)
 
 #### POST `/api/stripe/create-checkout-session`
+
 Create Stripe checkout session.
 
 **Headers:**
+
 ```
 Authorization: Bearer <token>
 ```
 
 **Request Body:**
+
 ```json
 {
   "priceId": "price_xxx",
@@ -294,6 +327,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "sessionId": "cs_xxx",
@@ -304,14 +338,17 @@ Authorization: Bearer <token>
 ---
 
 #### POST `/api/stripe/create-portal-session`
+
 Create Stripe billing portal session.
 
 **Headers:**
+
 ```
 Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "url": "https://billing.stripe.com/..."
@@ -321,9 +358,11 @@ Authorization: Bearer <token>
 ---
 
 #### GET `/api/stripe/publishable-key`
+
 Get Stripe publishable key for frontend.
 
 **Response:**
+
 ```json
 {
   "publishableKey": "pk_live_..."
@@ -333,9 +372,11 @@ Get Stripe publishable key for frontend.
 ---
 
 #### POST `/api/stripe/webhook`
+
 Stripe webhook endpoint (handles subscription events).
 
 **Headers:**
+
 ```
 Stripe-Signature: <signature>
 ```
@@ -347,14 +388,17 @@ Stripe-Signature: <signature>
 ### eBay Integration
 
 #### POST `/api/listings/:id/post-to-ebay`
+
 Post listing to eBay.
 
 **Headers:**
+
 ```
 Authorization: Bearer <token>
 ```
 
 **Request Body:**
+
 ```json
 {
   "ebayCategoryId": "11450"
@@ -362,6 +406,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -375,9 +420,11 @@ Authorization: Bearer <token>
 ### Utilities
 
 #### GET `/api/health`
+
 Health check endpoint.
 
 **Response:**
+
 ```json
 {
   "status": "ok",
@@ -400,11 +447,13 @@ Health check endpoint.
 ---
 
 #### GET `/api/init-db`
+
 Initialize database schema.
 
 **Security:** Disabled by default. Set `ALLOW_DB_INIT=true` explicitly (preferably only in local development) or the endpoint returns `403`.
 
 **Response:**
+
 ```json
 {
   "message": "Database initialized successfully",
@@ -426,6 +475,7 @@ All endpoints return errors in this format:
 ```
 
 **HTTP Status Codes:**
+
 - `200` - Success
 - `400` - Bad Request (validation error)
 - `401` - Unauthorized (missing/invalid token)
@@ -443,6 +493,7 @@ All endpoints return errors in this format:
 - **Other endpoints**: No specific limits (protected by authentication)
 
 Rate limit headers:
+
 ```
 X-RateLimit-Limit: 10
 X-RateLimit-Remaining: 9
@@ -454,12 +505,14 @@ X-RateLimit-Reset: 1640995200
 ## Request/Response Headers
 
 ### Request Headers
+
 ```
 Authorization: Bearer <token>
 Content-Type: application/json
 ```
 
 ### Response Headers
+
 ```
 X-Request-ID: <uuid>
 X-Content-Type-Options: nosniff
@@ -471,12 +524,12 @@ X-XSS-Protection: 1; mode=block
 
 ## Plan Limits
 
-| Plan | AI Generations/Month | Listings/Month |
-|------|---------------------|----------------|
-| Free | 5 | Unlimited |
-| Starter | 50 | Unlimited |
-| Pro | 200 | Unlimited |
-| Business | 1000 | Unlimited |
+| Plan     | AI Generations/Month | Listings/Month |
+| -------- | -------------------- | -------------- |
+| Free     | 5                    | Unlimited      |
+| Starter  | 50                   | Unlimited      |
+| Pro      | 200                  | Unlimited      |
+| Business | 1000                 | Unlimited      |
 
 ---
 
@@ -485,6 +538,7 @@ X-XSS-Protection: 1; mode=block
 ### Stripe Webhook Events
 
 The `/api/stripe/webhook` endpoint handles:
+
 - `checkout.session.completed`
 - `customer.subscription.created`
 - `customer.subscription.updated`
@@ -499,12 +553,14 @@ The `/api/stripe/webhook` endpoint handles:
 ### cURL Examples
 
 **Verify Clerk Token:**
+
 ```bash
 curl -X GET https://quicklist.ai/api/auth/verify \
   -H "Authorization: Bearer <clerk_session_token>"
 ```
 
 **Generate Listing:**
+
 ```bash
 curl -X POST https://quicklist.ai/api/generate \
   -H "Authorization: Bearer <token>" \
@@ -516,6 +572,7 @@ curl -X POST https://quicklist.ai/api/generate \
 ```
 
 **Get Listings:**
+
 ```bash
 curl https://quicklist.ai/api/listings?page=1&limit=20 \
   -H "Authorization: Bearer <token>"

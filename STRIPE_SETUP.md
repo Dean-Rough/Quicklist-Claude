@@ -1,9 +1,11 @@
 # Stripe Integration Setup Guide
 
 ## Overview
+
 QuickList uses Stripe for subscription payments. This guide will help you set up Stripe with sandbox (test) keys for development.
 
 ## Prerequisites
+
 - A Stripe account (sign up at https://stripe.com)
 - Stripe Dashboard access
 
@@ -21,6 +23,7 @@ QuickList uses Stripe for subscription payments. This guide will help you set up
 ## Step 2: Create Subscription Products
 
 ### Casual Plan (£4.99/month)
+
 1. Go to https://dashboard.stripe.com/test/products
 2. Click **+ Add product**
 3. Fill in:
@@ -37,6 +40,7 @@ QuickList uses Stripe for subscription payments. This guide will help you set up
    ```
 
 ### Pro Plan (£9.99/month)
+
 1. Create another product with:
    - **Name:** Pro Plan
    - **Description:** 200 listings per month with premium features
@@ -48,6 +52,7 @@ QuickList uses Stripe for subscription payments. This guide will help you set up
    ```
 
 ### Max Plan (£19.99/month)
+
 1. Create another product with:
    - **Name:** Max Plan
    - **Description:** Unlimited listings with all features
@@ -82,6 +87,7 @@ Webhooks allow Stripe to notify your app about subscription events (payments, ca
 ## Step 4: Update Price IDs in Code
 
 The frontend needs to know the price IDs. They're already configured in `index.html`:
+
 - Line 2920: Casual plan button uses `price_casual`
 - Line 2934: Pro plan button uses `price_pro`
 - Line 2948: Max plan button uses `price_max`
@@ -118,15 +124,16 @@ These match the placeholder values. When you create products in Stripe, the actu
 
 Stripe provides test cards for different scenarios:
 
-| Card Number | Scenario |
-|-------------|----------|
-| 4242 4242 4242 4242 | Success |
-| 4000 0000 0000 0002 | Card declined |
+| Card Number         | Scenario                |
+| ------------------- | ----------------------- |
+| 4242 4242 4242 4242 | Success                 |
+| 4000 0000 0000 0002 | Card declined           |
 | 4000 0025 0000 3155 | Requires authentication |
 
 ## Managing Subscriptions
 
 Users can manage their subscriptions through the Stripe Customer Portal:
+
 1. Go to Settings in your app
 2. Click **Manage Billing**
 3. They'll be redirected to Stripe's portal where they can:
@@ -137,6 +144,7 @@ Users can manage their subscriptions through the Stripe Customer Portal:
 ## Production Checklist
 
 Before going live:
+
 - [ ] Replace test keys with live keys (remove `_test_` from keys)
 - [ ] Create products in **live mode** (not test mode)
 - [ ] Update webhook endpoint to production URL
@@ -147,15 +155,18 @@ Before going live:
 ## Troubleshooting
 
 ### "Stripe not configured" error
+
 - Check that `STRIPE_SECRET_KEY` is set in `.env`
 - Restart your server after adding environment variables
 
 ### Checkout session fails to create
+
 - Verify price IDs match those in Stripe Dashboard
 - Check server logs for detailed error messages
 - Ensure user is authenticated
 
 ### Webhook events not received
+
 - Use `ngrok` or similar to expose localhost to internet
 - Verify webhook secret matches Stripe Dashboard
 - Check Stripe Dashboard > Webhooks > Endpoint details for delivery attempts

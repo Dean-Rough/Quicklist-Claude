@@ -4,9 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const SAMPLE_DIR =
-  process.env.SAMPLE_DIR ||
-  path.resolve(__dirname, '..', '..', 'Sample Images');
+const SAMPLE_DIR = process.env.SAMPLE_DIR || path.resolve(__dirname, '..', '..', 'Sample Images');
 const BASE_URL = process.env.BASE_URL || 'http://localhost:4577';
 const GROUP_GAP = Number(process.env.GROUP_GAP || 5);
 const MAX_IMAGES = Number(process.env.MAX_IMAGES || 10);

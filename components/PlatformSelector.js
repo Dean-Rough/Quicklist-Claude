@@ -37,8 +37,8 @@ class PlatformSelector {
       // Fetch platform variations from API
       const response = await fetch(`/api/listings/${this.listingId}/platform-variations`, {
         headers: {
-          'Authorization': `Bearer ${window.app?.authToken || localStorage.getItem('auth_token')}`
-        }
+          Authorization: `Bearer ${window.app?.authToken || localStorage.getItem('auth_token')}`,
+        },
       });
 
       if (!response.ok) {
@@ -143,29 +143,29 @@ class PlatformSelector {
         color: '#E53238',
         name: 'eBay',
         method: 'Direct API Post',
-        description: 'Posts automatically'
+        description: 'Posts automatically',
       },
       vinted: {
         icon: '👕',
         color: '#09B1BA',
         name: 'Vinted',
         method: 'Copy & Open App',
-        description: 'Paste in Vinted app'
+        description: 'Paste in Vinted app',
       },
       depop: {
         icon: '✨',
         color: '#FF2E2E',
         name: 'Depop',
         method: 'Copy & Open App',
-        description: 'Paste in Depop app'
+        description: 'Paste in Depop app',
       },
       facebook: {
         icon: '👤',
         color: '#1877F2',
         name: 'Facebook',
         method: 'Copy & Open App',
-        description: 'Paste in Marketplace'
-      }
+        description: 'Paste in Marketplace',
+      },
     };
 
     const data = platformData[platform];
@@ -198,7 +198,7 @@ class PlatformSelector {
     const modal = document.getElementById('platformSelectorModal');
 
     // Close buttons
-    modal.querySelectorAll('[data-action="close"]').forEach(btn => {
+    modal.querySelectorAll('[data-action="close"]').forEach((btn) => {
       btn.addEventListener('click', () => this.close());
     });
 
@@ -210,11 +210,10 @@ class PlatformSelector {
     });
 
     // Platform option clicks (toggle checkbox)
-    modal.querySelectorAll('.platform-option').forEach(option => {
+    modal.querySelectorAll('.platform-option').forEach((option) => {
       option.addEventListener('click', (e) => {
         // Don't toggle if clicking preview button or checkbox itself
-        if (e.target.closest('.platform-preview-btn') ||
-            e.target.closest('.platform-checkbox')) {
+        if (e.target.closest('.platform-preview-btn') || e.target.closest('.platform-checkbox')) {
           return;
         }
 
@@ -225,7 +224,7 @@ class PlatformSelector {
     });
 
     // Checkbox changes
-    modal.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+    modal.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
       checkbox.addEventListener('change', (e) => {
         const option = e.target.closest('.platform-option');
         this.togglePlatform(option, e.target.checked);
@@ -233,7 +232,7 @@ class PlatformSelector {
     });
 
     // Preview buttons
-    modal.querySelectorAll('[data-action="preview"]').forEach(btn => {
+    modal.querySelectorAll('[data-action="preview"]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const platform = btn.dataset.platform;
@@ -280,7 +279,7 @@ class PlatformSelector {
       ebay: { name: 'eBay', color: '#E53238', icon: '🏷️' },
       vinted: { name: 'Vinted', color: '#09B1BA', icon: '👕' },
       depop: { name: 'Depop', color: '#FF2E2E', icon: '✨' },
-      facebook: { name: 'Facebook', color: '#1877F2', icon: '👤' }
+      facebook: { name: 'Facebook', color: '#1877F2', icon: '👤' },
     };
 
     const data = platformData[platform];
@@ -302,12 +301,16 @@ class PlatformSelector {
             <pre class="preview-description">${textToShow}</pre>
           </div>
 
-          ${variation.itemSpecifics ? `
+          ${
+            variation.itemSpecifics
+              ? `
             <div class="preview-specifics">
               <h4>Platform-Specific Details:</h4>
               <pre>${JSON.stringify(variation.itemSpecifics, null, 2)}</pre>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
 
         <div class="modal-footer">
@@ -332,17 +335,19 @@ class PlatformSelector {
       previewModal.remove();
     });
 
-    previewModal.querySelector('[data-action="select-from-preview"]').addEventListener('click', () => {
-      // Toggle platform selection
-      const mainModal = document.getElementById('platformSelectorModal');
-      const checkbox = mainModal.querySelector(`input[data-platform="${platform}"]`);
-      const option = checkbox.closest('.platform-option');
+    previewModal
+      .querySelector('[data-action="select-from-preview"]')
+      .addEventListener('click', () => {
+        // Toggle platform selection
+        const mainModal = document.getElementById('platformSelectorModal');
+        const checkbox = mainModal.querySelector(`input[data-platform="${platform}"]`);
+        const option = checkbox.closest('.platform-option');
 
-      checkbox.checked = !checkbox.checked;
-      this.togglePlatform(option, checkbox.checked);
+        checkbox.checked = !checkbox.checked;
+        this.togglePlatform(option, checkbox.checked);
 
-      previewModal.remove();
-    });
+        previewModal.remove();
+      });
 
     previewModal.addEventListener('click', (e) => {
       if (e.target === previewModal) {
@@ -386,7 +391,9 @@ class PlatformSelector {
     if (errorCount === 0) {
       this.showSuccess(`Posted to ${successCount} platform${successCount > 1 ? 's' : ''}!`);
     } else {
-      this.showWarning(`Posted to ${successCount} platform${successCount > 1 ? 's' : ''}, ${errorCount} failed`);
+      this.showWarning(
+        `Posted to ${successCount} platform${successCount > 1 ? 's' : ''}, ${errorCount} failed`
+      );
     }
 
     // Close modal after delay
@@ -409,12 +416,12 @@ class PlatformSelector {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${window.app?.authToken || localStorage.getItem('auth_token')}`
+          Authorization: `Bearer ${window.app?.authToken || localStorage.getItem('auth_token')}`,
         },
         body: JSON.stringify({
           listingId: this.listingId,
-          variation: this.variations.ebay
-        })
+          variation: this.variations.ebay,
+        }),
       });
 
       if (!response.ok) {
@@ -467,13 +474,13 @@ class PlatformSelector {
     const urls = {
       vinted: 'https://www.vinted.co.uk/items/new',
       depop: 'https://www.depop.com/sell/',
-      facebook: 'https://www.facebook.com/marketplace/create/item'
+      facebook: 'https://www.facebook.com/marketplace/create/item',
     };
 
     const platformData = {
       vinted: { name: 'Vinted', color: '#09B1BA', icon: '👕' },
       depop: { name: 'Depop', color: '#FF2E2E', icon: '✨' },
-      facebook: { name: 'Facebook Marketplace', color: '#1877F2', icon: '👤' }
+      facebook: { name: 'Facebook Marketplace', color: '#1877F2', icon: '👤' },
     };
 
     const data = platformData[platform];
@@ -533,22 +540,26 @@ class PlatformSelector {
     document.body.appendChild(instructionModal);
 
     // Event listeners
-    instructionModal.querySelector('[data-action="close-instructions"]').addEventListener('click', () => {
-      instructionModal.remove();
-    });
+    instructionModal
+      .querySelector('[data-action="close-instructions"]')
+      .addEventListener('click', () => {
+        instructionModal.remove();
+      });
 
-    instructionModal.querySelector('[data-action="open-platform"]').addEventListener('click', async () => {
-      // Open platform URL
-      window.open(url, '_blank');
+    instructionModal
+      .querySelector('[data-action="open-platform"]')
+      .addEventListener('click', async () => {
+        // Open platform URL
+        window.open(url, '_blank');
 
-      // Track action
-      await this.trackClipboardAction(platform, 'open_platform', true);
+        // Track action
+        await this.trackClipboardAction(platform, 'open_platform', true);
 
-      // Update status to draft (user will post manually)
-      await this.updatePlatformStatus(platform, 'draft', null, url);
+        // Update status to draft (user will post manually)
+        await this.updatePlatformStatus(platform, 'draft', null, url);
 
-      instructionModal.remove();
-    });
+        instructionModal.remove();
+      });
 
     instructionModal.addEventListener('click', (e) => {
       if (e.target === instructionModal) {
@@ -566,14 +577,14 @@ class PlatformSelector {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${window.app?.authToken || localStorage.getItem('auth_token')}`
+          Authorization: `Bearer ${window.app?.authToken || localStorage.getItem('auth_token')}`,
         },
         body: JSON.stringify({
           platform,
           status,
           platformListingId,
-          platformUrl
-        })
+          platformUrl,
+        }),
       });
     } catch (error) {
       console.error('Failed to update platform status:', error);
@@ -589,7 +600,7 @@ class PlatformSelector {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${window.app?.authToken || localStorage.getItem('auth_token')}`
+          Authorization: `Bearer ${window.app?.authToken || localStorage.getItem('auth_token')}`,
         },
         body: JSON.stringify({
           listingId: this.listingId,
@@ -597,8 +608,8 @@ class PlatformSelector {
           action,
           success,
           errorMessage,
-          sessionId: this.sessionId
-        })
+          sessionId: this.sessionId,
+        }),
       });
     } catch (error) {
       console.error('Failed to track clipboard action:', error);

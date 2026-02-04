@@ -7,6 +7,7 @@ This document describes the complete removal of JWT authentication and full migr
 ## Changes Made to server.js
 
 ### 1. Removed Imports
+
 ```javascript
 // REMOVED:
 const bcrypt = require('bcryptjs');
@@ -17,6 +18,7 @@ const { clerkClient, requireAuth, verifyToken } = require('@clerk/clerk-sdk-node
 ```
 
 ### 2. Updated Environment Variable Validation
+
 ```javascript
 // NOW REQUIRED:
 const requiredEnvVars = [
@@ -32,75 +34,80 @@ const requiredEnvVars = [
 ```
 
 ### 3. Removed Functions
+
 - `validatePassword()` - No longer needed
 - Legacy Google OAuth client initialization
 - All `if (googleClient)` conditional blocks
 
 ### 4. Updated `/api/config/auth` Endpoint
+
 ```javascript
 // BEFORE: Complex logic with fallbacks
 // AFTER: Simple Clerk-only response
 app.get('/api/config/auth', (req, res) => {
-    res.json({
-        clerk: {
-            enabled: true,
-            publishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-        },
-        authProvider: 'clerk'
-    });
+  res.json({
+    clerk: {
+      enabled: true,
+      publishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    },
+    authProvider: 'clerk',
+  });
 });
 ```
 
 ### 5. Updated `authenticateToken` Middleware
+
 ```javascript
 // BEFORE: Tried Clerk, fallback to JWT
 // AFTER: Clerk-only with proper logging
 const authenticateToken = async (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) {
-        return res.status(401).json({ error: 'Access token required' });
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  try {
+    const session = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY,
+    });
+
+    if (session && session.sub) {
+      const user = await clerkClient.users.getUser(session.sub);
+      req.user = {
+        id: user.id,
+        email: user.emailAddresses[0]?.emailAddress,
+        name:
+          user.firstName && user.lastName
+            ? `${user.firstName} ${user.lastName}`
+            : user.firstName || user.username,
+        clerkId: user.id,
+      };
+
+      logger.info('User authenticated', {
+        userId: req.user.id,
+        email: req.user.email,
+        requestId: req.id,
+      });
+
+      return next();
+    } else {
+      logger.warn('Clerk token verification failed: no session', { requestId: req.id });
+      return res.status(403).json({ error: 'Invalid or expired token' });
     }
-
-    try {
-        const session = await verifyToken(token, {
-            secretKey: process.env.CLERK_SECRET_KEY
-        });
-
-        if (session && session.sub) {
-            const user = await clerkClient.users.getUser(session.sub);
-            req.user = {
-                id: user.id,
-                email: user.emailAddresses[0]?.emailAddress,
-                name: user.firstName && user.lastName
-                    ? `${user.firstName} ${user.lastName}`
-                    : user.firstName || user.username,
-                clerkId: user.id
-            };
-
-            logger.info('User authenticated', {
-                userId: req.user.id,
-                email: req.user.email,
-                requestId: req.id
-            });
-
-            return next();
-        } else {
-            logger.warn('Clerk token verification failed: no session', { requestId: req.id });
-            return res.status(403).json({ error: 'Invalid or expired token' });
-        }
-    } catch (error) {
-        logger.error('Clerk authentication error:', {
-            error: error.message,
-            requestId: req.id
-        });
-        return res.status(403).json({ error: 'Invalid or expired token' });
-    }
+  } catch (error) {
+    logger.error('Clerk authentication error:', {
+      error: error.message,
+      requestId: req.id,
+    });
+    return res.status(403).json({ error: 'Invalid or expired token' });
+  }
 };
 ```
 
 ### 6. Removed Auth Endpoints
+
 ```javascript
 // REMOVED COMPLETELY:
 - POST /api/auth/signup
@@ -114,6 +121,7 @@ const authenticateToken = async (req, res, next) => {
 ```
 
 ### 7. Updated `/api/auth/verify` Endpoint
+
 ```javascript
 // Removed isClerkEnabled check
 // Always syncs Clerk user to database
@@ -125,6 +133,7 @@ const authenticateToken = async (req, res, next) => {
 ### Remove Legacy OAuth Code Sections
 
 In `server.js`, remove all code between these lines:
+
 1. Lines ~9-19: Conditional Google OAuth client loading
 2. Lines ~363-485: All legacy Google OAuth endpoints
 3. Lines ~487-600: Legacy OAuth callback handlers (if any remain)
@@ -166,13 +175,15 @@ COMMENT ON COLUMN users.password_hash IS 'DEPRECATED: Legacy JWT auth, use clerk
 ### Remove from index.html:
 
 1. **Email/Password Form Fields** (lines ~2030-2040)
+
    ```html
    <!-- REMOVE: -->
-   <input type="password" id="authPassword" ...>
+   <input type="password" id="authPassword" ... />
    <small id="passwordHelp">Minimum 6 characters</small>
    ```
 
 2. **Legacy Auth Functions** (lines ~4940-5000)
+
    ```javascript
    // REMOVE:
    async signInLegacy() { ... }
@@ -180,6 +191,7 @@ COMMENT ON COLUMN users.password_hash IS 'DEPRECATED: Legacy JWT auth, use clerk
    ```
 
 3. **Password Validation** (lines ~2440-2460)
+
    ```javascript
    // REMOVE:
    const password = authPassword.value;
@@ -195,15 +207,15 @@ COMMENT ON COLUMN users.password_hash IS 'DEPRECATED: Legacy JWT auth, use clerk
 ### Keep in index.html:
 
 1. **Clerk SDK Loading** (line ~2123)
+
    ```html
    <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
    ```
 
 2. **Clerk OAuth Buttons** (lines ~2047-2060)
+
    ```html
-   <button onclick="app.signInWithClerk('google')">
-       Sign in with Google
-   </button>
+   <button onclick="app.signInWithClerk('google')">Sign in with Google</button>
    ```
 
 3. **Clerk Auth Functions** (lines ~5013-5067)
@@ -215,6 +227,7 @@ COMMENT ON COLUMN users.password_hash IS 'DEPRECATED: Legacy JWT auth, use clerk
 ## Environment Variables
 
 ### Remove from .env:
+
 ```env
 # REMOVE THESE:
 JWT_SECRET=...
@@ -224,6 +237,7 @@ GOOGLE_REDIRECT_URI=...  # Legacy OAuth
 ```
 
 ### Required in .env:
+
 ```env
 # REQUIRED:
 CLERK_SECRET_KEY=sk_test_... or sk_live_...
@@ -274,11 +288,13 @@ LOG_LEVEL=info
 ## Package.json Updates
 
 ### Remove dependencies:
+
 ```bash
 npm uninstall bcryptjs jsonwebtoken google-auth-library
 ```
 
 ### Update package.json:
+
 ```json
 {
   "dependencies": {
@@ -288,7 +304,7 @@ npm uninstall bcryptjs jsonwebtoken google-auth-library
     // "google-auth-library": "^x.x.x",  // if installed
 
     // KEEP:
-    "@clerk/clerk-sdk-node": "^4.13.23",
+    "@clerk/clerk-sdk-node": "^4.13.23"
     // ... other dependencies
   }
 }
@@ -332,11 +348,13 @@ SELECT id, email, password_hash IS NULL as no_password, clerk_id FROM users WHER
 If migration fails:
 
 1. **Restore server.js** from git:
+
    ```bash
    git checkout HEAD -- server.js
    ```
 
 2. **Reinstall JWT dependencies**:
+
    ```bash
    npm install bcryptjs jsonwebtoken
    ```

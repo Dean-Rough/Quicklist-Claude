@@ -20,33 +20,33 @@
 
 ### Core Tests (1-10)
 
-| # | Test Name | Status | Details |
-|---|-----------|--------|---------|
-| 1 | API Health Check | ✅ PASS | API responding correctly |
-| 2 | Frontend HTML Loading | ✅ PASS | 91KB HTML loads successfully |
-| 3 | Database Init Endpoint | ⚠️ PARTIAL | Endpoint exists, DB unreachable |
-| 4 | Auth Signup Endpoint | ⚠️ PARTIAL | Endpoint exists, DB unreachable |
-| 5 | Auth Verify (No Token) | ✅ PASS | Correctly rejects unauthorized |
-| 6 | Generate Endpoint (No Token) | ✅ PASS | Requires authentication |
-| 7 | Listings Endpoint (No Token) | ✅ PASS | Requires authentication |
-| 8 | Frontend UI Elements | ✅ PASS | All 10/10 elements present |
-| 9 | Static Assets Loading | ✅ PASS | JSZip, Google Fonts |
-| 10 | CORS Configuration | ✅ PASS | Headers configured |
+| #   | Test Name                    | Status     | Details                         |
+| --- | ---------------------------- | ---------- | ------------------------------- |
+| 1   | API Health Check             | ✅ PASS    | API responding correctly        |
+| 2   | Frontend HTML Loading        | ✅ PASS    | 91KB HTML loads successfully    |
+| 3   | Database Init Endpoint       | ⚠️ PARTIAL | Endpoint exists, DB unreachable |
+| 4   | Auth Signup Endpoint         | ⚠️ PARTIAL | Endpoint exists, DB unreachable |
+| 5   | Auth Verify (No Token)       | ✅ PASS    | Correctly rejects unauthorized  |
+| 6   | Generate Endpoint (No Token) | ✅ PASS    | Requires authentication         |
+| 7   | Listings Endpoint (No Token) | ✅ PASS    | Requires authentication         |
+| 8   | Frontend UI Elements         | ✅ PASS    | All 10/10 elements present      |
+| 9   | Static Assets Loading        | ✅ PASS    | JSZip, Google Fonts             |
+| 10  | CORS Configuration           | ✅ PASS    | Headers configured              |
 
 ### Advanced Tests (11-20)
 
-| # | Test Name | Status | Details |
-|---|-----------|--------|---------|
-| 11 | JavaScript Syntax | ❌ FAIL | Non-critical validation issue |
-| 12 | API Endpoint Structure | ✅ PASS | 5/5 endpoints exist |
-| 13 | Security Posture | ✅ PASS | No exposed keys, JWT auth |
-| 14 | Core Features Present | ✅ PASS | 6/6 features working |
-| 15 | Marketplace Support | ✅ PASS | Vinted, eBay, Gumtree |
-| 16 | Error Handling | ✅ PASS | Proper error responses |
-| 17 | REST API Methods | ✅ PASS | GET, POST, DELETE work |
-| 18 | Responsive Design | ✅ PASS | Mobile-friendly |
-| 19 | Dark Mode Theme | ✅ PASS | Indigo accent, Outfit font |
-| 20 | Marketing Content | ✅ PASS | All pages present |
+| #   | Test Name              | Status  | Details                       |
+| --- | ---------------------- | ------- | ----------------------------- |
+| 11  | JavaScript Syntax      | ❌ FAIL | Non-critical validation issue |
+| 12  | API Endpoint Structure | ✅ PASS | 5/5 endpoints exist           |
+| 13  | Security Posture       | ✅ PASS | No exposed keys, JWT auth     |
+| 14  | Core Features Present  | ✅ PASS | 6/6 features working          |
+| 15  | Marketplace Support    | ✅ PASS | Vinted, eBay, Gumtree         |
+| 16  | Error Handling         | ✅ PASS | Proper error responses        |
+| 17  | REST API Methods       | ✅ PASS | GET, POST, DELETE work        |
+| 18  | Responsive Design      | ✅ PASS | Mobile-friendly               |
+| 19  | Dark Mode Theme        | ✅ PASS | Indigo accent, Outfit font    |
+| 20  | Marketing Content      | ✅ PASS | All pages present             |
 
 ---
 
@@ -105,6 +105,7 @@
 **Issue:** External PostgreSQL (Neon) unreachable from sandbox environment
 **Impact:** Authentication and listing persistence features untestable
 **Affected Features:**
+
 - User signup/signin
 - Saving listings to database
 - Loading saved listings
@@ -150,6 +151,7 @@
 ## Technical Stack
 
 **Frontend:**
+
 - Vanilla JavaScript (no frameworks)
 - HTML5 with semantic markup
 - CSS3 with custom properties
@@ -157,6 +159,7 @@
 - Google Fonts (Outfit family)
 
 **Backend:**
+
 - Node.js with Express
 - PostgreSQL (Neon Database)
 - JWT authentication
@@ -165,9 +168,11 @@
 - dotenv for configuration
 
 **AI/ML:**
+
 - Google Gemini Vision API (2.0-flash-exp)
 
 **Storage:**
+
 - PostgreSQL for persistent data
 - localStorage for settings
 
@@ -176,6 +181,7 @@
 ## Tested Features
 
 ### Frontend Components
+
 ✅ Marketing landing page
 ✅ Photo tips page
 ✅ Seller checklist page
@@ -192,6 +198,7 @@
 ✅ Responsive layout
 
 ### Backend Endpoints
+
 ✅ GET /api/health
 ✅ POST /api/auth/signup
 ✅ POST /api/auth/signin
@@ -262,17 +269,20 @@ The only limitations are environment-specific (database connectivity in sandbox)
 ## Next Steps for Deployment
 
 1. **Clone repository:**
+
    ```bash
    git clone https://github.com/Dean-Rough/Quicklist-Claude.git
    cd Quicklist-Claude
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Start server:**
+
    ```bash
    npm start
    ```
