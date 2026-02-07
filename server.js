@@ -3486,7 +3486,55 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
       bodyKeys: Object.keys(req.body || {}),
     });
 
-    const { images, platform, hint, itemModel, conditionInfo } = req.body;
+    const { images, platform, hint, itemModel, conditionInfo, personality } = req.body;
+
+    // Validate and enforce personality tier restrictions
+    const PERSONALITY_TIERS = {
+      standard: 'free',
+      expert: 'free',
+      punchy: 'pro',
+      luxe: 'pro',
+      streetwear: 'pro',
+      delboy: 'pro',
+    };
+    const TIER_LEVELS = { free: 0, starter: 1, casual: 2, pro: 3, business: 4, max: 4 };
+    
+    let validatedPersonality = 'standard'; // Default
+    
+    if (personality && PERSONALITY_TIERS[personality]) {
+      // Get user's subscription tier
+      let userTier = 'free';
+      try {
+        const subResult = await safeQuery(
+          `SELECT plan_type FROM subscriptions WHERE user_id = $1 AND status = 'active' ORDER BY created_at DESC LIMIT 1`,
+          [userId]
+        );
+        if (subResult.rows.length > 0) {
+          userTier = subResult.rows[0].plan_type || 'free';
+        }
+      } catch (tierError) {
+        logger.warn('Could not fetch user tier, defaulting to free', { userId, error: tierError.message });
+      }
+      
+      const requiredTier = PERSONALITY_TIERS[personality];
+      const userLevel = TIER_LEVELS[userTier] || 0;
+      const requiredLevel = TIER_LEVELS[requiredTier] || 0;
+      
+      if (userLevel >= requiredLevel) {
+        validatedPersonality = personality;
+      } else {
+        logger.warn('User attempted to use personality above their tier', {
+          userId,
+          requestedPersonality: personality,
+          userTier,
+          requiredTier,
+        });
+        // Fall back to standard - don't error, just use default
+        validatedPersonality = 'standard';
+      }
+    }
+    
+    logger.info('Personality selection:', { userId, requested: personality, validated: validatedPersonality });
 
     // Validate images
     if (!images || !Array.isArray(images) || images.length === 0) {
@@ -3741,7 +3789,31 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
       ? `\n🔴 **USER-PROVIDED ADDITIONAL INFO** 🔴\nAdditional user notes: "${hint}"\n\n**Include this information appropriately in your listing description**\n\n`
       : '';
 
-    const prompt = `${itemModelHint}${conditionHint}${userInfoHint}${extractedCodesSection}${visionSection}${conditionSection}You are an expert e-commerce listing specialist for the UK resale market. Your PRIMARY goal is to accurately identify the item by reading ALL visible text and labels in ALL the images provided.
+    // Build personality/tone instructions
+    const PERSONALITY_PROMPTS = {
+      standard: `**WRITING STYLE: STANDARD**
+Write clear, balanced descriptions that work well on any marketplace. Use professional but approachable language. Be informative without being overly formal or casual.`,
+      
+      expert: `**WRITING STYLE: EXPERT/PROFESSIONAL**
+Write fact-focused, authoritative descriptions aimed at serious buyers. Use precise terminology and technical specifications. Avoid casual language or marketing fluff. Emphasize authenticity, provenance, and technical details. Appeal to collectors and knowledgeable buyers.`,
+      
+      punchy: `**WRITING STYLE: PUNCHY SELLER**
+Write energetic, compelling copy that drives quick sales. Use short, punchy sentences. Create urgency without being pushy. Highlight the best features upfront. Use action words and confident language. Make the listing exciting and hard to scroll past.`,
+      
+      luxe: `**WRITING STYLE: LUXE BOUTIQUE**
+Write elegant, refined descriptions for premium and designer items. Use sophisticated vocabulary and evocative language. Create an aspirational tone that positions the item as a quality investment piece. Reference craftsmanship, heritage, and timeless appeal. Avoid casual phrases.`,
+      
+      streetwear: `**WRITING STYLE: STREETWEAR/HYPE**
+Write in the voice of a hypebeast or sneakerhead. Use contemporary streetwear culture language naturally. Reference drops, grails, fire pieces. Speak to the resale community. Be authentic to the culture without forcing slang. Appeal to collectors who know the value.`,
+      
+      delboy: `**WRITING STYLE: CHEEKY MARKET TRADER**
+Write with warm, cheeky charm like a friendly market trader. Use a conversational British tone with gentle humour. Create rapport with the buyer. Phrases like "lovely bit of kit", "proper bargain", "won't last long". Keep it tasteful - charming, not cheesy. Be genuine and personable.`,
+    };
+    
+    const personalitySection = PERSONALITY_PROMPTS[validatedPersonality] || PERSONALITY_PROMPTS.standard;
+    const personalityHint = `\n🎨 **LISTING PERSONALITY** 🎨\n${personalitySection}\n\n**IMPORTANT**: Apply this writing style to the marketing paragraph and description while keeping all facts accurate.\n\n`;
+
+    const prompt = `${personalityHint}${itemModelHint}${conditionHint}${userInfoHint}${extractedCodesSection}${visionSection}${conditionSection}You are an expert e-commerce listing specialist for the UK resale market. Your PRIMARY goal is to accurately identify the item by reading ALL visible text and labels in ALL the images provided.
 
 **THREE-PHASE IDENTIFICATION SYSTEM:**
 - **Phase 1 (Code Parsing)**: Extracted codes from tags - USE THESE AS PRIMARY IDENTIFIERS

@@ -280,6 +280,9 @@ const app = {
     this.updateUI();
     this.updateAuthButtons();
     this.updateMobileMenu();
+    
+    // Update personality dropdown based on user tier
+    this.updatePersonalityDropdown();
 
     // Preload pricing configuration for checkout
     this.loadPricingConfig();
@@ -1984,8 +1987,87 @@ const app = {
     }
   },
 
+  // Get selected listing personality
+  getSelectedPersonality() {
+    const select = document.getElementById('personalitySelect');
+    return select ? select.value : 'standard';
+  },
+
+  // Update personality dropdown based on user subscription tier
+  async updatePersonalityDropdown() {
+    const select = document.getElementById('personalitySelect');
+    if (!select) return;
+
+    // Default to free tier
+    let userTier = 'free';
+
+    // Try to get user's subscription tier
+    if (this.state.token) {
+      try {
+        const response = await fetch(`${this.apiUrl}/subscription/status`, {
+          headers: {
+            Authorization: `Bearer ${this.state.token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          userTier = data.subscription?.planType || 'free';
+        }
+      } catch (error) {
+        console.warn('Failed to fetch subscription status for personality dropdown');
+      }
+    }
+
+    // Tier hierarchy: free < starter < casual < pro < business/max
+    const tierLevels = { free: 0, starter: 1, casual: 2, pro: 3, business: 4, max: 4 };
+    const userLevel = tierLevels[userTier] || 0;
+
+    // Enable/disable options based on tier
+    const options = select.querySelectorAll('option');
+    options.forEach(option => {
+      const requiredTier = option.dataset.tier || 'free';
+      const requiredLevel = tierLevels[requiredTier] || 0;
+
+      if (userLevel >= requiredLevel) {
+        option.disabled = false;
+        // Remove lock emoji from text if user has access
+        option.textContent = option.textContent.replace(/^🔒\s*/, '');
+      } else {
+        option.disabled = true;
+        // Add lock emoji if not already there
+        if (!option.textContent.startsWith('🔒')) {
+          option.textContent = '🔒 ' + option.textContent;
+        }
+      }
+    });
+
+    // Update description based on selection
+    select.addEventListener('change', () => this.updatePersonalityDescription());
+    this.updatePersonalityDescription();
+  },
+
+  // Update the personality description helper text
+  updatePersonalityDescription() {
+    const select = document.getElementById('personalitySelect');
+    const description = document.getElementById('personalityDescription');
+    if (!select || !description) return;
+
+    const descriptions = {
+      standard: 'Clear, balanced descriptions that work well on any marketplace',
+      expert: 'Professional, fact-focused listings for serious buyers',
+      punchy: 'Energetic, compelling copy that drives quick sales',
+      luxe: 'Elegant, refined language for premium and designer items',
+      streetwear: 'Hypebeast-style descriptions for sneakers and streetwear',
+      delboy: 'Cheeky, market-trader charm with a wink and a nudge',
+    };
+
+    description.textContent = descriptions[select.value] || descriptions.standard;
+  },
+
   // Call backend API for generation
   async callGeminiAPI(base64Images, platform, hint, location = '') {
+    const personality = this.getSelectedPersonality();
+
     try {
       const response = await fetch(`${this.apiUrl}/generate`, {
         method: 'POST',
@@ -1998,6 +2080,7 @@ const app = {
           platform,
           hint,
           location,
+          personality, // Add personality to request
         }),
         signal: this.state.generationAbortController?.signal,
       });

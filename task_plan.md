@@ -1,4 +1,4 @@
-# Quicklist — UX + Growth Push (PM Plan)
+# Quicklist - UX + Growth Push (PM Plan)
 
 ## Goal
 Ship a cleaner, faster Quicklist flow that supports **bulk photo dumps → auto split into items**, clarifies **Pro vs Max**, and reduces analysis latency (actual + perceived). Keep changes shippable in small PRs.
@@ -11,15 +11,15 @@ Ship a cleaner, faster Quicklist flow that supports **bulk photo dumps → auto 
 
 ## Phases
 
-### Phase 0 — Baseline + decide “what’s live” (today)
+### Phase 0 - Baseline + decide "what's live" (today)
 - [ ] Confirm whether `main` is what Vercel prod is running.
 - [ ] Check remote branches/PRs: `feature/phase1-quality-tools`, `claude/quicklist-ai-app-*`.
 - [ ] Run local checks: lint/format/build.
 - [ ] Decide whether to deploy a small PR (UI-only) today.
 
-### Phase 1 — UX audit (current flow) + pain points
+### Phase 1 - UX audit (current flow) + pain points
 - [ ] Map current user flow: landing → auth → new item → upload photos → analysis → listing output → export/marketplace.
-- [ ] Identify “slow as fuck” spots:
+- [ ] Identify "slow as fuck" spots:
   - network requests (AI calls)
   - image upload/processing
   - market research
@@ -27,14 +27,14 @@ Ship a cleaner, faster Quicklist flow that supports **bulk photo dumps → auto 
   - serial vs parallel steps
 - [ ] Document current gating for Pro/Max features (what is disabled + why).
 
-### Phase 2 — Bulk photo dump → auto split items (MVP)
+### Phase 2 - Bulk photo dump → auto split items (MVP)
 **Decision:** Implement a batch-friendly top-level flow: **Catalogue → New Batch → Review Groups → Generate → Export → Archive**.
 
 - [ ] Add **Catalogue / Item Browser** as the default post-login landing.
   - Shows items/drafts with status: Draft / Generated / Exported / Archived.
   - Filters + search.
 - [ ] Add **New Batch** flow:
-  - user uploads 10–50 photos
+  - user uploads 10-50 photos
   - system clusters into groups (items)
   - user confirms/edits groups
   - then runs analysis per group
@@ -49,14 +49,14 @@ Ship a cleaner, faster Quicklist flow that supports **bulk photo dumps → auto 
   - Export
   - Archive
 
-### Phase 3 — Pro vs Max clarity
+### Phase 3 - Pro vs Max clarity
 - [ ] Define feature matrix:
   - Pro: batch processing, enhancement, blur fix, etc.
-  - Max: priority queue, higher limits, extra “styles/personality”, etc.
+  - Max: priority queue, higher limits, extra "styles/personality", etc.
 - [ ] Update pricing page copy to match actual toggles.
-- [ ] In-app feature locks: consistent “locked” UI with CTA.
+- [ ] In-app feature locks: consistent "locked" UI with CTA.
 
-### Phase 4 — Analysis speed improvements
+### Phase 4 - Analysis speed improvements
 - [ ] Parallelize steps where possible.
 - [ ] Add progress UI with staged steps + partial results.
 - [ ] Caching:
@@ -65,24 +65,25 @@ Ship a cleaner, faster Quicklist flow that supports **bulk photo dumps → auto 
   - reuse extracted attributes across platforms
 - [ ] Make failures recoverable (retry only failed step).
 
-### Phase 5 — Listing “personality” presets (tiered feature)
+### Phase 5 — Listing "personality" presets (tiered feature) ✅ DONE
 **Decision (Dean):** Dropdown is visible on all tiers.
 - Starter/Basic: can select **Standard** or **Expert** only.
 - Pro/Max: can select all presets.
 
-- [ ] Implement as **tone presets** (safe) not heavy persona roleplay.
-- [ ] Presets (draft):
-  - Standard (default)
+- [x] Implement as **tone presets** (safe) not heavy persona roleplay.
+- [x] Presets (implemented):
+  - Standard (default) - Clear, balanced descriptions
   - Expert (straight facts / professional)
-  - Punchy seller
-  - Luxe boutique
-  - Streetwear/hype
-  - Delboy-lite (UK cheeky) — keep it subtle, not parody
-- [ ] UX:
-  - Dropdown near generation
-  - Disabled options show lock + upgrade CTA on lower tiers
-  - Remember last used
-  - (Optional) tiny preview snippet
+  - Punchy seller - Energetic, compelling copy
+  - Luxe boutique - Elegant, refined language
+  - Streetwear/hype - Hypebeast culture voice
+  - Delboy-lite (UK cheeky) — Cheeky Market Trader
+- [x] UX:
+  - Dropdown near generation button
+  - Disabled options show 🔒 lock on lower tiers
+  - Tier checking via subscription API
+  - Contextual description updates on selection
+- [x] Server-side enforcement - validates tier before using personality
 
 ## Deliverables
 - UX flow diagram (markdown) + screen list.
@@ -97,4 +98,4 @@ Ship a cleaner, faster Quicklist flow that supports **bulk photo dumps → auto 
 ## Next actions (immediate)
 1) Inspect current repo files for: pricing copy, plan gating, analysis pipeline code paths.
 2) Produce UX audit + concrete changes list.
-3) Identify quickest “old colour scheme” revert option (token swap) and propose.
+3) Identify quickest "old colour scheme" revert option (token swap) and propose.
