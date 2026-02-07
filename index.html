@@ -1119,6 +1119,39 @@
                   Scan Label to Extract Product Info
                 </button>
               </div>
+              <!-- Listing Personality Dropdown -->
+              <div class="form-group" style="margin-bottom: 1rem">
+                <label
+                  class="form-label"
+                  style="display: flex; align-items: center; justify-content: space-between"
+                >
+                  <span>Listing Style</span>
+                </label>
+                <select class="form-input" id="personalitySelect" style="width: 100%">
+                  <option value="standard" data-tier="free">Standard</option>
+                  <option value="expert" data-tier="free">Expert (Professional)</option>
+                  <option value="punchy" data-tier="pro" disabled>🔒 Punchy Seller (Pro)</option>
+                  <option value="luxe" data-tier="pro" disabled>🔒 Luxe Boutique (Pro)</option>
+                  <option value="streetwear" data-tier="pro" disabled>
+                    🔒 Streetwear/Hype (Pro)
+                  </option>
+                  <option value="delboy" data-tier="pro" disabled>
+                    🔒 Cheeky Market Trader (Pro)
+                  </option>
+                </select>
+                <small
+                  style="
+                    color: var(--text-muted);
+                    font-size: 0.85rem;
+                    display: block;
+                    margin-top: 0.5rem;
+                  "
+                >
+                  <span id="personalityDescription"
+                    >Choose the tone and style for your listing description</span
+                  >
+                </small>
+              </div>
               <button class="btn btn-primary" id="generateBtn" style="width: 100%" disabled>
                 Generate Listing
               </button>
