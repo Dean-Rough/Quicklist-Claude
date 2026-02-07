@@ -8,7 +8,6 @@
     "dev": "bash scripts/dev.sh",
     "clerk:token": "node scripts/clerk-token.js",
     "build": "bash vercel-build.sh",
-    "vercel-build": "bash vercel-build.sh",
     "prepare": "husky",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
