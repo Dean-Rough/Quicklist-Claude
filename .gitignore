@@ -72,3 +72,4 @@ temp/
 .vercel
 
 stripe_backup_code.txt
+.env*.local
