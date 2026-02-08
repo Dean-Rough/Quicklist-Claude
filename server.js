@@ -31,6 +31,19 @@ const GEMINI_VISION_MODEL =
 const buildGeminiUrl = (model, apiKey) =>
   `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:generateContent?key=${apiKey}`;
 
+// Helper for fetch with timeout to prevent hanging requests
+async function fetchWithTimeout(url, options, timeoutMs = 30000) {
+  // eslint-disable-next-line no-undef
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 // Initialize Sentry error tracking (optional - only if DSN is configured)
 const Sentry = require('@sentry/node');
 if (process.env.SENTRY_DSN) {
@@ -2465,30 +2478,34 @@ ${listing.modelCodes && listing.modelCodes.length > 0 ? `Model Code: ${listing.m
 
     logger.info('Phase 4: Finding stock image:', { searchQuery });
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: stockImagePrompt }],
-          },
-        ],
-        tools: [
-          {
-            google_search: {},
-          },
-        ],
-        generationConfig: {
-          temperature: 0.1, // Low temperature for precise URL extraction
-          topP: 0.8,
-          topK: 20,
-          maxOutputTokens: 512,
+    const response = await fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: stockImagePrompt }],
+            },
+          ],
+          tools: [
+            {
+              google_search: {},
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1, // Low temperature for precise URL extraction
+            topP: 0.8,
+            topK: 20,
+            maxOutputTokens: 512,
+          },
+        }),
+      },
+      25000
+    ); // 25s timeout for stock image search
 
     if (!response.ok) {
       throw new Error(`Stock image API request failed: ${response.status}`);
@@ -2628,26 +2645,30 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
       imageCount: Math.min(images.length, 2),
     });
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: parts,
-          },
-        ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.2, // Low temperature for accurate recognition
-          topP: 0.85,
-          topK: 30,
-          maxOutputTokens: 1024,
+    const response = await fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: parts,
+            },
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2, // Low temperature for accurate recognition
+            topP: 0.85,
+            topK: 30,
+            maxOutputTokens: 1024,
+          },
+        }),
+      },
+      25000
+    ); // 25s timeout
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
@@ -2754,26 +2775,30 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
 
     logger.info('Phase 1: Intensive code parsing:', { imageCount: images.length });
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: parts,
-          },
-        ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.1, // Low temperature for precise extraction
-          topP: 0.8,
-          topK: 20,
-          maxOutputTokens: 1024,
+    const response = await fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: parts,
+            },
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.1, // Low temperature for precise extraction
+            topP: 0.8,
+            topK: 20,
+            maxOutputTokens: 1024,
+          },
+        }),
+      },
+      25000
+    ); // 25s timeout
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
@@ -2959,26 +2984,30 @@ Return ONLY the JSON object. No markdown, no explanation, no other text.`;
 
     const parts = [{ text: qualityPrompt }, prepareImageForGemini(imageBase64)];
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: parts,
-          },
-        ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.2, // Low temperature for consistent scoring
-          topP: 0.8,
-          topK: 20,
-          maxOutputTokens: 1024,
+    const response = await fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: parts,
+            },
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2, // Low temperature for consistent scoring
+            topP: 0.8,
+            topK: 20,
+            maxOutputTokens: 1024,
+          },
+        }),
+      },
+      20000
+    ); // 20s timeout for quality check
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
@@ -3680,11 +3709,23 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
     logger.info('Starting parallel processing:', { userId, imageCount: images.length, platform });
 
     // Analyze quality of all images in parallel
-    const qualityPromises = images.map((img) => analyzeImageQuality(img, apiKey));
+    const qualityPromises = images.map((img) =>
+      analyzeImageQuality(img, apiKey).catch((err) => {
+        logger.warn('Quality analysis failed for image:', { error: err.message });
+        return { overallScore: 70, criticalIssues: [], recommendations: [] };
+      })
+    );
 
+    // Wrap each phase in try-catch so one failing doesn't kill the others
     const [parsedCodes, visionRecognition, qualityAnalysis] = await Promise.all([
-      parseProductCodes(images, apiKey),
-      recognizeProductWithVision(images, apiKey),
+      parseProductCodes(images, apiKey).catch((err) => {
+        logger.warn('Code parsing failed:', { error: err.message });
+        return { modelCodes: [], styleCodes: [], skuNumbers: [], allText: [] };
+      }),
+      recognizeProductWithVision(images, apiKey).catch((err) => {
+        logger.warn('Vision recognition failed:', { error: err.message });
+        return { visualBrand: null, productLine: null, confidence: 'LOW' };
+      }),
       Promise.all(qualityPromises),
     ]);
     logger.info('Parallel processing complete');
@@ -4736,26 +4777,30 @@ If you can't read certain parts clearly, note this in the response.`;
 
     const parts = [{ text: labelPrompt }, prepareImageForGemini(image)];
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: parts,
-          },
-        ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.2, // Low temperature for accurate text extraction
-          topP: 0.95,
-          topK: 40,
-          maxOutputTokens: 2048,
+    const response = await fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: parts,
+            },
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2, // Low temperature for accurate text extraction
+            topP: 0.95,
+            topK: 40,
+            maxOutputTokens: 2048,
+          },
+        }),
+      },
+      25000
+    ); // 25s timeout
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
@@ -4855,26 +4900,30 @@ Provide honest but not alarming language for the condition disclosure.`;
     // Build parts array: prompt text + all images
     const parts = [{ text: damagePrompt }, ...images.map(prepareImageForGemini)];
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: parts,
-          },
-        ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.3, // Lower temperature for more factual damage assessment
-          topP: 0.95,
-          topK: 40,
-          maxOutputTokens: 2048,
+    const response = await fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: parts,
+            },
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.3, // Lower temperature for more factual damage assessment
+            topP: 0.95,
+            topK: 40,
+            maxOutputTokens: 2048,
+          },
+        }),
+      },
+      25000
+    ); // 25s timeout
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
