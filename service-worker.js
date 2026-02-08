@@ -4,10 +4,10 @@
  */
 
 // Cache configuration
-const CACHE_VERSION = 'v2'; // Bumped for Phase 1 multi-platform release
-const STATIC_CACHE = 'quicklist-static-v2';
-const DYNAMIC_CACHE = 'quicklist-dynamic-v2';
-const IMAGE_CACHE = 'quicklist-images-v2';
+const CACHE_VERSION = 'v3'; // Bumped to bust stale caches
+const STATIC_CACHE = 'quicklist-static-v3';
+const DYNAMIC_CACHE = 'quicklist-dynamic-v3';
+const IMAGE_CACHE = 'quicklist-images-v3';
 
 // Cache these files on install
 const STATIC_ASSETS = [
@@ -106,9 +106,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets - cache first
+  // JavaScript files - ALWAYS network first (we deploy often)
+  if (url.pathname.endsWith('.js') && !url.hostname.includes('cdnjs')) {
+    event.respondWith(networkFirstStrategy(request));
+    return;
+  }
+
+  // HTML files - network first (critical for updates)
+  if (url.pathname === '/' || url.pathname.endsWith('.html')) {
+    event.respondWith(networkFirstStrategy(request));
+    return;
+  }
+
+  // External static assets (CDNs, fonts) - cache first
   if (
-    STATIC_ASSETS.includes(url.pathname) ||
     url.hostname.includes('fonts.googleapis.com') ||
     url.hostname.includes('fonts.gstatic.com') ||
     url.hostname.includes('cdnjs.cloudflare.com')

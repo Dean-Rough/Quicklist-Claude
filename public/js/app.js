@@ -821,9 +821,23 @@ const app = {
 
   // Delete image
   deleteImage(id) {
+    // Find and revoke the object URL to prevent memory leak
+    const imgToDelete = this.state.uploadedImages.find((img) => img.id === id);
+    if (imgToDelete && imgToDelete.url && imgToDelete.url.startsWith('blob:')) {
+      URL.revokeObjectURL(imgToDelete.url);
+    }
     this.state.uploadedImages = this.state.uploadedImages.filter((img) => img.id !== id);
     this.renderImageGrid();
     this.updateGenerateButton();
+  },
+
+  // Clean up all object URLs (call when resetting state)
+  cleanupImageUrls() {
+    this.state.uploadedImages.forEach((img) => {
+      if (img.url && img.url.startsWith('blob:')) {
+        URL.revokeObjectURL(img.url);
+      }
+    });
   },
 
   renderReviewImages(images = null) {
@@ -4835,6 +4849,7 @@ ${this.state.currentListing?.keywords?.join(', ')}
       this.state.isAuthenticated = false;
       this.state.user = null;
       this.state.token = null;
+      this.cleanupImageUrls(); // Prevent memory leak
       this.state.uploadedImages = [];
       this.state.currentListing = null;
       this.state.savedListings = [];
