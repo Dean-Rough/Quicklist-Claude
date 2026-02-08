@@ -86,11 +86,6 @@
           "price": "0",
           "priceCurrency": "GBP"
         },
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.8",
-          "ratingCount": "127"
-        },
         "description": "AI-powered product listing generator that creates professional marketplace listings from photos. Supports Vinted, eBay, and Gumtree.",
         "featureList": [
           "AI-Powered Descriptions",
@@ -1118,6 +1113,29 @@
                   </svg>
                   Scan Label to Extract Product Info
                 </button>
+              </div>
+              <!-- Target Platform Selector -->
+              <div class="form-group" style="margin-bottom: 1rem">
+                <label class="form-label" for="platformSelectInput">
+                  <span>Target Platform</span>
+                </label>
+                <select class="form-input" id="platformSelectInput" style="width: 100%">
+                  <option value="vinted">Vinted</option>
+                  <option value="ebay">eBay</option>
+                  <option value="gumtree">Gumtree</option>
+                  <option value="depop">Depop</option>
+                  <option value="facebook">Facebook Marketplace</option>
+                </select>
+                <small
+                  style="
+                    color: var(--text-muted);
+                    font-size: 0.85rem;
+                    display: block;
+                    margin-top: 0.5rem;
+                  "
+                >
+                  AI will optimize title length and keywords for your chosen platform
+                </small>
               </div>
               <!-- Listing Personality Dropdown -->
               <div class="form-group" style="margin-bottom: 1rem">

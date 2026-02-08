@@ -46,6 +46,7 @@ const app = {
     messagesLoading: false,
     generationCancelled: false,
     generationAbortController: null,
+    imageEnhancementEnabled: false,
     dashboardTips: [
       'Batch similar items to speed through photos',
       'Use voice input to capture condition notes hands-free',
@@ -55,9 +56,14 @@ const app = {
   },
 
   getPlatform() {
-    const platformSelect = document.getElementById('platformSelect');
-    if (platformSelect && platformSelect.value) {
-      return platformSelect.value;
+    // Check input selector first (before generation), then output selector (after generation)
+    const inputSelect = document.getElementById('platformSelectInput');
+    if (inputSelect && inputSelect.value) {
+      return inputSelect.value;
+    }
+    const outputSelect = document.getElementById('platformSelect');
+    if (outputSelect && outputSelect.value) {
+      return outputSelect.value;
     }
     return 'vinted';
   },
@@ -402,12 +408,29 @@ const app = {
     // Generate button
     document.getElementById('generateBtn').addEventListener('click', () => this.generateListing());
 
-    // Platform formatter (post-generation)
-    const platformSelect = document.getElementById('platformSelect');
-    if (platformSelect) {
-      platformSelect.addEventListener('change', () => {
-        if (!this.state.currentListing) return;
-        this.applyPlatformFormat(platformSelect.value);
+    // Platform selectors - sync input and output selectors
+    const platformInputSelect = document.getElementById('platformSelectInput');
+    const platformOutputSelect = document.getElementById('platformSelect');
+
+    if (platformInputSelect) {
+      platformInputSelect.addEventListener('change', () => {
+        // Sync to output selector if it exists
+        if (platformOutputSelect) {
+          platformOutputSelect.value = platformInputSelect.value;
+        }
+      });
+    }
+
+    if (platformOutputSelect) {
+      platformOutputSelect.addEventListener('change', () => {
+        // Sync back to input selector
+        if (platformInputSelect) {
+          platformInputSelect.value = platformOutputSelect.value;
+        }
+        // Apply format to current listing
+        if (this.state.currentListing) {
+          this.applyPlatformFormat(platformOutputSelect.value);
+        }
       });
     }
 
@@ -2061,6 +2084,42 @@ const app = {
       select.dataset.listenerAttached = 'true';
     }
     this.updatePersonalityDescription();
+
+    // Also update image enhancement toggle
+    this.updateImageEnhancementToggle(userTier);
+  },
+
+  // Update image enhancement toggle based on subscription tier
+  updateImageEnhancementToggle(userTier = 'free') {
+    const toggle = document.getElementById('imageEnhancement');
+    const description = document.getElementById('enhancementDescription');
+    if (!toggle) return;
+
+    const tierLevels = { free: 0, starter: 1, casual: 2, pro: 3, business: 4, max: 4 };
+    const userLevel = tierLevels[userTier] || 0;
+    const requiredLevel = tierLevels['pro'] || 3; // Pro required for enhancement
+
+    if (userLevel >= requiredLevel) {
+      toggle.disabled = false;
+      if (description) {
+        description.textContent =
+          'AI-powered image improvements, auto-tagging, OCR, and quality analysis';
+      }
+    } else {
+      toggle.disabled = true;
+      toggle.checked = false;
+      if (description) {
+        description.innerHTML =
+          'Upgrade to <strong>Pro</strong> or <strong>Max</strong> for AI image enhancements';
+      }
+    }
+  },
+
+  // Handle image enhancement toggle
+  toggleImageEnhancement(enabled) {
+    this.state.imageEnhancementEnabled = enabled;
+    console.log('Image enhancement:', enabled ? 'enabled' : 'disabled');
+    // Could trigger re-analysis of uploaded images here if needed
   },
 
   // Update the personality description helper text
