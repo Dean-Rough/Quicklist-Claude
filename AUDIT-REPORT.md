@@ -291,4 +291,49 @@ User → Upload Photos → Client-side resize/blur check
 
 ### Changes Made During Audit
 
-(Will be updated as fixes are implemented)
+#### Commit: cdc1334 (2026-02-08)
+
+**"fix(ux): remove fake reviews, add platform selector to input, fix image enhancement toggle"**
+
+1. **Removed fake aggregate rating from JSON-LD**
+   - File: `index.html`
+   - Risk: Google could penalize for fake structured data
+2. **Added platform selector to input form**
+   - File: `index.html`
+   - Added `#platformSelectInput` before personality dropdown
+   - Users can now choose Vinted/eBay/Gumtree BEFORE generating
+3. **Fixed missing toggleImageEnhancement function**
+   - File: `public/js/app.js`
+   - Added `toggleImageEnhancement()` function
+   - Added `updateImageEnhancementToggle()` for tier-gating
+   - Added `imageEnhancementEnabled` to state
+4. **Synced platform selectors**
+   - File: `public/js/app.js`
+   - Updated `getPlatform()` to check input selector first
+   - Added bidirectional sync between input and output selectors
+
+#### Previous Session Fixes (2026-02-08)
+
+- Added 50s timeout to main Gemini API call
+- Added 20-25s timeouts to all helper Gemini functions
+- Fixed event listener duplication in personality dropdown
+- Fixed Object URL memory leak on image deletion
+- Updated service worker to network-first for JS/HTML (v3)
+
+---
+
+## Next Steps (For Dean)
+
+### Immediate (This Week)
+
+1. Test the new platform selector UX
+2. Verify image enhancement toggle works for Pro users
+3. Consider adding video demo to landing page
+4. Create actual OG image for social shares
+
+### Backlog
+
+- Split server.js into route modules (5500+ lines is unwieldy)
+- Add request validation (Zod/Joi) to critical endpoints
+- Consider component-based frontend rebuild
+- Add caching layer for Gemini responses (Redis/Upstash)
