@@ -3498,9 +3498,9 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
       delboy: 'pro',
     };
     const TIER_LEVELS = { free: 0, starter: 1, casual: 2, pro: 3, business: 4, max: 4 };
-    
+
     let validatedPersonality = 'standard'; // Default
-    
+
     if (personality && PERSONALITY_TIERS[personality]) {
       // Get user's subscription tier
       let userTier = 'free';
@@ -3513,13 +3513,16 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
           userTier = subResult.rows[0].plan_type || 'free';
         }
       } catch (tierError) {
-        logger.warn('Could not fetch user tier, defaulting to free', { userId, error: tierError.message });
+        logger.warn('Could not fetch user tier, defaulting to free', {
+          userId,
+          error: tierError.message,
+        });
       }
-      
+
       const requiredTier = PERSONALITY_TIERS[personality];
       const userLevel = TIER_LEVELS[userTier] || 0;
       const requiredLevel = TIER_LEVELS[requiredTier] || 0;
-      
+
       if (userLevel >= requiredLevel) {
         validatedPersonality = personality;
       } else {
@@ -3533,8 +3536,12 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
         validatedPersonality = 'standard';
       }
     }
-    
-    logger.info('Personality selection:', { userId, requested: personality, validated: validatedPersonality });
+
+    logger.info('Personality selection:', {
+      userId,
+      requested: personality,
+      validated: validatedPersonality,
+    });
 
     // Validate images
     if (!images || !Array.isArray(images) || images.length === 0) {
@@ -3793,24 +3800,25 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
     const PERSONALITY_PROMPTS = {
       standard: `**WRITING STYLE: STANDARD**
 Write clear, balanced descriptions that work well on any marketplace. Use professional but approachable language. Be informative without being overly formal or casual.`,
-      
+
       expert: `**WRITING STYLE: EXPERT/PROFESSIONAL**
 Write fact-focused, authoritative descriptions aimed at serious buyers. Use precise terminology and technical specifications. Avoid casual language or marketing fluff. Emphasize authenticity, provenance, and technical details. Appeal to collectors and knowledgeable buyers.`,
-      
+
       punchy: `**WRITING STYLE: PUNCHY SELLER**
 Write energetic, compelling copy that drives quick sales. Use short, punchy sentences. Create urgency without being pushy. Highlight the best features upfront. Use action words and confident language. Make the listing exciting and hard to scroll past.`,
-      
+
       luxe: `**WRITING STYLE: LUXE BOUTIQUE**
 Write elegant, refined descriptions for premium and designer items. Use sophisticated vocabulary and evocative language. Create an aspirational tone that positions the item as a quality investment piece. Reference craftsmanship, heritage, and timeless appeal. Avoid casual phrases.`,
-      
+
       streetwear: `**WRITING STYLE: STREETWEAR/HYPE**
 Write in the voice of a hypebeast or sneakerhead. Use contemporary streetwear culture language naturally. Reference drops, grails, fire pieces. Speak to the resale community. Be authentic to the culture without forcing slang. Appeal to collectors who know the value.`,
-      
+
       delboy: `**WRITING STYLE: CHEEKY MARKET TRADER**
 Write with warm, cheeky charm like a friendly market trader. Use a conversational British tone with gentle humour. Create rapport with the buyer. Phrases like "lovely bit of kit", "proper bargain", "won't last long". Keep it tasteful - charming, not cheesy. Be genuine and personable.`,
     };
-    
-    const personalitySection = PERSONALITY_PROMPTS[validatedPersonality] || PERSONALITY_PROMPTS.standard;
+
+    const personalitySection =
+      PERSONALITY_PROMPTS[validatedPersonality] || PERSONALITY_PROMPTS.standard;
     const personalityHint = `\n🎨 **LISTING PERSONALITY** 🎨\n${personalitySection}\n\n**IMPORTANT**: Apply this writing style to the marketing paragraph and description while keeping all facts accurate.\n\n`;
 
     const prompt = `${personalityHint}${itemModelHint}${conditionHint}${userInfoHint}${extractedCodesSection}${visionSection}${conditionSection}You are an expert e-commerce listing specialist for the UK resale market. Your PRIMARY goal is to accurately identify the item by reading ALL visible text and labels in ALL the images provided.
@@ -4207,30 +4215,41 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
     const parts = [{ text: prompt }, ...images.map(prepareImageForGemini)];
 
     // Enable Google Search grounding for real-time price research
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: parts,
-          },
-        ],
-        tools: [
-          {
-            google_search: {},
-          },
-        ],
-        generationConfig: {
-          temperature: 0.7, // Increased for more creative, engaging descriptions while maintaining accuracy
-          topP: 0.95,
-          topK: 40,
-          maxOutputTokens: 3072, // Increased to allow for longer, more detailed descriptions
+    // Add timeout to prevent hanging requests (50s to stay within Vercel's 60s limit)
+    // eslint-disable-next-line no-undef
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 50000);
+
+    let response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: parts,
+            },
+          ],
+          tools: [
+            {
+              google_search: {},
+            },
+          ],
+          generationConfig: {
+            temperature: 0.7, // Increased for more creative, engaging descriptions while maintaining accuracy
+            topP: 0.95,
+            topK: 40,
+            maxOutputTokens: 3072, // Increased to allow for longer, more detailed descriptions
+          },
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');

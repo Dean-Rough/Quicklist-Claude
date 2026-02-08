@@ -280,7 +280,7 @@ const app = {
     this.updateUI();
     this.updateAuthButtons();
     this.updateMobileMenu();
-    
+
     // Update personality dropdown based on user tier
     this.updatePersonalityDropdown();
 
@@ -2024,7 +2024,7 @@ const app = {
 
     // Enable/disable options based on tier
     const options = select.querySelectorAll('option');
-    options.forEach(option => {
+    options.forEach((option) => {
       const requiredTier = option.dataset.tier || 'free';
       const requiredLevel = tierLevels[requiredTier] || 0;
 
@@ -2041,8 +2041,11 @@ const app = {
       }
     });
 
-    // Update description based on selection
-    select.addEventListener('change', () => this.updatePersonalityDescription());
+    // Only add event listener once (check for flag)
+    if (!select.dataset.listenerAttached) {
+      select.addEventListener('change', () => this.updatePersonalityDescription());
+      select.dataset.listenerAttached = 'true';
+    }
     this.updatePersonalityDescription();
   },
 
