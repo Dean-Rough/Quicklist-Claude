@@ -4606,27 +4606,29 @@ ${this.state.currentListing?.keywords?.join(', ')}
   },
 
   switchAppView(view) {
-    const views = ['newItem', 'savedItems', 'dashboard', 'settings', 'profile'];
+    // Map 'dashboard' to 'settings' since dashboard content is in settingsView
+    const resolvedView = view === 'dashboard' ? 'settings' : view;
+
+    const views = ['newItem', 'savedItems', 'settings', 'profile'];
     views.forEach((v) => {
       const el = document.getElementById(`${v}View`);
       if (el) {
-        el.classList.toggle('hidden', v !== view);
+        el.classList.toggle('hidden', v !== resolvedView);
       }
     });
 
-    this.state.currentAppView = view;
+    this.state.currentAppView = resolvedView;
 
-    if (view === 'savedItems') {
+    if (resolvedView === 'savedItems') {
       this.renderSavedItems();
-    } else if (view === 'dashboard') {
-      this.loadDashboardMetrics();
-    } else if (view === 'settings') {
+    } else if (resolvedView === 'settings') {
       this.loadSubscriptionData();
-    } else if (view === 'profile') {
+      this.loadDashboardMetrics(); // Also load dashboard metrics
+    } else if (resolvedView === 'profile') {
       this.loadProfileData();
     }
 
-    this.highlightBottomTab(view);
+    this.highlightBottomTab(resolvedView);
     window.scrollTo(0, 0);
   },
 
@@ -4649,7 +4651,7 @@ ${this.state.currentListing?.keywords?.join(', ')}
       return;
     }
     this.updateUI();
-    this.navigateToApp('newItem');
+    this.navigateToApp('settings'); // Dashboard content is in settingsView
   },
 
   // Check Clerk authentication
