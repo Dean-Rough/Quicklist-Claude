@@ -1090,8 +1090,20 @@ app.post('/api/stripe/create-checkout-session', authenticateToken, async (req, r
 
     const { priceId, planType } = req.body; // e.g., 'price_xxx', 'pro'
 
+    // Validate required fields
     if (!priceId || !planType) {
       return res.status(400).json({ error: 'Price ID and plan type required' });
+    }
+
+    // Validate priceId format (Stripe price IDs start with 'price_')
+    if (typeof priceId !== 'string' || !priceId.startsWith('price_')) {
+      return res.status(400).json({ error: 'Invalid price ID format' });
+    }
+
+    // Validate planType is one of the expected values
+    const validPlanTypes = ['casual', 'pro', 'max'];
+    if (typeof planType !== 'string' || !validPlanTypes.includes(planType)) {
+      return res.status(400).json({ error: 'Invalid plan type. Must be one of: casual, pro, max' });
     }
 
     const userId = req.user.id;
@@ -1721,25 +1733,56 @@ app.post('/api/messages/:id/reply', authenticateToken, async (req, res) => {
 
 // Listing endpoints
 app.post('/api/listings', authenticateToken, async (req, res) => {
+  // Validate request body exists
+  if (!req.body || typeof req.body !== 'object') {
+    return res.status(400).json({ error: 'Request body required' });
+  }
+
+  const {
+    title,
+    brand,
+    category,
+    description,
+    condition,
+    rrp,
+    price,
+    keywords,
+    sources,
+    platform,
+    images,
+    status,
+    location,
+  } = req.body;
+
+  // Validate required field: title
+  if (!title || typeof title !== 'string' || title.trim().length === 0) {
+    return res.status(400).json({ error: 'Title is required' });
+  }
+
+  // Validate title length
+  if (title.length > 500) {
+    return res.status(400).json({ error: 'Title must be 500 characters or less' });
+  }
+
+  // Validate optional string fields don't exceed reasonable limits
+  if (description && typeof description === 'string' && description.length > 10000) {
+    return res.status(400).json({ error: 'Description must be 10000 characters or less' });
+  }
+
+  // Validate keywords array if provided
+  if (keywords && !Array.isArray(keywords)) {
+    return res.status(400).json({ error: 'Keywords must be an array' });
+  }
+
+  // Validate images array if provided
+  if (images && !Array.isArray(images)) {
+    return res.status(400).json({ error: 'Images must be an array' });
+  }
+
   await ensureSchemaReady();
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const {
-      title,
-      brand,
-      category,
-      description,
-      condition,
-      rrp,
-      price,
-      keywords,
-      sources,
-      platform,
-      images,
-      status,
-      location,
-    } = req.body;
     const userId = req.user.id;
 
     const cleanStatus = sanitizeInput(status) || 'draft';
