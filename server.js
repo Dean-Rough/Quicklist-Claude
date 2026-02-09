@@ -5,7 +5,7 @@ const axios = require('axios');
 const xml2js = require('xml2js');
 const rateLimit = require('express-rate-limit');
 const logger = require('console-log-level')({ level: process.env.LOG_LEVEL || 'info' });
-const { clerkClient, clerkMiddleware, getAuth, requireAuth } = require('@clerk/express');
+const { clerkClient, clerkMiddleware, getAuth } = require('@clerk/express');
 const path = require('path');
 const fs = require('fs');
 const { Buffer } = require('buffer');
@@ -387,7 +387,7 @@ app.use((err, req, res, next) => {
 });
 
 // Test endpoint before Clerk middleware
-app.get('/api/ping', (req, res) => {
+app.get('/api/ping', (_req, res) => {
   res.json({ message: 'pong', timestamp: new Date().toISOString() });
 });
 
@@ -409,7 +409,7 @@ if (
 }
 
 // Auth config endpoint (for frontend)
-app.get('/api/config/auth', (req, res) => {
+app.get('/api/config/auth', (_req, res) => {
   res.json({
     clerk: {
       enabled: true,
@@ -420,7 +420,7 @@ app.get('/api/config/auth', (req, res) => {
 });
 
 // Pricing configuration for frontend
-app.get('/api/config/pricing', (req, res) => {
+app.get('/api/config/pricing', (_req, res) => {
   res.json({
     tiers: {
       casual: {
@@ -454,7 +454,7 @@ app.get('/api/config/pricing', (req, res) => {
 });
 
 // Cloudinary configuration for frontend
-app.get('/api/config/cloudinary', (req, res) => {
+app.get('/api/config/cloudinary', (_req, res) => {
   const uploadPreset = (process.env.CLOUDINARY_UPLOAD_PRESET || 'quicklist_unsigned').trim();
   const enhancedPreset = (
     process.env.CLOUDINARY_ENHANCED_UPLOAD_PRESET || 'upload-optimise'
@@ -516,7 +516,7 @@ app.use(
 );
 
 // Serve SPA entry point
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
@@ -1041,7 +1041,7 @@ const authenticateToken = async (req, res, next) => {
 
 if (!isProduction) {
   // Initialize database schema (development only)
-  app.get('/api/init-db', async (req, res) => {
+  app.get('/api/init-db', async (_req, res) => {
     try {
       if (process.env.ALLOW_DB_INIT !== 'true') {
         return res.status(403).json({ error: 'Database initialization is disabled' });
@@ -1387,7 +1387,7 @@ function mapPriceIdToPlanType(priceId) {
 }
 
 // Stripe: Get publishable key (for frontend)
-app.get('/api/stripe/publishable-key', (req, res) => {
+app.get('/api/stripe/publishable-key', (_req, res) => {
   try {
     const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
     if (!publishableKey) {
@@ -5511,7 +5511,7 @@ app.get('/api/ebay/analytics/:listingId', authenticateToken, async (req, res) =>
 // ============================================================================
 
 // Health check
-app.get('/api/health', async (req, res) => {
+app.get('/api/health', async (_req, res) => {
   try {
     const memoryUsage = process.memoryUsage();
     const health = {
