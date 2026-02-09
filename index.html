@@ -2036,6 +2036,111 @@
             </div>
           </div>
 
+          <!-- Dashboard Metrics Section -->
+          <div class="card" style="max-width: 800px; margin: 0 auto 2rem">
+            <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem">Overview</h2>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 1.5rem;
+                margin-bottom: 1.5rem;
+              "
+            >
+              <div
+                style="
+                  background: var(--bg-secondary);
+                  padding: 1rem;
+                  border-radius: 8px;
+                  text-align: center;
+                "
+              >
+                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem">
+                  Revenue (7 days)
+                </div>
+                <div
+                  id="statRevenue"
+                  style="font-size: 1.5rem; font-weight: 700; color: var(--success)"
+                >
+                  £0.00
+                </div>
+                <div
+                  id="statRevenueTrend"
+                  style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem"
+                >
+                  —
+                </div>
+              </div>
+              <div
+                style="
+                  background: var(--bg-secondary);
+                  padding: 1rem;
+                  border-radius: 8px;
+                  text-align: center;
+                "
+              >
+                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem">
+                  Active Listings
+                </div>
+                <div
+                  id="statListings"
+                  style="font-size: 1.5rem; font-weight: 700; color: var(--accent-indigo)"
+                >
+                  —
+                </div>
+                <div
+                  id="statListingsTrend"
+                  style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem"
+                >
+                  —
+                </div>
+              </div>
+              <div
+                style="
+                  background: var(--bg-secondary);
+                  padding: 1rem;
+                  border-radius: 8px;
+                  text-align: center;
+                "
+              >
+                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem">
+                  Unread Messages
+                </div>
+                <div
+                  id="statMessages"
+                  style="font-size: 1.5rem; font-weight: 700; color: var(--warning)"
+                >
+                  —
+                </div>
+                <div
+                  id="statMessagesTrend"
+                  style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem"
+                >
+                  —
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div style="margin-bottom: 1rem">
+              <h3 style="font-size: 1rem; margin-bottom: 0.75rem">Recent Activity</h3>
+              <div
+                id="dashboardActivity"
+                style="display: flex; flex-direction: column; gap: 0.75rem"
+              >
+                <p style="color: var(--text-muted)">Loading activity...</p>
+              </div>
+            </div>
+
+            <!-- Tips -->
+            <div>
+              <h3 style="font-size: 1rem; margin-bottom: 0.75rem">Tips</h3>
+              <ul id="dashboardTips" style="margin: 0; padding-left: 0; list-style: none">
+                <li style="color: var(--text-secondary)">• Loading tips...</li>
+              </ul>
+            </div>
+          </div>
+
           <!-- Subscription Section -->
           <div class="card" style="max-width: 800px; margin: 0 auto 2rem">
             <div
