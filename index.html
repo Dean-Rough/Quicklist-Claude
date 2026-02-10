@@ -1820,25 +1820,139 @@
                         </label>
                       </div>
                     </div>
-                    <div class="field-group" style="display: grid; gap: 0.5rem">
-                      <button
-                        class="btn btn-primary"
-                        id="downloadBtn"
-                        type="button"
-                        onclick="app.downloadZip()"
-                      >
-                        Download ZIP
-                      </button>
-                      <button
-                        class="btn btn-primary"
-                        id="postToEbayBtn"
-                        type="button"
-                        style="width: 100%; display: none"
-                        onclick="app.postToEbay()"
-                      >
-                        Post to eBay
-                      </button>
+                    <!-- Export Actions - Three Button Layout -->
+                    <div class="field-group export-actions" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem">
+                      <!-- Download Dropdown -->
+                      <div class="dropdown-container">
+                        <button class="btn btn-primary dropdown-toggle" id="downloadBtn" type="button" onclick="app.toggleDropdown('downloadDropdown')">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                          <span class="btn-text">Download</span>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-left: 4px"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="dropdown-menu" id="downloadDropdown">
+                          <button class="dropdown-item" onclick="app.downloadZip(); app.closeDropdowns()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                            Download ZIP (all files)
+                          </button>
+                          <button class="dropdown-item" onclick="app.downloadImagesOnly(); app.closeDropdowns()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            Images only
+                          </button>
+                          <button class="dropdown-item" onclick="app.downloadTextOnly(); app.closeDropdowns()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                            Text file only
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Copy Dropdown -->
+                      <div class="dropdown-container">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" onclick="app.toggleDropdown('copyDropdown')">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                          <span class="btn-text">Copy</span>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-left: 4px"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="dropdown-menu" id="copyDropdown">
+                          <button class="dropdown-item" onclick="app.copyAll(); app.closeDropdowns()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            Copy all (formatted)
+                          </button>
+                          <div class="dropdown-divider"></div>
+                          <button class="dropdown-item" onclick="app.copyField('title'); app.closeDropdowns()">Title</button>
+                          <button class="dropdown-item" onclick="app.copyField('description'); app.closeDropdowns()">Description</button>
+                          <button class="dropdown-item" onclick="app.copyField('price'); app.closeDropdowns()">Price</button>
+                          <button class="dropdown-item" onclick="app.copyField('keywords'); app.closeDropdowns()">Keywords/Tags</button>
+                        </div>
+                      </div>
+
+                      <!-- Share Dropdown -->
+                      <div class="dropdown-container">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" onclick="app.toggleDropdown('shareDropdown')">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                          <span class="btn-text">Share</span>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-left: 4px"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="dropdown-menu" id="shareDropdown">
+                          <button class="dropdown-item" onclick="app.shareNative(); app.closeDropdowns()" id="nativeShareBtn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+                            Share via...
+                          </button>
+                          <button class="dropdown-item" onclick="app.emailListing(); app.closeDropdowns()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                            Email to me
+                          </button>
+                          <div class="dropdown-divider"></div>
+                          <button class="dropdown-item" onclick="app.openInPlatform('ebay'); app.closeDropdowns()">
+                            Open in eBay
+                          </button>
+                          <button class="dropdown-item" onclick="app.openInPlatform('vinted'); app.closeDropdowns()">
+                            Open in Vinted
+                          </button>
+                        </div>
+                      </div>
                     </div>
+                    
+                    <!-- Mobile: Stack buttons vertically -->
+                    <style>
+                      @media (max-width: 480px) {
+                        .export-actions {
+                          grid-template-columns: 1fr !important;
+                        }
+                        .export-actions .btn-text {
+                          display: inline !important;
+                        }
+                      }
+                      .dropdown-container {
+                        position: relative;
+                      }
+                      .dropdown-toggle {
+                        width: 100%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 2px;
+                      }
+                      .dropdown-menu {
+                        display: none;
+                        position: absolute;
+                        top: 100%;
+                        left: 0;
+                        right: 0;
+                        min-width: 180px;
+                        background: var(--card-bg, #1a1a2e);
+                        border: 1px solid var(--border-color, #333);
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                        z-index: 1000;
+                        margin-top: 4px;
+                        padding: 4px 0;
+                      }
+                      .dropdown-menu.show {
+                        display: block;
+                      }
+                      .dropdown-item {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        width: 100%;
+                        padding: 10px 14px;
+                        border: none;
+                        background: none;
+                        color: var(--text-color, #fff);
+                        font-size: 14px;
+                        text-align: left;
+                        cursor: pointer;
+                        transition: background 0.15s;
+                      }
+                      .dropdown-item:hover {
+                        background: var(--hover-bg, rgba(255,255,255,0.1));
+                      }
+                      .dropdown-divider {
+                        height: 1px;
+                        background: var(--border-color, #333);
+                        margin: 4px 0;
+                      }
+                    </style>
                   </div>
                 </div>
               </div>

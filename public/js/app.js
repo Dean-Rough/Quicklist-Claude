@@ -3387,7 +3387,221 @@ ${this.state.currentListing?.keywords?.join(', ')}
     }
 
     btn.disabled = false;
-    btn.innerHTML = 'Download ZIP';
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span class="btn-text">Download</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-left: 4px"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+  },
+
+  // ============================================
+  // EXPORT ACTIONS - Dropdown Menu Functions
+  // ============================================
+
+  toggleDropdown(dropdownId) {
+    const dropdown = document.getElementById(dropdownId);
+    const wasOpen = dropdown.classList.contains('show');
+    
+    // Close all dropdowns first
+    this.closeDropdowns();
+    
+    // Toggle the clicked one
+    if (!wasOpen) {
+      dropdown.classList.add('show');
+      // Close on outside click
+      setTimeout(() => {
+        document.addEventListener('click', this.handleOutsideClick, { once: true });
+      }, 0);
+    }
+  },
+
+  handleOutsideClick: function(e) {
+    if (!e.target.closest('.dropdown-container')) {
+      window.app.closeDropdowns();
+    }
+  },
+
+  closeDropdowns() {
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+      menu.classList.remove('show');
+    });
+  },
+
+  // Download images only (no text files)
+  async downloadImagesOnly() {
+    const btn = document.getElementById('downloadBtn');
+    btn.disabled = true;
+    
+    try {
+      const zip = new JSZip();
+      
+      for (let i = 0; i < this.state.uploadedImages.length; i++) {
+        const img = this.state.uploadedImages[i];
+        const blob = await fetch(img.url).then(r => r.blob());
+        zip.file(`image-${i + 1}.jpg`, blob);
+      }
+      
+      const content = await zip.generateAsync({ type: 'blob' });
+      const title = document.getElementById('outputTitle').value || 'quicklist';
+      const filename = title.trim().split(/\s+/).slice(0, 3).map(w => w.replace(/[^a-z0-9]/gi, '').toLowerCase()).filter(w => w).join('-') || 'quicklist';
+      
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${filename}-images.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      this.showToast('Images downloaded!');
+    } catch (error) {
+      this.showToast('Error downloading images: ' + error.message, 'error');
+    }
+    
+    btn.disabled = false;
+  },
+
+  // Download text file only
+  downloadTextOnly() {
+    const listingText = this.getListingText();
+    const blob = new Blob([listingText], { type: 'text/plain' });
+    const title = document.getElementById('outputTitle').value || 'quicklist';
+    const filename = title.trim().split(/\s+/).slice(0, 3).map(w => w.replace(/[^a-z0-9]/gi, '').toLowerCase()).filter(w => w).join('-') || 'quicklist';
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}-listing.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    this.showToast('Text file downloaded!');
+  },
+
+  // Get formatted listing text
+  getListingText() {
+    return `
+Title: ${document.getElementById('outputTitle').value || ''}
+Brand: ${document.getElementById('outputBrand').value || ''}
+Category: ${document.getElementById('outputCategory').value || ''}
+Condition: ${document.getElementById('outputCondition').value || ''}
+RRP: ${document.getElementById('outputRRP').value || ''}
+Price: ${document.getElementById('outputPrice').value || ''}
+Location: ${document.getElementById('itemLocation')?.value || ''}
+
+Description:
+${document.getElementById('outputDescription').value || ''}
+
+Keywords:
+${this.state.currentListing?.keywords?.join(', ') || ''}
+    `.trim();
+  },
+
+  // Copy all listing details
+  async copyAll() {
+    const text = this.getListingText();
+    try {
+      await navigator.clipboard.writeText(text);
+      this.showToast('Listing copied to clipboard!');
+    } catch (error) {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      this.showToast('Listing copied to clipboard!');
+    }
+  },
+
+  // Copy individual field
+  async copyField(field) {
+    let text = '';
+    switch (field) {
+      case 'title':
+        text = document.getElementById('outputTitle').value || '';
+        break;
+      case 'description':
+        text = document.getElementById('outputDescription').value || '';
+        break;
+      case 'price':
+        text = document.getElementById('outputPrice').value || '';
+        break;
+      case 'keywords':
+        text = this.state.currentListing?.keywords?.join(', ') || '';
+        break;
+    }
+    
+    try {
+      await navigator.clipboard.writeText(text);
+      this.showToast(`${field.charAt(0).toUpperCase() + field.slice(1)} copied!`);
+    } catch (error) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      this.showToast(`${field.charAt(0).toUpperCase() + field.slice(1)} copied!`);
+    }
+  },
+
+  // Native share (mobile share sheet)
+  async shareNative() {
+    const title = document.getElementById('outputTitle').value || 'My Listing';
+    const text = this.getListingText();
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: text
+        });
+        this.showToast('Shared successfully!');
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          this.showToast('Share failed', 'error');
+        }
+      }
+    } else {
+      // Fallback: copy to clipboard
+      await this.copyAll();
+      this.showToast('Share not supported - copied to clipboard instead');
+    }
+  },
+
+  // Email listing to user
+  emailListing() {
+    const title = document.getElementById('outputTitle').value || 'My Listing';
+    const text = this.getListingText();
+    const subject = encodeURIComponent(`Quicklist: ${title}`);
+    const body = encodeURIComponent(text);
+    
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    this.showToast('Opening email...');
+  },
+
+  // Open platform with pre-filled data
+  openInPlatform(platform) {
+    const title = document.getElementById('outputTitle').value || '';
+    const description = document.getElementById('outputDescription').value || '';
+    const price = document.getElementById('outputPrice').value || '';
+    
+    let url = '';
+    switch (platform) {
+      case 'ebay':
+        // eBay sell page - they'll need to paste content
+        url = 'https://www.ebay.co.uk/sl/sell';
+        this.copyAll(); // Copy listing first
+        this.showToast('Listing copied! Paste into eBay form.');
+        break;
+      case 'vinted':
+        // Vinted sell page
+        url = 'https://www.vinted.co.uk/items/new';
+        this.copyAll();
+        this.showToast('Listing copied! Paste into Vinted form.');
+        break;
+    }
+    
+    if (url) {
+      window.open(url, '_blank');
+    }
   },
 
   // Post listing to eBay
