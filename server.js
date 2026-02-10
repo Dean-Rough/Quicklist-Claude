@@ -901,9 +901,9 @@ async function getPlanLimit(userId) {
     const planType = result.rows[0]?.plan_type || 'free';
     const planLimits = {
       free: 5,
-      starter: 50,
+      casual: 50,
       pro: 200,
-      business: 1000,
+      max: 10000,
     };
     return planLimits[planType] || 5;
   } catch (error) {
@@ -1389,11 +1389,10 @@ async function handlePaymentFailed(invoice) {
 
 function mapPriceIdToPlanType(priceId) {
   // Map your Stripe price IDs to plan types
-  // Update these with your actual Stripe price IDs
   const priceMap = {
-    [process.env.STRIPE_PRICE_STARTER]: 'starter',
+    [process.env.STRIPE_PRICE_CASUAL]: 'casual',
     [process.env.STRIPE_PRICE_PRO]: 'pro',
-    [process.env.STRIPE_PRICE_BUSINESS]: 'business',
+    [process.env.STRIPE_PRICE_MAX]: 'max',
   };
   return priceMap[priceId] || 'free';
 }
@@ -1475,9 +1474,9 @@ app.get('/api/subscription/status', authenticateToken, async (req, res) => {
     // Get plan limits
     const planLimits = {
       free: 5,
-      starter: 50,
+      casual: 50,
       pro: 200,
-      business: 1000,
+      max: 10000,
     };
 
     const planType = subscription.plan_type || 'free';
