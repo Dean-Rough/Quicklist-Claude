@@ -3567,6 +3567,161 @@
       </div>
     </div>
 
+    <!-- Upsell Sticky Footer (Free Users) -->
+    <div id="upsellFooter" class="upsell-footer hidden">
+      <div class="upsell-content">
+        <div class="upsell-usage">
+          <div class="upsell-text">
+            <span class="upsell-plan">Free Plan</span>
+            <span class="upsell-count"><span id="upsellUsed">0</span>/<span id="upsellLimit">5</span> listings this month</span>
+          </div>
+          <div class="upsell-bar">
+            <div class="upsell-bar-fill" id="upsellBarFill" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="upsell-cta">
+          <button class="btn btn-accent upsell-btn" onclick="app.showUpgradeModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            Upgrade
+          </button>
+        </div>
+        <button class="upsell-dismiss" onclick="app.dismissUpsell()" aria-label="Dismiss">×</button>
+      </div>
+    </div>
+
+    <style>
+      .upsell-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, var(--card-bg, #1a1a2e) 0%, #252542 100%);
+        border-top: 1px solid var(--border-color, #333);
+        padding: 12px 16px;
+        z-index: 999;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+        transform: translateY(0);
+        transition: transform 0.3s ease;
+      }
+      .upsell-footer.hidden {
+        transform: translateY(100%);
+        pointer-events: none;
+      }
+      .upsell-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .upsell-usage {
+        flex: 1;
+        min-width: 0;
+      }
+      .upsell-text {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 6px;
+        flex-wrap: wrap;
+      }
+      .upsell-plan {
+        font-weight: 600;
+        color: var(--accent, #6c5ce7);
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .upsell-count {
+        color: var(--text-secondary, #aaa);
+        font-size: 14px;
+      }
+      .upsell-bar {
+        height: 6px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 3px;
+        overflow: hidden;
+        max-width: 300px;
+      }
+      .upsell-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent, #6c5ce7) 0%, #a29bfe 100%);
+        border-radius: 3px;
+        transition: width 0.5s ease, background 0.3s ease;
+      }
+      .upsell-bar-fill.warning {
+        background: linear-gradient(90deg, #fdcb6e 0%, #e17055 100%);
+      }
+      .upsell-bar-fill.critical {
+        background: linear-gradient(90deg, #e17055 0%, #d63031 100%);
+      }
+      .upsell-cta {
+        flex-shrink: 0;
+      }
+      .upsell-btn {
+        padding: 10px 20px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .btn-accent {
+        background: linear-gradient(135deg, var(--accent, #6c5ce7) 0%, #a29bfe 100%);
+        color: white;
+        border: none;
+      }
+      .btn-accent:hover {
+        background: linear-gradient(135deg, #5b4cdb 0%, #8c7ae6 100%);
+        transform: translateY(-1px);
+      }
+      .upsell-dismiss {
+        background: none;
+        border: none;
+        color: var(--text-muted, #666);
+        font-size: 20px;
+        cursor: pointer;
+        padding: 4px 8px;
+        margin-left: 8px;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+      }
+      .upsell-dismiss:hover {
+        opacity: 1;
+      }
+      @media (max-width: 480px) {
+        .upsell-content {
+          flex-wrap: wrap;
+        }
+        .upsell-usage {
+          width: 100%;
+        }
+        .upsell-bar {
+          max-width: 100%;
+        }
+        .upsell-cta {
+          flex: 1;
+        }
+        .upsell-btn {
+          width: 100%;
+        }
+        .upsell-dismiss {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+        }
+        .upsell-footer {
+          padding-top: 28px;
+        }
+      }
+      /* Add padding to body when footer is visible */
+      body.has-upsell-footer {
+        padding-bottom: 80px;
+      }
+      @media (max-width: 480px) {
+        body.has-upsell-footer {
+          padding-bottom: 120px;
+        }
+      }
+    </style>
+
     <!-- Toast Notification -->
     <div class="toast" id="toast" role="alert" aria-live="polite">
       <div class="toast-icon" id="toastIcon">

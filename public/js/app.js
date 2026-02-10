@@ -5262,9 +5262,62 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       if (usageCountEl) usageCountEl.textContent = data.usage.listingsCreated;
       if (usageBarEl) usageBarEl.style.width = `${data.usage.percentage}%`;
       if (usageLimitEl) usageLimitEl.textContent = `of ${data.usage.limit} listings used`;
+
+      // Update upsell footer for free users
+      this.updateUpsellFooter(data.subscription, data.usage);
     } catch (error) {
       console.error('Error loading subscription data:', error);
       this.showToast('Failed to load subscription data', 'error');
+    }
+  },
+
+  // Upsell Footer Management
+  updateUpsellFooter(subscription, usage) {
+    const footer = document.getElementById('upsellFooter');
+    if (!footer) return;
+
+    // Only show for free users who haven't dismissed it this session
+    const dismissed = sessionStorage.getItem('upsellDismissed');
+    const isFree = !subscription.planType || subscription.planType === 'free';
+    
+    if (!isFree || dismissed) {
+      footer.classList.add('hidden');
+      document.body.classList.remove('has-upsell-footer');
+      return;
+    }
+
+    // Update usage display
+    const usedEl = document.getElementById('upsellUsed');
+    const limitEl = document.getElementById('upsellLimit');
+    const barFill = document.getElementById('upsellBarFill');
+
+    if (usedEl) usedEl.textContent = usage.listingsCreated || 0;
+    if (limitEl) limitEl.textContent = usage.limit || 5;
+    
+    const percentage = usage.percentage || 0;
+    if (barFill) {
+      barFill.style.width = `${percentage}%`;
+      // Color coding based on usage
+      barFill.classList.remove('warning', 'critical');
+      if (percentage >= 80) {
+        barFill.classList.add('critical');
+      } else if (percentage >= 60) {
+        barFill.classList.add('warning');
+      }
+    }
+
+    // Show the footer
+    footer.classList.remove('hidden');
+    document.body.classList.add('has-upsell-footer');
+  },
+
+  dismissUpsell() {
+    const footer = document.getElementById('upsellFooter');
+    if (footer) {
+      footer.classList.add('hidden');
+      document.body.classList.remove('has-upsell-footer');
+      // Remember dismissal for this session
+      sessionStorage.setItem('upsellDismissed', 'true');
     }
   },
 
