@@ -5167,6 +5167,11 @@ ${this.state.currentListing?.keywords?.join(', ')}
 
     if (!modal || !plansContainer) return;
 
+    // Load pricing config from API
+    if (!this.pricingConfig) {
+      await this.loadPricingConfig();
+    }
+
     // Get current subscription plan
     let currentPlan = 'free';
     try {
@@ -5183,54 +5188,81 @@ ${this.state.currentListing?.keywords?.join(', ')}
       console.error('Error fetching current plan:', error);
     }
 
-    // Define plans (price IDs should be set in your Stripe dashboard)
-    // For now using placeholder IDs - you'll need to replace these with actual Stripe price IDs
-    const plans = [
-      {
-        name: 'Starter',
-        price: '£19',
+    // Build plans array from backend config
+    const plans = [];
+    
+    if (!this.pricingConfig?.configured) {
+      // Stripe not configured - show informational message
+      plansContainer.innerHTML = `
+        <div class="card" style="text-align: center; padding: 2rem;">
+          <h3 style="margin-bottom: 1rem;">Pricing Coming Soon</h3>
+          <p style="color: var(--text-muted);">Payment system is currently being configured. Please check back soon!</p>
+        </div>
+      `;
+      modal.classList.remove('hidden');
+      return;
+    }
+
+    // Build plans from API config
+    const tierConfig = this.pricingConfig.tiers;
+    
+    if (tierConfig.casual) {
+      plans.push({
+        id: 'casual',
+        name: tierConfig.casual.name,
+        price: `£${tierConfig.casual.price}`,
         period: 'month',
-        priceId: 'price_starter', // Replace with actual Stripe price ID
+        priceId: tierConfig.casual.priceId,
         features: [
-          '50 listings/month',
+          `${tierConfig.casual.listings} listings/month`,
           'All marketplaces',
-          'API posting',
-          'Cross-listing',
-          'Auto-delist',
-          'Basic analytics',
+          'AI-powered descriptions',
+          'Market research',
+          'Pricing intelligence',
+          'Image enhancement',
         ],
-        current: currentPlan === 'starter',
-      },
-      {
-        name: 'Pro',
-        price: '£39',
+        current: currentPlan === 'casual',
+      });
+    }
+    
+    if (tierConfig.pro) {
+      plans.push({
+        id: 'pro',
+        name: tierConfig.pro.name,
+        price: `£${tierConfig.pro.price}`,
         period: 'month',
-        priceId: 'price_pro', // Replace with actual Stripe price ID
+        priceId: tierConfig.pro.priceId,
         features: [
-          '200 listings/month',
+          `${tierConfig.pro.listings} listings/month`,
+          'Premium AI personalities',
           'Bulk processing',
           'Advanced analytics',
           'Priority support',
-          'Export data',
+          'Export & backup',
         ],
         current: currentPlan === 'pro',
-        featured: true,
-      },
-      {
-        name: 'Business',
-        price: '£69',
+        featured: tierConfig.pro.featured,
+      });
+    }
+    
+    if (tierConfig.max) {
+      plans.push({
+        id: 'max',
+        name: tierConfig.max.name,
+        price: `£${tierConfig.max.price}`,
         period: 'month',
-        priceId: 'price_business', // Replace with actual Stripe price ID
+        priceId: tierConfig.max.priceId,
         features: [
-          '1,000 listings/month',
-          'Cloud automation',
-          'Scheduled publishing',
-          'Template system',
-          'Priority support',
+          'Unlimited listings',
+          'All Pro features',
+          'API access',
+          'Custom integrations',
+          'Dedicated support',
+          'Early access to features',
         ],
-        current: currentPlan === 'business',
-      },
-    ];
+        current: currentPlan === 'max',
+      });
+    }
 
     plansContainer.innerHTML = plans
       .map(
@@ -5249,7 +5281,7 @@ ${this.state.currentListing?.keywords?.join(', ')}
                         ${
                           plan.current
                             ? '<button class="btn btn-secondary" disabled>Current Plan</button>'
-                            : `<button class="btn ${plan.featured ? 'btn-primary' : 'btn-secondary'}" onclick="app.startCheckout('${plan.priceId}', '${plan.name.toLowerCase()}')">Upgrade to ${plan.name}</button>`
+                            : `<button class="btn ${plan.featured ? 'btn-primary' : 'btn-secondary'}" onclick="app.handlePlanSelection('${plan.id}', '${plan.priceId}')">Upgrade to ${plan.name}</button>`
                         }
                     </div>
                 `
@@ -5279,19 +5311,15 @@ ${this.state.currentListing?.keywords?.join(', ')}
   },
 
   async handlePlanSelection(planType, fallbackPriceId) {
-    // Use dynamic price ID from config if available, otherwise use fallback
-    let priceId = fallbackPriceId;
-
+    // Ensure pricing config is loaded
     if (!this.pricingConfig) {
       await this.loadPricingConfig();
     }
 
-    if (this.pricingConfig?.tiers?.[planType]?.priceId) {
-      priceId = this.pricingConfig.tiers[planType].priceId;
-    }
+    // Use price ID from config if available, otherwise use fallback
+    let priceId = this.pricingConfig?.tiers?.[planType]?.priceId || fallbackPriceId;
 
-    if (!priceId || priceId.startsWith('price_')) {
-      // Still a placeholder - Stripe not configured
+    if (!priceId) {
       this.showToast('Payment system is being configured. Please try again later.', 'warning');
       return;
     }
