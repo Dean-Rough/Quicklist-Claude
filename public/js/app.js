@@ -209,13 +209,188 @@ const app = {
     });
   },
 
-  // Check for first-time users
+  // Check for first-time users and show onboarding
   checkOnboarding() {
-    const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
-    if (!hasSeenOnboarding && !this.state.isAuthenticated) {
-      // Could show onboarding tour here
-      localStorage.setItem('hasSeenOnboarding', 'true');
+    const hasSeenOnboarding = localStorage.getItem('quicklist-onboarding-v1');
+    if (!hasSeenOnboarding && this.state.isAuthenticated) {
+      // Show onboarding tour after a brief delay
+      setTimeout(() => this.startOnboardingTour(), 800);
     }
+  },
+
+  // Onboarding tour state
+  onboardingStep: 0,
+  onboardingSteps: [
+    {
+      target: '#photoUploader',
+      title: '📸 Step 1: Upload Photos',
+      content: 'Drag and drop your item photos here, or tap to select. More angles = better listings!',
+      position: 'bottom'
+    },
+    {
+      target: '#generateBtn',
+      title: '✨ Step 2: Let AI Work',
+      content: 'Our AI analyzes your photos and generates a complete listing with title, description, and pricing.',
+      position: 'top'
+    },
+    {
+      target: '.export-actions, #downloadBtn',
+      title: '🚀 Step 3: Export & Sell',
+      content: 'Download, copy, or share your listing. Then paste it into Vinted, eBay, or any marketplace!',
+      position: 'top'
+    }
+  ],
+
+  // Start the onboarding tour
+  startOnboardingTour() {
+    this.onboardingStep = 0;
+    this.showOnboardingStep();
+  },
+
+  // Show current onboarding step
+  showOnboardingStep() {
+    // Remove any existing tooltip
+    const existing = document.getElementById('onboardingTooltip');
+    if (existing) existing.remove();
+
+    const step = this.onboardingSteps[this.onboardingStep];
+    if (!step) {
+      this.finishOnboarding();
+      return;
+    }
+
+    const target = document.querySelector(step.target);
+    if (!target) {
+      // Skip to next step if target not found
+      this.onboardingStep++;
+      if (this.onboardingStep < this.onboardingSteps.length) {
+        this.showOnboardingStep();
+      } else {
+        this.finishOnboarding();
+      }
+      return;
+    }
+
+    // Create tooltip
+    const tooltip = document.createElement('div');
+    tooltip.id = 'onboardingTooltip';
+    tooltip.innerHTML = `
+      <div class="onboarding-backdrop" onclick="app.skipOnboarding()"></div>
+      <div class="onboarding-tooltip" style="position: absolute; z-index: 10001;">
+        <div class="onboarding-progress">
+          ${this.onboardingSteps.map((_, i) => `
+            <div class="onboarding-dot ${i === this.onboardingStep ? 'active' : i < this.onboardingStep ? 'completed' : ''}"></div>
+          `).join('')}
+        </div>
+        <h4 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-size: 1rem;">${step.title}</h4>
+        <p style="margin: 0 0 1rem 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4;">${step.content}</p>
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+          <button class="btn btn-secondary" onclick="app.skipOnboarding()" style="font-size: 0.85rem; padding: 0.4rem 0.75rem;">Skip</button>
+          <button class="btn btn-primary" onclick="app.nextOnboardingStep()" style="font-size: 0.85rem; padding: 0.4rem 0.75rem;">
+            ${this.onboardingStep < this.onboardingSteps.length - 1 ? 'Next' : 'Got it!'}
+          </button>
+        </div>
+      </div>
+      <style>
+        .onboarding-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 9999;
+        }
+        .onboarding-tooltip {
+          background: var(--bg-secondary, #1a1a2e);
+          border: 1px solid var(--border-color, #333);
+          border-radius: 12px;
+          padding: 1rem;
+          max-width: 300px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .onboarding-progress {
+          display: flex;
+          gap: 6px;
+          margin-bottom: 0.75rem;
+        }
+        .onboarding-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: var(--border-color, #333);
+        }
+        .onboarding-dot.active {
+          background: var(--primary, #6c5ce7);
+          transform: scale(1.2);
+        }
+        .onboarding-dot.completed {
+          background: var(--success, #10b981);
+        }
+        .onboarding-highlight {
+          position: relative;
+          z-index: 10000 !important;
+          box-shadow: 0 0 0 4px var(--primary, #6c5ce7), 0 0 20px rgba(108, 92, 231, 0.4);
+          border-radius: 8px;
+        }
+      </style>
+    `;
+    document.body.appendChild(tooltip);
+
+    // Highlight target element
+    target.classList.add('onboarding-highlight');
+
+    // Position tooltip
+    const tooltipEl = tooltip.querySelector('.onboarding-tooltip');
+    const targetRect = target.getBoundingClientRect();
+    
+    if (step.position === 'bottom') {
+      tooltipEl.style.top = `${targetRect.bottom + window.scrollY + 12}px`;
+      tooltipEl.style.left = `${Math.max(16, Math.min(targetRect.left + targetRect.width / 2 - 150, window.innerWidth - 316))}px`;
+    } else {
+      tooltipEl.style.top = `${targetRect.top + window.scrollY - tooltipEl.offsetHeight - 12}px`;
+      tooltipEl.style.left = `${Math.max(16, Math.min(targetRect.left + targetRect.width / 2 - 150, window.innerWidth - 316))}px`;
+    }
+
+    // Scroll target into view if needed
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  },
+
+  // Move to next onboarding step
+  nextOnboardingStep() {
+    // Remove highlight from current target
+    const currentStep = this.onboardingSteps[this.onboardingStep];
+    if (currentStep) {
+      const target = document.querySelector(currentStep.target);
+      if (target) target.classList.remove('onboarding-highlight');
+    }
+
+    this.onboardingStep++;
+    if (this.onboardingStep < this.onboardingSteps.length) {
+      this.showOnboardingStep();
+    } else {
+      this.finishOnboarding();
+    }
+  },
+
+  // Skip onboarding
+  skipOnboarding() {
+    this.finishOnboarding();
+  },
+
+  // Finish onboarding
+  finishOnboarding() {
+    // Remove tooltip
+    const tooltip = document.getElementById('onboardingTooltip');
+    if (tooltip) tooltip.remove();
+
+    // Remove any highlights
+    document.querySelectorAll('.onboarding-highlight').forEach(el => {
+      el.classList.remove('onboarding-highlight');
+    });
+
+    // Mark as completed
+    localStorage.setItem('quicklist-onboarding-v1', 'true');
   },
 
   async init() {
@@ -251,9 +426,6 @@ const app = {
     // Setup pull-to-refresh
     this.setupPullToRefresh();
 
-    // Check for onboarding
-    this.checkOnboarding();
-
     // Setup Clerk event listeners BEFORE waiting for auth
     this.setupClerkListeners();
 
@@ -286,6 +458,9 @@ const app = {
     this.updateUI();
     this.updateAuthButtons();
     this.updateMobileMenu();
+
+    // Check for onboarding tour (after auth is established)
+    this.checkOnboarding();
 
     // Update personality dropdown based on user tier
     this.updatePersonalityDropdown();
