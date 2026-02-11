@@ -2540,52 +2540,109 @@ const app = {
       platformSelect.value = listing.platform;
     }
 
-    if (pricingIntelligence && platform === 'ebay') {
+    // Show pricing section for all platforms (enhanced display)
+    const suggestedPrice = document.getElementById('outputPrice')?.value || listing.price || '';
+    const rrp = document.getElementById('outputRRP')?.value || listing.rrp || '';
+    
+    if (pricingIntelligence || suggestedPrice) {
       pricingSection.style.display = 'block';
 
       let html = '';
-
-      if (pricingIntelligence.avgSoldPrice) {
-        html += `
-                            <div class="pricing-stat">
-                                <span class="pricing-stat-label">Average Sold Price</span>
-                                <span class="pricing-stat-value">${pricingIntelligence.avgSoldPrice}</span>
-                            </div>
-                        `;
-      }
-
-      if (pricingIntelligence.priceRange) {
-        html += `
-                            <div class="pricing-stat">
-                                <span class="pricing-stat-label">Price Range</span>
-                                <span class="pricing-stat-value">${pricingIntelligence.priceRange.min} - ${pricingIntelligence.priceRange.max}</span>
-                            </div>
-                        `;
-      }
-
+      
+      // Universal pricing explanation header
       html += `
-                        <div class="pricing-stat">
-                            <span class="pricing-stat-label">Sold Listings Found</span>
-                            <span class="pricing-stat-value">${pricingIntelligence.soldCount || 0}</span>
-                        </div>
-                        <div class="pricing-stat">
-                            <span class="pricing-stat-label">Active Competitors</span>
-                            <span class="pricing-stat-value">${pricingIntelligence.competitorCount || 0}</span>
-                        </div>
-                    `;
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+          <div style="width: 40px; height: 40px; background: var(--primary, #6c5ce7); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-weight: 600; color: var(--text-primary);">Suggested Price: ${suggestedPrice}</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">AI-recommended based on similar items</div>
+          </div>
+        </div>
+      `;
+      
+      // Show RRP comparison if available
+      if (rrp && rrp !== '£0' && rrp !== suggestedPrice) {
+        const rrpNum = parseFloat(rrp.replace(/[^0-9.]/g, ''));
+        const priceNum = parseFloat(suggestedPrice.replace(/[^0-9.]/g, ''));
+        if (rrpNum > priceNum && rrpNum > 0) {
+          const discount = Math.round((1 - priceNum / rrpNum) * 100);
+          html += `
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success, #10b981); border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem;">
+              <div style="font-size: 0.9rem; color: var(--success, #10b981);">
+                <strong>${discount}% off RRP</strong> — Great value for buyers!
+              </div>
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+                Original retail: ${rrp}
+              </div>
+            </div>
+          `;
+        }
+      }
+      
+      // Detailed pricing intel for eBay
+      if (pricingIntelligence && platform === 'ebay') {
+        html += '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1rem;">';
 
-      if (pricingIntelligence.recommendations && pricingIntelligence.recommendations.length > 0) {
+        if (pricingIntelligence.avgSoldPrice) {
+          html += `
+            <div class="pricing-stat">
+              <span class="pricing-stat-label">Average Sold Price</span>
+              <span class="pricing-stat-value">${pricingIntelligence.avgSoldPrice}</span>
+            </div>
+          `;
+        }
+
+        if (pricingIntelligence.priceRange) {
+          html += `
+            <div class="pricing-stat">
+              <span class="pricing-stat-label">Price Range</span>
+              <span class="pricing-stat-value">${pricingIntelligence.priceRange.min} - ${pricingIntelligence.priceRange.max}</span>
+            </div>
+          `;
+        }
+
+        html += `
+          <div class="pricing-stat">
+            <span class="pricing-stat-label">Sold Listings Found</span>
+            <span class="pricing-stat-value">${pricingIntelligence.soldCount || 0}</span>
+          </div>
+          <div class="pricing-stat">
+            <span class="pricing-stat-label">Active Competitors</span>
+            <span class="pricing-stat-value">${pricingIntelligence.competitorCount || 0}</span>
+          </div>
+        `;
+        html += '</div>';
+      } else if (!pricingIntelligence) {
+        // Simplified pricing tips for non-eBay platforms
+        const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
+        html += `
+          <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; background: var(--bg-tertiary, var(--bg-secondary)); padding: 0.75rem; border-radius: 8px;">
+            <p style="margin: 0 0 0.5rem 0;">💡 <strong>Pricing tips for ${platformName}:</strong></p>
+            <ul style="margin: 0; padding-left: 1.25rem;">
+              <li>Check similar items on ${platformName} before listing</li>
+              <li>Factor in platform fees (typically 10-15%)</li>
+              <li>Price competitively for faster sales</li>
+            </ul>
+          </div>
+        `;
+      }
+
+      if (pricingIntelligence && pricingIntelligence.recommendations && pricingIntelligence.recommendations.length > 0) {
         html += '<div style="margin-top: 1rem;"><strong>Recommendations:</strong></div>';
         pricingIntelligence.recommendations.forEach((rec) => {
           const priceMatch = rec.match(/£(\d+)/);
           const price = priceMatch ? priceMatch[1] : null;
 
           html += `
-                                <div class="pricing-recommendation" onclick="app.useRecommendedPrice('${price}')">
-                                    <div class="pricing-recommendation-title">${rec}</div>
-                                    ${price ? '<div class="pricing-recommendation-desc">Click to use this price</div>' : ''}
-                                </div>
-                            `;
+            <div class="pricing-recommendation" onclick="app.useRecommendedPrice('${price}')">
+              <div class="pricing-recommendation-title">${rec}</div>
+              ${price ? '<div class="pricing-recommendation-desc">Click to use this price</div>' : ''}
+            </div>
+          `;
         });
       }
 
