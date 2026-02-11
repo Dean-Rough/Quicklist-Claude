@@ -59,7 +59,7 @@
     <meta property="twitter:image" content="https://quicklist.it.com/hero-image.jpg" />
 
     <!-- Additional SEO -->
-    <meta name="theme-color" content="#FF7A5C" />
+    <meta name="theme-color" content="#FF90E8" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="QuickList" />
@@ -70,7 +70,7 @@
     <link rel="apple-touch-icon" href="/icons/icon-152.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png" />
-    <meta name="msapplication-TileColor" content="#FF7A5C" />
+    <meta name="msapplication-TileColor" content="#FF90E8" />
     <meta name="msapplication-TileImage" content="/icons/icon-144.png" />
 
     <!-- Content Security Policy -->
@@ -540,6 +540,10 @@
                 </div>
               </div>
             </div>
+            <div class="highlight-box--yellow highlight-box" style="margin-top: 3rem;">
+              <h3>No Writing Required</h3>
+              <p>Just photos. Our AI does the rest — descriptions, pricing, keywords, and more.</p>
+            </div>
           </div>
         </section>
 
@@ -547,7 +551,7 @@
         <section
           class="section"
           aria-labelledby="features-title"
-          style="background: var(--bg-secondary)"
+          style="background: var(--bg-tertiary)"
         >
           <div class="container">
             <span class="section-label">Powerful Tools</span>
@@ -613,14 +617,21 @@
                 <h3>Stock Image Finder</h3>
                 <p>Automatically find official manufacturer product images to enhance your listing.</p>
               </div>
-              <!-- Full width banner -->
-              <div class="card card-full card-interactive" data-animate style="text-align: center; padding: 2.5rem;">
-                <h3>Multi-Platform Support</h3>
-                <p style="max-width: 600px; margin: 0.5rem auto 0;">Generate listings optimized for every major UK marketplace</p>
-                <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap; font-weight: 700; font-size: 1.1rem;">
-                  <span style="color: var(--accent);">Vinted</span>
-                  <span style="color: var(--accent-blue);">eBay</span>
-                  <span style="color: var(--accent-mint);">Gumtree</span>
+              <!-- Bento grid: Multi-Platform + stats -->
+              <div class="card card-full" data-animate style="padding: 0; overflow: hidden;">
+                <div class="bento-grid" style="border: none; border-radius: 0;">
+                  <div class="bento-cell" style="text-align: center;">
+                    <div class="bento-cell-number" style="color: var(--accent);">Vinted</div>
+                    <div class="bento-cell-desc">Trendy descriptions that match Vinted's style and search algorithm.</div>
+                  </div>
+                  <div class="bento-cell" style="text-align: center;">
+                    <div class="bento-cell-number" style="color: var(--accent-blue);">eBay</div>
+                    <div class="bento-cell-desc">Optimized titles, item specifics, and category IDs for maximum visibility.</div>
+                  </div>
+                  <div class="bento-cell" style="text-align: center;">
+                    <div class="bento-cell-number" style="color: var(--accent-mint);">Gumtree</div>
+                    <div class="bento-cell-desc">Local-friendly listings with the right tone for UK buyers.</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -687,8 +698,52 @@
           </div>
         </section>
 
+        <!-- Stats Bento Grid -->
+        <section class="section" aria-label="Platform statistics" style="background: var(--bg-tertiary);">
+          <div class="container">
+            <span class="section-label">By the Numbers</span>
+            <h2 class="section-title">Why Sellers Choose QuickList</h2>
+            <div class="bento-grid" style="margin-top: 2rem;">
+              <div class="bento-cell" style="text-align: center;">
+                <div class="bento-cell-number" style="color: var(--accent);">60s</div>
+                <div class="bento-cell-title">Average Listing Time</div>
+                <div class="bento-cell-desc">From photo to finished listing in under a minute.</div>
+              </div>
+              <div class="bento-cell" style="text-align: center;">
+                <div class="bento-cell-number" style="color: var(--accent-mint);">3</div>
+                <div class="bento-cell-title">Marketplaces</div>
+                <div class="bento-cell-desc">Vinted, eBay, and Gumtree — each with tailored listings.</div>
+              </div>
+              <div class="bento-cell" style="text-align: center;">
+                <div class="bento-cell-number" style="color: var(--accent-yellow);">5</div>
+                <div class="bento-cell-title">Free Listings/Month</div>
+                <div class="bento-cell-desc">Get started without paying a penny. Upgrade when you're ready.</div>
+              </div>
+              <div class="bento-cell" style="text-align: center;">
+                <div class="bento-cell-number" style="color: var(--accent-blue);">10+</div>
+                <div class="bento-cell-title">Photos Per Listing</div>
+                <div class="bento-cell-desc">Upload up to 10 images for comprehensive AI analysis.</div>
+              </div>
+              <div class="bento-cell" style="text-align: center;">
+                <div class="bento-cell-number" style="color: var(--accent-lavender);">AI</div>
+                <div class="bento-cell-title">Smart Pricing</div>
+                <div class="bento-cell-desc">Real market data from recent sales to price competitively.</div>
+              </div>
+              <div class="bento-cell" style="text-align: center;">
+                <div class="bento-cell-number" style="color: var(--accent-peach);">ZIP</div>
+                <div class="bento-cell-title">One-Click Export</div>
+                <div class="bento-cell-desc">Download everything you need in a single ZIP file.</div>
+              </div>
+            </div>
+            <div class="pullout pullout--pink" style="margin-top: 2.5rem; text-align: center;">
+              <div class="pullout-title">Did you know?</div>
+              <p>Sellers who use AI-generated descriptions see up to 40% faster sale times compared to manually written listings.</p>
+            </div>
+          </div>
+        </section>
+
         <!-- Target Audience - Featured cards with Lottie -->
-        <section class="section" aria-labelledby="target-audience-title" style="background: var(--bg-secondary);">
+        <section class="section" aria-labelledby="target-audience-title" style="background: var(--bg-primary);">
           <div class="container">
             <span class="section-label">Built for You</span>
             <h2 id="target-audience-title" class="section-title">
@@ -2017,10 +2072,10 @@
                         left: 0;
                         right: 0;
                         min-width: 180px;
-                        background: var(--card-bg, #1a1a2e);
-                        border: 1px solid var(--border-color, #333);
+                        background: var(--bg-primary, #FFFFFF);
+                        border: 2px solid #000000;
                         border-radius: 8px;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                        box-shadow: 4px 4px 0 0 #000000;
                         z-index: 1000;
                         margin-top: 4px;
                         padding: 4px 0;
@@ -2036,18 +2091,18 @@
                         padding: 10px 14px;
                         border: none;
                         background: none;
-                        color: var(--text-color, #fff);
+                        color: #000000;
                         font-size: 14px;
                         text-align: left;
                         cursor: pointer;
                         transition: background 0.15s;
                       }
                       .dropdown-item:hover {
-                        background: var(--hover-bg, rgba(255,255,255,0.1));
+                        background: var(--bg-tertiary, #F4F4F0);
                       }
                       .dropdown-divider {
                         height: 1px;
-                        background: var(--border-color, #333);
+                        background: #000000;
                         margin: 4px 0;
                       }
                     </style>
@@ -2743,7 +2798,7 @@
     <div id="exportSuccessModal" class="modal hidden">
       <div class="modal-content" style="max-width: 480px; text-align: center;">
         <div style="padding: 2rem 1rem;">
-          <div style="width: 64px; height: 64px; margin: 0 auto 1.5rem; background: var(--success, #10b981); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <div style="width: 64px; height: 64px; margin: 0 auto 1.5rem; background: var(--success, #10b981); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #000000;">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
@@ -2903,11 +2958,12 @@
                 color: white;
                 padding: 16px 24px;
                 border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                border: 2px solid #000000;
+                box-shadow: 4px 4px 0 0 #000000;
                 z-index: 10000;
                 max-width: 90%;
                 text-align: center;
-                font-family: system-ui, -apple-system, sans-serif;
+                font-family: 'Manrope', system-ui, sans-serif;
                 font-size: 14px;
                 line-height: 1.5;
             `;
@@ -2915,12 +2971,12 @@
                 <div style="margin-bottom: 8px;">${message}</div>
                 <button onclick="window.location.reload()" style="
                     background: white;
-                    color: #dc2626;
-                    border: none;
+                    color: #000000;
+                    border: 2px solid #000000;
                     padding: 8px 16px;
-                    border-radius: 4px;
+                    border-radius: 6px;
                     cursor: pointer;
-                    font-weight: 600;
+                    font-weight: 700;
                     font-size: 13px;
                 ">Refresh Page</button>
             `;
@@ -3016,23 +3072,31 @@
                 publishableKey: publishableKey,
                 appearance: {
                   variables: {
-                    colorPrimary: '#FF7A5C',
-                    colorBackground: '#ffffff',
-                    colorInputBackground: '#f7f2ea',
-                    colorInputText: '#1a1a2e',
-                    colorText: '#1a1a2e',
+                    colorPrimary: '#FF90E8',
+                    colorBackground: '#FFFFFF',
+                    colorInputBackground: '#FFFFFF',
+                    colorInputText: '#000000',
+                    colorText: '#000000',
                     fontFamily: "'Manrope', system-ui, sans-serif",
-                    borderRadius: '12px',
+                    borderRadius: '8px',
                   },
                   elements: {
                     card: {
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e0d8',
-                      borderRadius: '16px',
+                      backgroundColor: '#FFFFFF',
+                      border: '2px solid #000000',
+                      borderRadius: '12px',
+                      boxShadow: '6px 6px 0 0 #000000',
                     },
                     formButtonPrimary: {
-                      backgroundColor: '#6c5ce7',
-                      borderRadius: '10px',
+                      backgroundColor: '#FF90E8',
+                      color: '#000000',
+                      border: '2px solid #000000',
+                      borderRadius: '8px',
+                      fontWeight: '700',
+                    },
+                    formFieldInput: {
+                      border: '2px solid #000000',
+                      borderRadius: '8px',
                     },
                     footer: {
                       display: 'none',
@@ -3655,11 +3719,11 @@
         bottom: 0;
         left: 0;
         right: 0;
-        background: var(--bg-secondary, #ffffff);
-        border-top: 1px solid var(--border-color, #e5dccf);
+        background: var(--bg-primary, #FFFFFF);
+        border-top: 2px solid #000000;
         padding: 12px 16px;
         z-index: 999;
-        box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+        box-shadow: none;
         transform: translateY(0);
         transition: transform 0.3s ease;
         font-family: 'Manrope', sans-serif;
@@ -3688,7 +3752,7 @@
       }
       .upsell-plan {
         font-weight: 600;
-        color: var(--accent, #FF7A5C);
+        color: var(--accent, #FF90E8);
         font-size: 13px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -3699,22 +3763,23 @@
       }
       .upsell-bar {
         height: 6px;
-        background: var(--bg-tertiary, #f0e6d9);
-        border-radius: 3px;
+        background: var(--bg-tertiary, #F4F4F0);
+        border-radius: 0;
+        border: 2px solid #000000;
         overflow: hidden;
         max-width: 300px;
       }
       .upsell-bar-fill {
         height: 100%;
-        background: linear-gradient(90deg, var(--accent, #FF7A5C) 0%, var(--accent-yellow, #FFD93D) 100%);
-        border-radius: 3px;
+        background: var(--accent, #FF90E8);
+        border-radius: 0;
         transition: width 0.5s ease, background 0.3s ease;
       }
       .upsell-bar-fill.warning {
-        background: linear-gradient(90deg, #fdcb6e 0%, #e17055 100%);
+        background: #FFC900;
       }
       .upsell-bar-fill.critical {
-        background: linear-gradient(90deg, #e17055 0%, #d63031 100%);
+        background: #e17055;
       }
       .upsell-cta {
         flex-shrink: 0;
@@ -3725,20 +3790,18 @@
         white-space: nowrap;
       }
       .btn-accent {
-        background: var(--accent, #FF7A5C);
-        color: white;
-        border: 2px solid var(--text-primary, #1f2937);
-        border-radius: 10px;
+        background: var(--accent, #FF90E8);
+        color: #000000;
+        border: 2px solid #000000;
+        border-radius: 8px;
         font-family: 'Manrope', sans-serif;
         font-weight: 700;
         transition: transform 0.15s ease, box-shadow 0.15s ease;
       }
       .btn-accent:hover {
-        background: var(--accent, #FF7A5C);
+        background: var(--accent, #FF90E8);
         transform: translate(-2px, -2px);
-        box-shadow: 2px 2px 0 0 var(--text-primary, #1f2937);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
+        box-shadow: 2px 2px 0 0 #000000;
       }
       .upsell-dismiss {
         background: none;
