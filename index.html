@@ -372,7 +372,11 @@
       <!-- Home / Landing Page -->
       <div id="homeView">
         <!-- Hero Section -->
-        <section class="hero" aria-label="Hero section">
+        <section class="hero" aria-label="Hero section" style="position: relative;">
+          <!-- Floating decorative tags -->
+          <span class="tag-float tag-float--coral" style="top: 12%; right: 8%; transform: rotate(-4deg);" data-rotate="-4">AI Powered</span>
+          <span class="tag-float" style="bottom: 18%; left: 5%; transform: rotate(3deg);" data-rotate="3">Instant Results</span>
+          <span class="tag-float tag-float--mint" style="top: 25%; left: 2%; transform: rotate(-6deg);" data-rotate="-6">Free to Start</span>
           <div class="hero-content">
             <div class="hero-text">
               <h1>Turn Your Clutter Into Cash with AI</h1>
@@ -463,9 +467,10 @@
           </div>
         </section>
 
-        <!-- How It Works -->
+        <!-- How It Works - Alternating Layout -->
         <section class="section" aria-labelledby="how-it-works-title">
           <div class="container">
+            <span class="section-label">Simple as 1-2-3</span>
             <h2 id="how-it-works-title" class="section-title">How QuickList AI Works</h2>
             <p
               style="
@@ -479,60 +484,73 @@
               Three simple steps from photo to professional listing. No writing, no research, no
               hassle.
             </p>
-            <div class="steps">
-              <div class="step">
-                <div
-                  id="step1-animation"
-                  class="step-image"
-                  style="border-radius: 12px; overflow: hidden; background: var(--bg-tertiary)"
-                  aria-label="Animated illustration of scanning and photographing items"
-                ></div>
-                <div class="step-number">1</div>
-                <h3>Upload Your Photos</h3>
-                <p>
-                  Take photos of your item from different angles. Our AI reads labels, tags, and
-                  codes automatically. No need for perfect lighting or backgrounds.
-                </p>
+            <div class="steps-alternating">
+              <!-- Step 1: Visual left, text right -->
+              <div class="step-row">
+                <div class="step-visual">
+                  <div
+                    id="step1-animation"
+                    style="width: 100%; height: 100%;"
+                    aria-label="Animated illustration of scanning and photographing items"
+                  ></div>
+                </div>
+                <div class="step-info">
+                  <div class="step-number">1</div>
+                  <h3>Upload Your Photos</h3>
+                  <p>
+                    Take photos of your item from different angles. Our AI reads labels, tags, and
+                    codes automatically. No need for perfect lighting or backgrounds.
+                  </p>
+                </div>
               </div>
-              <div class="step">
-                <div
-                  id="step2-animation"
-                  class="step-image"
-                  style="border-radius: 12px; overflow: hidden; background: var(--bg-tertiary)"
-                  aria-label="Animated illustration of AI processing in real-time"
-                ></div>
-                <div class="step-number">2</div>
-                <h3>AI Generates Everything</h3>
-                <p>
-                  Our AI identifies your product, writes the description, suggests competitive
-                  prices, and finds the perfect keywords. All in seconds.
-                </p>
+              <!-- Step 2: Text left, visual right (reversed via CSS) -->
+              <div class="step-row">
+                <div class="step-visual">
+                  <div
+                    id="step2-animation"
+                    style="width: 100%; height: 100%;"
+                    aria-label="Animated illustration of AI processing in real-time"
+                  ></div>
+                </div>
+                <div class="step-info">
+                  <div class="step-number">2</div>
+                  <h3>AI Generates Everything</h3>
+                  <p>
+                    Our AI identifies your product, writes the description, suggests competitive
+                    prices, and finds the perfect keywords. All in seconds.
+                  </p>
+                </div>
               </div>
-              <div class="step">
-                <div
-                  id="step3-animation"
-                  class="step-image"
-                  style="border-radius: 12px; overflow: hidden; background: var(--bg-tertiary)"
-                  aria-label="Animated illustration of completed listing"
-                ></div>
-                <div class="step-number">3</div>
-                <h3>Download & List</h3>
-                <p>
-                  Review your professional listing, make any edits, then download everything in a
-                  ZIP file. Copy and paste to Vinted, eBay, or Gumtree.
-                </p>
+              <!-- Step 3: Visual left, text right -->
+              <div class="step-row">
+                <div class="step-visual">
+                  <div
+                    id="step3-animation"
+                    style="width: 100%; height: 100%;"
+                    aria-label="Animated illustration of completed listing"
+                  ></div>
+                </div>
+                <div class="step-info">
+                  <div class="step-number">3</div>
+                  <h3>Download & List</h3>
+                  <p>
+                    Review your professional listing, make any edits, then download everything in a
+                    ZIP file. Copy and paste to Vinted, eBay, or Gumtree.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- Features -->
+        <!-- Features - Masonry Grid -->
         <section
           class="section"
           aria-labelledby="features-title"
           style="background: var(--bg-secondary)"
         >
           <div class="container">
+            <span class="section-label">Powerful Tools</span>
             <h2 id="features-title" class="section-title">
               Everything You Need to Sell Successfully
             </h2>
@@ -545,48 +563,134 @@
                 margin: 0 auto 3rem;
               "
             >
-              Tools that save you time listing items for sale. Used by UK sellers across the UK.
+              Tools that save you time listing items for sale. Used by sellers across the UK.
             </p>
-            <div class="grid grid-3">
-              <div class="card">
-                <h3>AI-Powered Descriptions</h3>
-                <p>Marketplace-ready descriptions in the style buyers respond to.</p>
+            <div class="grid-masonry">
+              <!-- Large card: AI Descriptions with Lottie -->
+              <div class="card card-wide card-interactive card-split" data-animate>
+                <div class="card-split-text">
+                  <span class="card-tag">Core Feature</span>
+                  <h3>AI-Powered Descriptions</h3>
+                  <p>Marketplace-ready descriptions in the style buyers respond to. Our AI writes like a top seller.</p>
+                </div>
+                <div class="card-split-visual">
+                  <div id="feature-anim-ai" data-anim-path="/json_anim/online-shopping-time-line-art-illustration-2025-10-20-03-11-10-utc.json"></div>
+                </div>
               </div>
-              <div class="card">
-                <h3>Optimized Titles & Categories</h3>
-                <p>Perfect titles and categories for maximum visibility.</p>
+              <!-- Regular card -->
+              <div class="card card-interactive" data-animate>
+                <span class="card-tag card-tag--mint">SEO</span>
+                <h3>Optimized Titles</h3>
+                <p>Perfect titles and categories for maximum search visibility.</p>
               </div>
-              <div class="card">
+              <!-- Regular card -->
+              <div class="card card-interactive" data-animate>
+                <span class="card-tag card-tag--yellow">Smart</span>
                 <h3>Data-Driven Pricing</h3>
                 <p>Price suggestions based on recent sold listings on eBay and Vinted.</p>
               </div>
-              <div class="card">
-                <h3>Professional Images</h3>
-                <p>Generate hero images, enhance photos, and fix blur.</p>
+              <!-- Large card: Professional Images with Lottie -->
+              <div class="card card-wide card-interactive card-split" data-animate>
+                <div class="card-split-text">
+                  <span class="card-tag card-tag--blue">Visual AI</span>
+                  <h3>Professional Images</h3>
+                  <p>Generate hero images, enhance your photos, and automatically detect blur. Make every listing look professional.</p>
+                </div>
+                <div class="card-split-visual">
+                  <div id="feature-anim-images" data-anim-path="/json_anim/scan-to-pay-illustration-in-line-art-style-2025-10-20-04-28-23-utc.json"></div>
+                </div>
               </div>
-              <div class="card">
+              <!-- Regular cards -->
+              <div class="card card-interactive" data-animate>
                 <h3>Keywords & Hashtags</h3>
-                <p>Boost your listing's reach with optimized keywords.</p>
+                <p>Boost your listing's reach with optimized keywords that match buyer searches.</p>
               </div>
-              <div class="card">
+              <div class="card card-interactive" data-animate>
                 <h3>Honest Flaw Detection</h3>
-                <p>Automatically identify and list any imperfections.</p>
+                <p>Automatically identify and list any imperfections. Build buyer trust.</p>
               </div>
-              <div class="card">
+              <div class="card card-interactive" data-animate>
                 <h3>Stock Image Finder</h3>
-                <p>Automatically find official manufacturer product images.</p>
+                <p>Automatically find official manufacturer product images to enhance your listing.</p>
               </div>
-              <div class="card">
+              <!-- Full width banner -->
+              <div class="card card-full card-interactive" data-animate style="text-align: center; padding: 2.5rem;">
                 <h3>Multi-Platform Support</h3>
-                <p>Generate listings optimized for Vinted, eBay, and Gumtree.</p>
+                <p style="max-width: 600px; margin: 0.5rem auto 0;">Generate listings optimized for every major UK marketplace</p>
+                <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap; font-weight: 700; font-size: 1.1rem;">
+                  <span style="color: var(--accent);">Vinted</span>
+                  <span style="color: var(--accent-blue);">eBay</span>
+                  <span style="color: var(--accent-mint);">Gumtree</span>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- Target Audience -->
-        <section class="section" aria-labelledby="target-audience-title">
+        <!-- Testimonials -->
+        <section class="section" aria-labelledby="testimonials-title">
           <div class="container">
+            <span class="section-label">Trusted by Sellers</span>
+            <h2 id="testimonials-title" class="section-title">What Sellers Are Saying</h2>
+            <div class="testimonial-track">
+              <div class="testimonial-card">
+                <p class="testimonial-quote">"Listed 30 items in an hour. Usually takes me all weekend. Absolute game changer."</p>
+                <div class="testimonial-author">
+                  <div class="testimonial-avatar">JD</div>
+                  <div>
+                    <div class="testimonial-name">Jane D.</div>
+                    <div class="testimonial-role">Vinted Seller</div>
+                  </div>
+                </div>
+              </div>
+              <div class="testimonial-card">
+                <p class="testimonial-quote">"The AI descriptions are better than what I was writing myself. My items sell faster now."</p>
+                <div class="testimonial-author">
+                  <div class="testimonial-avatar">MR</div>
+                  <div>
+                    <div class="testimonial-name">Mark R.</div>
+                    <div class="testimonial-role">eBay Power Seller</div>
+                  </div>
+                </div>
+              </div>
+              <div class="testimonial-card">
+                <p class="testimonial-quote">"I was sceptical about the pricing suggestions but they were spot on. Sold everything within a week."</p>
+                <div class="testimonial-author">
+                  <div class="testimonial-avatar">SP</div>
+                  <div>
+                    <div class="testimonial-name">Sarah P.</div>
+                    <div class="testimonial-role">Gumtree Seller</div>
+                  </div>
+                </div>
+              </div>
+              <div class="testimonial-card">
+                <p class="testimonial-quote">"Perfect for clearing out the kids' old stuff. Photos in, listing out. So simple my mum uses it."</p>
+                <div class="testimonial-author">
+                  <div class="testimonial-avatar">TK</div>
+                  <div>
+                    <div class="testimonial-name">Tom K.</div>
+                    <div class="testimonial-role">Casual Seller</div>
+                  </div>
+                </div>
+              </div>
+              <div class="testimonial-card">
+                <p class="testimonial-quote">"The flaw detection saved me from a return. It spotted a mark I missed and added it to the description."</p>
+                <div class="testimonial-author">
+                  <div class="testimonial-avatar">LC</div>
+                  <div>
+                    <div class="testimonial-name">Lucy C.</div>
+                    <div class="testimonial-role">Resale Business</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Target Audience - Featured cards with Lottie -->
+        <section class="section" aria-labelledby="target-audience-title" style="background: var(--bg-secondary);">
+          <div class="container">
+            <span class="section-label">Built for You</span>
             <h2 id="target-audience-title" class="section-title">
               Perfect For Every Type of Seller
             </h2>
@@ -603,114 +707,113 @@
               saves you time and helps you sell more.
             </p>
             <div class="grid grid-2">
-              <div class="card">
-                <img
-                  src="/images/stock-mother-daughter.jpg"
-                  alt="Mother and daughter sorting through clothes together"
-                  style="
-                    width: 100%;
-                    height: 200px;
-                    object-fit: cover;
-                    border-radius: 8px;
-                    margin-bottom: 1.5rem;
-                  "
-                  loading="lazy"
-                />
-                <h3>Casual Declutterers</h3>
-                <ul style="list-style: none; padding: 0">
-                  <li>Got stuff to sell but hate writing descriptions</li>
-                  <li>Want to make money without the hassle</li>
-                  <li>Need quick, professional listings</li>
-                  <li>Selling on Vinted, eBay, or Gumtree</li>
-                </ul>
+              <div class="audience-card audience-card--coral">
+                <div class="audience-visual">
+                  <div
+                    id="casual-seller-animation"
+                    style="width: 100%; height: 100%;"
+                    aria-label="Casual online shopping illustration"
+                  ></div>
+                </div>
+                <div class="audience-body">
+                  <span class="tag-float" style="position: relative; top: auto; left: auto; right: auto; display: inline-block; margin-bottom: 1rem; transform: rotate(-2deg);">Weekend Sellers</span>
+                  <h3>Casual Declutterers</h3>
+                  <ul>
+                    <li>Got stuff to sell but hate writing descriptions</li>
+                    <li>Want to make money without the hassle</li>
+                    <li>Need quick, professional listings</li>
+                    <li>Selling on Vinted, eBay, or Gumtree</li>
+                  </ul>
+                </div>
               </div>
-              <div class="card">
-                <img
-                  src="/images/stock-wardrobe.jpg"
-                  alt="Colorful clothes hanging on a rail ready to sell"
-                  style="
-                    width: 100%;
-                    height: 200px;
-                    object-fit: cover;
-                    border-radius: 8px;
-                    margin-bottom: 1.5rem;
-                  "
-                  loading="lazy"
-                />
-                <h3>Power Sellers & eBay Businesses</h3>
-                <ul style="list-style: none; padding: 0">
-                  <li>Process hundreds of items efficiently</li>
-                  <li>Maintain consistent quality across listings</li>
-                  <li>Save hours of manual work</li>
-                  <li>Scale your business faster</li>
-                </ul>
+              <div class="audience-card audience-card--mint">
+                <div class="audience-visual">
+                  <div
+                    id="power-seller-animation"
+                    style="width: 100%; height: 100%;"
+                    aria-label="Professional online selling illustration"
+                  ></div>
+                </div>
+                <div class="audience-body">
+                  <span class="tag-float tag-float--mint" style="position: relative; top: auto; left: auto; right: auto; display: inline-block; margin-bottom: 1rem; transform: rotate(2deg);">Full Time</span>
+                  <h3>Power Sellers & eBay Businesses</h3>
+                  <ul>
+                    <li>Process hundreds of items efficiently</li>
+                    <li>Maintain consistent quality across listings</li>
+                    <li>Save hours of manual work</li>
+                    <li>Scale your business faster</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- FAQ -->
-        <section
-          class="section"
-          aria-labelledby="faq-title"
-          style="background: var(--bg-secondary)"
-        >
+        <!-- FAQ - Accordion -->
+        <section class="section" aria-labelledby="faq-title">
           <div class="container">
+            <span class="section-label">Got Questions?</span>
             <h2 id="faq-title" class="section-title">Frequently Asked Questions</h2>
-            <p
-              style="
-                text-align: center;
-                color: var(--text-secondary);
-                font-size: 1.1rem;
-                max-width: 800px;
-                margin: 0 auto 3rem;
-              "
-            >
-              Everything you need to know about QuickList AI
-            </p>
-            <div class="grid grid-2">
-              <div class="card">
-                <h3>Is it free?</h3>
-                <p>
-                  Yes! We offer a free tier with generous limits. Upgrade for unlimited listings and
-                  premium features.
-                </p>
+            <div class="faq-list">
+              <div class="faq-item">
+                <div class="faq-question" onclick="this.parentElement.classList.toggle('active'); this.setAttribute('aria-expanded', this.parentElement.classList.contains('active'))" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" role="button" tabindex="0" aria-expanded="false">
+                  <span>Is it really free?</span>
+                  <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                  Yes! We offer a free tier with 5 AI-generated listings per month. That's enough for most casual sellers. Upgrade anytime for more listings and premium features like bulk processing and eBay direct posting.
+                </div>
               </div>
-              <div class="card">
-                <h3>Which marketplaces are supported?</h3>
-                <p>Currently Vinted, eBay, and Gumtree. More coming soon!</p>
+              <div class="faq-item">
+                <div class="faq-question" onclick="this.parentElement.classList.toggle('active'); this.setAttribute('aria-expanded', this.parentElement.classList.contains('active'))" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" role="button" tabindex="0" aria-expanded="false">
+                  <span>Which marketplaces are supported?</span>
+                  <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                  Currently Vinted, eBay, and Gumtree. Each platform gets listings tailored to its specific format and style. We're working on adding Facebook Marketplace and Depop next.
+                </div>
               </div>
-              <div class="card">
-                <h3>How accurate is the AI?</h3>
-                <p>Very! But you can always edit any field before posting your listing.</p>
+              <div class="faq-item">
+                <div class="faq-question" onclick="this.parentElement.classList.toggle('active'); this.setAttribute('aria-expanded', this.parentElement.classList.contains('active'))" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" role="button" tabindex="0" aria-expanded="false">
+                  <span>How accurate is the AI?</span>
+                  <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                  Very! Our AI identifies brands, models, conditions, and even reads labels from your photos. But you always have full control - every field is editable before you post your listing. Think of it as a first draft that's usually spot on.
+                </div>
+              </div>
+              <div class="faq-item">
+                <div class="faq-question" onclick="this.parentElement.classList.toggle('active'); this.setAttribute('aria-expanded', this.parentElement.classList.contains('active'))" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" role="button" tabindex="0" aria-expanded="false">
+                  <span>What happens to my photos?</span>
+                  <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                  Your photos are processed securely and used only to generate your listing. They're stored in your account so you can re-use them, and you can delete them at any time. We never share your images with third parties.
+                </div>
+              </div>
+              <div class="faq-item">
+                <div class="faq-question" onclick="this.parentElement.classList.toggle('active'); this.setAttribute('aria-expanded', this.parentElement.classList.contains('active'))" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" role="button" tabindex="0" aria-expanded="false">
+                  <span>How does the pricing suggestion work?</span>
+                  <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                  We analyse recently sold items on eBay and Vinted to suggest a competitive price. You'll see the average sold price, price range, and our recommendation - so you can price to sell fast or maximise your profit.
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- Final CTA -->
-        <section class="section" aria-label="Call to action">
+        <!-- Final CTA - Bold boxed style -->
+        <section class="section" aria-label="Call to action" style="position: relative;">
           <div class="container">
-            <div
-              class="card"
-              style="
-                text-align: center;
-                padding: 4rem 2rem;
-                background: linear-gradient(
-                  135deg,
-                  var(--accent-indigo) 0%,
-                  var(--accent-indigo-hover) 100%
-                );
-                border: none;
-              "
-            >
-              <h2 style="font-size: 2.5rem; margin-bottom: 1rem; color: white">
-                Ready to Turn Clutter into Cash?
-              </h2>
+            <div class="cta-card">
+              <span class="tag-float tag-float--pink" style="top: -12px; right: 40px; transform: rotate(4deg);" data-rotate="4">Start Free</span>
+              <span class="tag-float tag-float--mint" style="bottom: -10px; left: 30px; transform: rotate(-3deg);" data-rotate="-3">No Credit Card</span>
+              <h2>Ready to Turn Clutter into Cash?</h2>
               <p
                 style="
                   font-size: 1.25rem;
-                  color: rgba(255, 255, 255, 0.9);
                   margin-bottom: 2rem;
                   max-width: 600px;
                   margin-left: auto;
@@ -720,21 +823,14 @@
                 Upload a photo and see what our AI generates. Takes about a minute to try.
               </p>
               <button
-                class="btn"
-                style="
-                  font-size: 1.25rem;
-                  padding: 1rem 2rem;
-                  background: white;
-                  color: var(--accent-indigo);
-                  font-weight: 600;
-                "
+                class="cta-btn"
                 onclick="app.showAuthModal()"
                 aria-label="Start creating listings with QuickList AI"
               >
                 Get Started Now - It's Free
               </button>
               <p style="margin-top: 1.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem">
-                No credit card required • 5 free listings per month • Cancel anytime
+                No credit card required &bull; 5 free listings per month &bull; Cancel anytime
               </p>
             </div>
           </div>

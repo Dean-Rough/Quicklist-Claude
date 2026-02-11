@@ -7173,5 +7173,97 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize lazy-loaded animations
   initLazyAnimations();
 
+  // Initialize scroll-triggered card entrance animations
+  initCardAnimations();
+
+  // Initialize feature card Lottie animations
+  initFeatureAnimations();
+
+  // Initialize floating tag parallax
+  initTagParallax();
+
   app.init();
 });
+
+// ============================================
+// SCROLL-TRIGGERED CARD ANIMATIONS
+// ============================================
+function initCardAnimations() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const cardObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        cardObserver.unobserve(entry.target);
+      }
+    });
+  }, { rootMargin: '0px 0px -50px 0px', threshold: 0.1 });
+
+  document.querySelectorAll('.card[data-animate]').forEach(card => {
+    cardObserver.observe(card);
+  });
+}
+
+// ============================================
+// FEATURE CARD LOTTIE ANIMATIONS
+// ============================================
+function initFeatureAnimations() {
+  if (typeof lottie === 'undefined') return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  document.querySelectorAll('[data-anim-path]').forEach(container => {
+    const path = container.dataset.animPath;
+    if (!path) return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !container.dataset.loaded) {
+        container.dataset.loaded = 'true';
+
+        const anim = lottie.loadAnimation({
+          container: container,
+          renderer: 'svg',
+          loop: true,
+          autoplay: false,
+          path: path
+        });
+
+        // Delay play for card entrance animation
+        setTimeout(() => anim.play(), 300);
+
+        // Hover: restart from beginning
+        const card = container.closest('.card');
+        if (card) {
+          card.addEventListener('mouseenter', () => {
+            anim.goToAndPlay(0, true);
+          });
+        }
+
+        observer.unobserve(entry.target);
+      }
+    }, { rootMargin: '100px', threshold: 0.1 });
+
+    observer.observe(container);
+  });
+}
+
+// ============================================
+// FLOATING TAG MOUSE PARALLAX
+// ============================================
+function initTagParallax() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const tags = document.querySelectorAll('.tag-float');
+  if (tags.length === 0) return;
+
+  document.addEventListener('mousemove', (e) => {
+    const x = (e.clientX / window.innerWidth - 0.5) * 2;
+    const y = (e.clientY / window.innerHeight - 0.5) * 2;
+
+    tags.forEach((tag, i) => {
+      const depth = (i % 3 + 1) * 4;
+      const baseRotate = tag.dataset.rotate || '0';
+      tag.style.transform = `rotate(${baseRotate}deg) translate(${x * depth}px, ${y * depth}px)`;
+    });
+  });
+}
