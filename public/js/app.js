@@ -5439,7 +5439,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         colorDanger: '#ef4444',
         colorSuccess: '#10b981',
         colorWarning: '#f59e0b',
-        fontFamily: "'Space Grotesk', 'Outfit', system-ui, sans-serif",
+        fontFamily: "'Manrope', system-ui, sans-serif",
         borderRadius: '12px',
         spacingUnit: '4px',
       },
@@ -5449,15 +5449,15 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         },
         card: {
           backgroundColor: '#ffffff',
-          border: '1px solid #e5e0d8',
+          border: '1.5px solid #e5e0d8',
           borderRadius: '16px',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
         },
         headerTitle: {
           color: '#1a1a2e',
           fontSize: '1.5rem',
-          fontWeight: '700',
-          fontFamily: "'Space Grotesk', 'Outfit', system-ui, sans-serif",
+          fontWeight: '800',
+          fontFamily: "'Manrope', system-ui, sans-serif",
         },
         headerSubtitle: {
           color: '#64748b',
