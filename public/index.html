@@ -1,0 +1,2950 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-FWSBPTC7CS"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'G-FWSBPTC7CS');
+  </script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Primary SEO Meta Tags -->
+  <title>QuickList AI - AI-Powered Product Listing Generator for Vinted, eBay & Gumtree</title>
+  <meta name="title" content="QuickList AI - AI-Powered Product Listing Generator for Vinted, eBay & Gumtree" />
+  <meta name="description"
+    content="Turn your clutter into cash with AI-powered listing generation. Upload photos, get professional descriptions, pricing, and keywords. Works with Vinted, eBay, and Gumtree. Free to start." />
+  <meta name="keywords"
+    content="AI listing generator, Vinted listing tool, eBay listing generator, Gumtree listing, product description AI, marketplace listing tool, resale listing generator, UK marketplace tools" />
+  <meta name="author" content="QuickList AI" />
+  <meta name="robots" content="index, follow" />
+  <meta name="language" content="English" />
+  <meta name="revisit-after" content="7 days" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://quicklist.it.com/" />
+  <meta property="og:title" content="QuickList AI - Turn Clutter into Cash with AI" />
+  <meta property="og:description"
+    content="AI-powered product listing generator for Vinted, eBay, and Gumtree. Upload photos, get professional listings in seconds. Free to start." />
+  <meta property="og:image" content="https://quicklist.it.com/hero-image.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="QuickList AI" />
+  <meta property="og:locale" content="en_GB" />
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://quicklist.it.com/" />
+  <meta property="twitter:title" content="QuickList AI - AI-Powered Listing Generator" />
+  <meta property="twitter:description"
+    content="Turn your clutter into cash. AI generates professional listings for Vinted, eBay, and Gumtree from photos. Free to start." />
+  <meta property="twitter:image" content="https://quicklist.it.com/hero-image.jpg" />
+
+  <!-- Additional SEO -->
+  <meta name="theme-color" content="#FF7A5C" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="QuickList" />
+  <link rel="canonical" href="https://quicklist.it.com/" />
+
+  <!-- PWA Configuration -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icons/icon-152.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png" />
+  <meta name="msapplication-TileColor" content="#FF7A5C" />
+  <meta name="msapplication-TileImage" content="/icons/icon-144.png" />
+
+  <!-- Content Security Policy -->
+  <!-- CSP temporarily disabled for development -->
+  <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.clerk.dev https://*.clerk.accounts.dev https://*.clerk.dev https://*.lottiefiles.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' http://localhost:3000 https://api.clerk.dev https://*.clerk.accounts.dev https://*.clerk.dev https://clerk.clerk.com; frame-src 'self' https://accounts.clerk.dev https://*.clerk.accounts.dev; worker-src 'self' blob:;"> -->
+
+  <!-- Cloudinary Media Editor SDK -->
+  <script src="https://media-editor.cloudinary.com/latest/all.js" type="text/javascript" defer></script>
+
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "QuickList AI",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "GBP"
+        },
+        "description": "AI-powered product listing generator that creates professional marketplace listings from photos. Supports Vinted, eBay, and Gumtree.",
+        "featureList": [
+          "AI-Powered Descriptions",
+          "Optimized Titles & Categories",
+          "Data-Driven Pricing",
+          "Professional Image Enhancement",
+          "Stock Image Finder",
+          "Multi-Platform Support"
+        ]
+      }
+    </script>
+
+  <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "QuickList AI",
+        "url": "https://quicklist.it.com/",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://quicklist.it.com/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+
+  <!-- Sentry Error Tracking (Browser SDK) -->
+  <script src="https://browser.sentry-cdn.com/8.44.0/bundle.min.js" crossorigin="anonymous"></script>
+  <script>
+    // Initialize Sentry for frontend error tracking
+    // Only initialize if SENTRY_DSN_FRONTEND is configured (set via environment or inline)
+    const SENTRY_DSN_FRONTEND = ''; // Leave empty - will be set via Vercel env vars or inline
+
+    if (SENTRY_DSN_FRONTEND) {
+      Sentry.init({
+        dsn: SENTRY_DSN_FRONTEND,
+        environment:
+          window.location.hostname === 'quicklist.it.com' ? 'production' : 'development',
+        tracesSampleRate: window.location.hostname === 'quicklist.it.com' ? 0.1 : 1.0,
+        replaysSessionSampleRate: 0.1, // 10% of sessions
+        replaysOnErrorSampleRate: 1.0, // 100% of sessions with errors
+        integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
+        beforeSend(event, hint) {
+          // Don't send errors from localhost unless explicitly enabled
+          if (window.location.hostname === 'localhost' && !window.SENTRY_FORCE_SEND) {
+            return null;
+          }
+          return event;
+        },
+      });
+      console.log('Sentry frontend error tracking initialized');
+    } else {
+      console.log('Sentry DSN not configured - frontend error tracking disabled');
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://media-editor.cloudinary.com" />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+
+  <!-- Lottie/Bodymovin for Animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
+</head>
+
+<body>
+  <!-- Skip Link for Accessibility -->
+  <a href="#marketingView" class="skip-link">Skip to main content</a>
+
+  <!-- Screen Reader Announcements (Live Region) -->
+  <div role="status" aria-live="polite" aria-atomic="true" class="sr-only" id="announcements"></div>
+
+  <!-- Offline Indicator -->
+  <div id="offlineIndicator" class="offline-indicator">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14H8v-2h2v2zm0-4H8V7h2v5z" />
+    </svg>
+    <span>Offline - Changes will sync when online</span>
+  </div>
+
+  <!-- Pull to Refresh -->
+  <div id="pullToRefresh" class="pull-to-refresh">
+    <div class="pull-to-refresh-spinner"></div>
+  </div>
+
+  <!-- Install PWA Button -->
+  <button id="installPWA" class="install-pwa-button" aria-label="Install QuickList app">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path
+        d="M18 1.01L8 1c-1.1 0-2 .9-2 2v3h2V5h10v14H8v-1H6v3c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM10 15h2V8H5v2h3.59L3 15.59 4.41 17 10 11.41z" />
+    </svg>
+    <span>Install App</span>
+  </button>
+
+  <!-- Onboarding Overlay -->
+  <div id="onboardingOverlay" class="onboarding-overlay"></div>
+
+  <!-- Marketing Header -->
+  <header id="marketingHeader" class="header">
+    <div class="header-content">
+      <button class="hamburger-btn" onclick="app.toggleMobileMenu()" aria-label="Toggle mobile menu"
+        aria-expanded="false" aria-controls="mobileMenu">
+        <svg class="icon icon-menu" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        </svg>
+      </button>
+      <div class="logo" onclick="app.navigateTo('home')" style="cursor: pointer">
+        <div id="logo-animation-1" style="height: 40px; width: 120px"></div>
+      </div>
+      <nav class="nav-links">
+        <a class="nav-link" onclick="app.navigateTo('photoTips')">Photo Tips</a>
+        <a class="nav-link" onclick="app.navigateTo('checklist')">Seller Checklist</a>
+        <a class="nav-link" onclick="app.navigateTo('pricing')">Pricing</a>
+        <!-- Auth buttons container -->
+        <div id="authButtons" style="display: flex; gap: 1rem">
+          <!-- Show when NOT authenticated -->
+          <button id="signInBtn" class="btn btn-secondary" onclick="app.showAuthModal('signIn')" style="display: none">
+            Sign In
+          </button>
+          <button id="signUpBtn" class="btn btn-primary" onclick="app.showAuthModal('signUp')" style="display: none">
+            Sign Up
+          </button>
+
+          <!-- Show when authenticated -->
+          <button id="dashboardBtn" class="btn btn-secondary" onclick="app.goToDashboard()" style="display: none">
+            Dashboard
+          </button>
+          <button id="signOutBtn" class="btn btn-primary" onclick="app.signOut()" style="display: none">
+            Sign Out
+          </button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- App Header -->
+  <header id="appHeader" class="header hidden">
+    <div class="header-content">
+      <button class="hamburger-btn" onclick="app.toggleMobileMenu()" aria-label="Toggle mobile menu"
+        aria-expanded="false" aria-controls="appMobileMenu">
+        <svg class="icon icon-menu" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        </svg>
+      </button>
+      <div class="logo" onclick="app.navigateToApp('newItem')" style="cursor: pointer">
+        <div id="logo-animation-2" style="height: 40px; width: 120px"></div>
+      </div>
+      <nav class="nav-links">
+        <a class="nav-link" onclick="app.navigateToApp('newItem')" aria-label="Create new listing">New Item</a>
+        <a class="nav-link" onclick="app.navigateToApp('savedItems')" aria-label="View saved listings">Saved Items</a>
+        <a class="nav-link" onclick="app.navigateToApp('settings')" aria-label="Open settings">Settings</a>
+        <button class="btn btn-secondary" onclick="app.signOut()" style="margin-left: auto"
+          aria-label="Sign out of QuickList">
+          Sign Out
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Mobile Menu Overlay -->
+  <div id="mobileMenuOverlay" class="mobile-menu-overlay" onclick="app.closeMobileMenu()"></div>
+  <nav id="mobileMenu" class="mobile-menu">
+    <div class="mobile-menu-header">
+      <button class="mobile-menu-close" onclick="app.closeMobileMenu()" aria-label="Close mobile menu">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <h3>Menu</h3>
+    </div>
+    <div id="mobileMenuContent" class="mobile-menu-content">
+      <!-- Menu items will be dynamically populated based on auth state -->
+    </div>
+  </nav>
+
+  <!-- Marketing Views -->
+  <main id="marketingView" tabindex="-1">
+    <!-- Home / Landing Page -->
+    <div id="homeView">
+      <!-- Hero Section -->
+      <section class="hero" aria-label="Hero section">
+        <div class="hero-content">
+          <div class="hero-text">
+            <h1>Turn Your Clutter Into Cash with AI</h1>
+            <p>
+              Stop staring at that overflowing drawer. QuickList AI transforms your photos into
+              professional marketplace listings in seconds. Perfect for Vinted, eBay, and Gumtree.
+            </p>
+            <div class="hero-cta-group">
+              <button class="btn btn-primary" style="font-size: 1.25rem; padding: 1rem 2rem"
+                onclick="app.showAuthModal()" aria-label="Get started with QuickList AI">
+                Get Started Free
+              </button>
+              <button class="btn btn-secondary" style="font-size: 1.25rem; padding: 1rem 2rem"
+                onclick="document.getElementById('homeView').querySelector('.section').scrollIntoView({ behavior: 'smooth' })"
+                aria-label="Learn how QuickList AI works">
+                See How It Works
+              </button>
+            </div>
+            <div style="
+                  margin-top: 2rem;
+                  display: flex;
+                  gap: 2rem;
+                  flex-wrap: wrap;
+                  align-items: center;
+                ">
+              <div style="display: flex; align-items: center; gap: 0.5rem">
+                <span style="color: var(--success); font-weight: 600"><svg width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2"
+                    style="display: inline-block; vertical-align: middle">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg></span>
+                <span style="color: var(--text-secondary)">No credit card required</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem">
+                <span style="color: var(--success); font-weight: 600"><svg width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2"
+                    style="display: inline-block; vertical-align: middle">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg></span>
+                <span style="color: var(--text-secondary)">5 free listings per month</span>
+              </div>
+
+            </div>
+          </div>
+          <div class="hero-image-container">
+            <div id="hero-animation" aria-label="Animated illustration of an online marketplace"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- How It Works -->
+      <section class="section" aria-labelledby="how-it-works-title">
+        <div class="container">
+          <h2 id="how-it-works-title" class="section-title">How QuickList AI Works</h2>
+          <p style="
+                text-align: center;
+                color: var(--text-secondary);
+                font-size: 1.1rem;
+                max-width: 800px;
+                margin: 0 auto 3rem;
+              ">
+            Three simple steps from photo to professional listing. No writing, no research, no
+            hassle.
+          </p>
+          <div class="steps">
+            <div class="step">
+              <div id="step1-animation" class="step-image"
+                style="border-radius: 12px; overflow: hidden; background: var(--bg-tertiary)"
+                aria-label="Animated illustration of scanning and photographing items"></div>
+              <div class="step-number">1</div>
+              <h3>Upload Your Photos</h3>
+              <p>
+                Take photos of your item from different angles. Our AI reads labels, tags, and
+                codes automatically. No need for perfect lighting or backgrounds.
+              </p>
+            </div>
+            <div class="step">
+              <div id="step2-animation" class="step-image"
+                style="border-radius: 12px; overflow: hidden; background: var(--bg-tertiary)"
+                aria-label="Animated illustration of AI processing in real-time"></div>
+              <div class="step-number">2</div>
+              <h3>AI Generates Everything</h3>
+              <p>
+                Our AI identifies your product, writes the description, suggests competitive
+                prices, and finds the perfect keywords. All in seconds.
+              </p>
+            </div>
+            <div class="step">
+              <div id="step3-animation" class="step-image"
+                style="border-radius: 12px; overflow: hidden; background: var(--bg-tertiary)"
+                aria-label="Animated illustration of completed listing"></div>
+              <div class="step-number">3</div>
+              <h3>Download & List</h3>
+              <p>
+                Review your professional listing, make any edits, then download everything in a
+                ZIP file. Copy and paste to Vinted, eBay, or Gumtree.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section class="section" aria-labelledby="features-title">
+        <div class="container">
+          <h2 id="features-title" class="section-title">
+            Everything You Need to Sell Successfully
+          </h2>
+          <p style="
+                text-align: center;
+                color: var(--text-secondary);
+                font-size: 1.1rem;
+                max-width: 800px;
+                margin: 0 auto 3rem;
+              ">
+            Tools that save you time listing items for sale. Used by UK sellers across the UK.
+          </p>
+          <div class="bento-grid">
+            <div class="bento-cell bento-span-4 bento-cream">
+              <h3>AI-Powered Descriptions</h3>
+              <p>Marketplace-ready descriptions in the style buyers respond to.</p>
+            </div>
+            <div class="bento-cell bento-span-4 bento-green">
+              <h3>Optimized Titles & Categories</h3>
+              <p>Perfect titles and categories for maximum visibility.</p>
+            </div>
+            <div class="bento-cell bento-span-4 bento-teal">
+              <h3>Data-Driven Pricing</h3>
+              <p>Price suggestions based on recent sold listings on eBay and Vinted.</p>
+            </div>
+            <div class="bento-cell bento-span-6 bento-pink">
+              <h3>Professional Images</h3>
+              <p>Generate hero images, enhance photos, and fix blur.</p>
+            </div>
+            <div class="bento-cell bento-span-6 bento-lavender">
+              <h3>Keywords & Hashtags</h3>
+              <p>Boost your listing's reach with optimized keywords.</p>
+            </div>
+            <div class="bento-cell bento-span-4 bento-yellow">
+              <h3>Honest Flaw Detection</h3>
+              <p>Automatically identify and list any imperfections.</p>
+            </div>
+            <div class="bento-cell bento-span-4 bento-cream">
+              <h3>Stock Image Finder</h3>
+              <p>Automatically find official manufacturer product images.</p>
+            </div>
+            <div class="bento-cell bento-span-4 bento-green">
+              <h3>Multi-Platform Support</h3>
+              <p>Generate listings optimized for Vinted, eBay, and Gumtree.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Target Audience -->
+      <section class="section" aria-labelledby="target-audience-title">
+        <div class="container">
+          <h2 id="target-audience-title" class="section-title">
+            Perfect For Every Type of Seller
+          </h2>
+          <p style="
+                text-align: center;
+                color: var(--text-secondary);
+                font-size: 1.1rem;
+                max-width: 800px;
+                margin: 0 auto 3rem;
+              ">
+            Whether you're decluttering your wardrobe or running a resale business, QuickList AI
+            saves you time and helps you sell more.
+          </p>
+          <div class="bento-grid">
+            <div class="bento-cell bento-span-6 bento-pink">
+              <img src="/images/stock-mother-daughter.jpg" alt="Mother and daughter sorting through clothes together"
+                style="
+                    width: 100%;
+                    height: 200px;
+                    object-fit: cover;
+                    border-radius: 8px;
+                    margin-bottom: 1.5rem;
+                  " loading="lazy" />
+              <h3>Casual Declutterers</h3>
+              <ul style="list-style: none; padding: 0">
+                <li>Got stuff to sell but hate writing descriptions</li>
+                <li>Want to make money without the hassle</li>
+                <li>Need quick, professional listings</li>
+                <li>Selling on Vinted, eBay, or Gumtree</li>
+              </ul>
+            </div>
+            <div class="bento-cell bento-span-6 bento-teal">
+              <img src="/images/stock-wardrobe.jpg" alt="Colorful clothes hanging on a rail ready to sell" style="
+                    width: 100%;
+                    height: 200px;
+                    object-fit: cover;
+                    border-radius: 8px;
+                    margin-bottom: 1.5rem;
+                  " loading="lazy" />
+              <h3>Power Sellers & eBay Businesses</h3>
+              <ul style="list-style: none; padding: 0">
+                <li>Process hundreds of items efficiently</li>
+                <li>Maintain consistent quality across listings</li>
+                <li>Save hours of manual work</li>
+                <li>Scale your business faster</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="section" aria-labelledby="faq-title">
+        <div class="container">
+          <h2 id="faq-title" class="section-title">Frequently Asked Questions</h2>
+          <p style="
+                text-align: center;
+                color: var(--text-secondary);
+                font-size: 1.1rem;
+                max-width: 800px;
+                margin: 0 auto 3rem;
+              ">
+            Everything you need to know about QuickList AI
+          </p>
+          <div class="bento-grid">
+            <div class="bento-cell bento-span-6 bento-cream">
+              <h3>Is it free?</h3>
+              <p>
+                Yes! We offer a free tier with generous limits. Upgrade for unlimited listings and
+                premium features.
+              </p>
+            </div>
+            <div class="bento-cell bento-span-6 bento-green">
+              <h3>Which marketplaces are supported?</h3>
+              <p>Currently Vinted, eBay, and Gumtree. More coming soon!</p>
+            </div>
+            <div class="bento-cell bento-span-12 bento-lavender">
+              <h3>How accurate is the AI?</h3>
+              <p>Very! But you can always edit any field before posting your listing.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Final CTA -->
+      <section class="section" aria-label="Call to action">
+        <div class="container">
+          <div class="bento-grid">
+            <div class="bento-cell bento-span-12 bento-yellow" style="text-align: center; padding: 4rem 2rem;">
+              <h2 style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--dark)">
+                Ready to Turn Clutter into Cash?
+              </h2>
+              <p style="
+                    font-size: 1.25rem;
+                    color: rgba(29, 29, 27, 0.8);
+                    margin-bottom: 2rem;
+                    max-width: 600px;
+                    margin-left: auto;
+                    margin-right: auto;
+                  ">
+                Upload a photo and see what our AI generates. Takes about a minute to try.
+              </p>
+              <button class="btn" style="
+                    font-size: 1.1rem;
+                    padding: 1rem 2rem;
+                    background: var(--dark);
+                    color: var(--cream);
+                  " onclick="app.showAuthModal()" aria-label="Start creating listings with QuickList AI">
+                Get Started Now - It's Free
+              </button>
+              <p style="margin-top: 1.5rem; color: rgba(29, 29, 27, 0.6); font-size: 0.9rem">
+                No credit card required • 5 free listings per month • Cancel anytime
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Photo Tips Page -->
+    <div id="photoTipsView" class="hidden">
+      <section class="section">
+        <div class="container">
+          <h1 class="section-title">Photography Tips for Better Listings</h1>
+          <div class="bento-grid">
+            <div class="bento-cell bento-span-6 bento-cream">
+              <h3>Use Natural Light</h3>
+              <p>
+                Shoot near a window during daytime. Natural light makes colors accurate and
+                reduces harsh shadows. Avoid using flash—it creates unflattering reflections.
+              </p>
+            </div>
+            <div class="bento-cell bento-span-6 bento-teal">
+              <h3>Clean, Simple Background</h3>
+              <p>
+                Place items against a plain white or neutral background. This helps buyers focus
+                on the product and makes your listing look professional.
+              </p>
+            </div>
+            <div class="bento-cell bento-span-6 bento-pink">
+              <h3>Capture Tags & Labels</h3>
+              <p>
+                Include close-up shots of brand tags, size labels, and care instructions. This
+                builds trust and provides essential information.
+              </p>
+            </div>
+            <div class="bento-cell bento-span-6 bento-green">
+              <h3>Show All Angles</h3>
+              <p>
+                Take multiple photos from different angles. Front, back, sides, and details. More
+                photos = more buyer confidence.
+              </p>
+            </div>
+            <div class="bento-cell bento-span-6 bento-lavender">
+              <h3>Highlight Flaws Honestly</h3>
+              <p>
+                Photograph any damage, stains, or wear. Honesty prevents returns and builds your
+                reputation as a trustworthy seller.
+              </p>
+            </div>
+            <div class="bento-cell bento-span-6 bento-yellow">
+              <h3>Keep It Steady</h3>
+              <p>
+                Use both hands or prop your phone against something stable. Blurry photos kill
+                sales faster than anything else.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Seller Checklist Page -->
+    <div id="checklistView" class="hidden">
+      <section class="section">
+        <div class="container">
+          <h1 class="section-title">Seller Checklist: Get Ready to List</h1>
+          <div class="bento-cell bento-cream" style="max-width: 800px; margin: 0 auto">
+            <h3>Before You Start</h3>
+            <ul style="list-style: none; padding: 0">
+              <li style="padding: 1rem 0; border-bottom: 1px solid var(--border-color)">
+                <strong>Clean Everything</strong><br />
+                <span style="color: var(--text-secondary)">Wash, wipe, or dust your items. Clean items sell faster and
+                  for more
+                  money.</span>
+              </li>
+              <li style="padding: 1rem 0; border-bottom: 1px solid var(--border-color)">
+                <strong>Sort Into Batches</strong><br />
+                <span style="color: var(--text-secondary)">Group similar items together (e.g., all clothing, all
+                  electronics) for
+                  efficient photographing.</span>
+              </li>
+              <li style="padding: 1rem 0; border-bottom: 1px solid var(--border-color)">
+                <strong>Set Up Your 'Studio'</strong><br />
+                <span style="color: var(--text-secondary)">Find a well-lit spot with a clean background. Keep it
+                  simple.</span>
+              </li>
+              <li style="padding: 1rem 0; border-bottom: 1px solid var(--border-color)">
+                <strong>Gather Supplies</strong><br />
+                <span style="color: var(--text-secondary)">Phone, charging cable, measuring tape (for dimensions), and
+                  packaging
+                  materials.</span>
+              </li>
+              <li style="padding: 1rem 0; border-bottom: 1px solid var(--border-color)">
+                <strong>Research Competitors</strong><br />
+                <span style="color: var(--text-secondary)">Quick browse of similar items on your marketplace. Get a
+                  sense of pricing and
+                  descriptions.</span>
+              </li>
+              <li style="padding: 1rem 0">
+                <strong>Plan Your Shipping</strong><br />
+                <span style="color: var(--text-secondary)">Know your packaging options and shipping costs before
+                  listing.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Pricing Page -->
+    <div id="pricingView" class="hidden">
+      <section class="section">
+        <div class="container">
+          <h1 class="section-title">Simple, Transparent Pricing</h1>
+          <div class="pricing-grid">
+            <div class="pricing-card">
+              <div class="pricing-tier">Starter</div>
+              <div class="pricing-price">Free</div>
+              <div class="pricing-period">Forever</div>
+              <ul class="pricing-features">
+                <li>5 listings per month</li>
+                <li>AI descriptions</li>
+                <li>Basic price suggestions</li>
+                <li>Standard image tools</li>
+              </ul>
+              <button class="btn btn-secondary" onclick="app.showAuthModal()" aria-label="Get started with QuickList">
+                Get Started
+              </button>
+            </div>
+            <div class="pricing-card">
+              <div class="pricing-tier">Casual</div>
+              <div class="pricing-price">£4.99</div>
+              <div class="pricing-period">per month</div>
+              <ul class="pricing-features">
+                <li>50 listings per month</li>
+                <li>Advanced AI descriptions</li>
+                <li>Market data pricing</li>
+                <li>Image enhancement</li>
+                <li>Keywords & hashtags</li>
+              </ul>
+              <button class="btn btn-secondary" onclick="app.handlePlanSelection('casual', 'price_casual')">
+                Choose Casual
+              </button>
+            </div>
+            <div class="pricing-card featured">
+              <div class="pricing-tier">Pro</div>
+              <div class="pricing-price">£9.99</div>
+              <div class="pricing-period">per month</div>
+              <ul class="pricing-features">
+                <li>200 listings per month</li>
+                <li>Premium AI descriptions</li>
+                <li>Real-time market data</li>
+                <li>Hero image generation</li>
+                <li>Blur detection & fixing</li>
+                <li>Batch processing</li>
+              </ul>
+              <button class="btn btn-primary" onclick="app.handlePlanSelection('pro', 'price_pro')">
+                Choose Pro
+              </button>
+            </div>
+            <div class="pricing-card">
+              <div class="pricing-tier">Max</div>
+              <div class="pricing-price">£19.99</div>
+              <div class="pricing-period">per month</div>
+              <ul class="pricing-features">
+                <li>Unlimited listings</li>
+                <li>Everything in Pro</li>
+                <li>Priority processing</li>
+                <li>API access</li>
+                <li>Custom integrations</li>
+                <li>Priority support</li>
+              </ul>
+              <button class="btn btn-secondary" onclick="app.handlePlanSelection('max', 'price_max')">
+                Choose Max
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- App Views -->
+  <main id="appView" class="hidden">
+    <!-- New Item View -->
+    <div id="newItemView">
+      <!-- Top Section: Upload Photos & Listing Details Side-by-Side -->
+      <div class="input-panels-container">
+        <!-- Left Panel: Upload Photos -->
+        <div class="input-panel">
+          <div class="bento-cell">
+            <h2 class="mb-3">Upload Photos</h2>
+            <div class="image-uploader" id="imageUploader">
+              <div class="image-uploader-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V8C1 7.46957 1.21071 6.96086 1.58579 6.58579C1.96086 6.21071 2.46957 6 3 6H7L9 3H15L17 6H21C21.5304 6 22.0391 6.21071 22.4142 6.58579C22.7893 6.96086 23 7.46957 23 8V19Z"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+              </div>
+              <p><strong>Click to upload or use camera</strong></p>
+              <p style="color: var(--text-muted); font-size: 0.875rem">
+                Supports multiple images
+              </p>
+            </div>
+            <input type="file" id="imageInput" accept="image/*" multiple style="display: none" />
+
+            <!-- Image Enhancement Toggle -->
+            <div class="form-group" style="margin-top: 1rem">
+              <label class="form-label" style="display: flex; align-items: center; justify-content: space-between">
+                <span>
+                  Image Enhancement
+                  <small style="color: var(--text-muted); font-weight: normal; margin-left: 0.5rem">
+                    (Pro & Max only)
+                  </small>
+                </span>
+                <label class="switch" style="margin: 0">
+                  <input type="checkbox" id="imageEnhancement" onchange="app.toggleImageEnhancement(this.checked)"
+                    disabled />
+                  <span class="slider"></span>
+                </label>
+              </label>
+              <small style="
+                    color: var(--text-muted);
+                    font-size: 0.85rem;
+                    display: block;
+                    margin-top: 0.5rem;
+                  ">
+                <span id="enhancementDescription">
+                  AI-powered image improvements, auto-tagging, OCR, and quality analysis
+                </span>
+              </small>
+            </div>
+
+            <div class="image-grid" id="imageGrid"></div>
+          </div>
+        </div>
+
+        <!-- Right Panel: Listing Details -->
+        <div class="input-panel">
+          <div class="bento-cell">
+            <h2 class="mb-3">Listing Details</h2>
+            <div class="form-group">
+              <label class="form-label" for="itemHint">Item Name or Model
+                <small style="color: var(--text-muted)">(Optional)</small></label>
+              <div class="input-with-icon">
+                <input type="text" class="form-input" id="itemHint"
+                  placeholder="e.g., 'Nike Air Max 90', 'iPhone 12 Pro', 'Vintage Levi's 501'" />
+                <button class="voice-input-button" type="button" aria-pressed="false"
+                  onclick="app.toggleVoiceInput('itemHint', this)">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
+                </button>
+              </div>
+              <small style="color: var(--text-muted); font-size: 0.85rem">Any info to help the AI identify your
+                product</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="conditionInfo">Further Info <small
+                  style="color: var(--text-muted)">(Optional)</small></label>
+              <div class="input-with-icon">
+                <input type="text" class="form-input" id="conditionInfo"
+                  placeholder="E.g., missing box, small hole, brand new, no cable" />
+                <button class="voice-input-button" type="button" aria-pressed="false"
+                  onclick="app.toggleVoiceInput('conditionInfo', this)">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Label Scanner <small style="color: var(--text-muted)">(Optional)</small></label>
+              <button class="btn btn-secondary" type="button" onclick="app.showLabelScanner()" style="width: 100%">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"
+                  style="display: inline-block; vertical-align: middle; margin-right: 8px">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                Scan Label to Extract Product Info
+              </button>
+            </div>
+            <!-- Target Platform Selector -->
+            <div class="form-group" style="margin-bottom: 1rem">
+              <label class="form-label" for="platformSelectInput">
+                <span>Target Platform</span>
+              </label>
+              <select class="form-input" id="platformSelectInput" style="width: 100%">
+                <option value="vinted">Vinted</option>
+                <option value="ebay">eBay</option>
+                <option value="gumtree">Gumtree</option>
+                <option value="depop">Depop</option>
+                <option value="facebook">Facebook Marketplace</option>
+              </select>
+              <small style="
+                    color: var(--text-muted);
+                    font-size: 0.85rem;
+                    display: block;
+                    margin-top: 0.5rem;
+                  ">
+                AI will optimize title length and keywords for your chosen platform
+              </small>
+            </div>
+            <!-- Listing Personality Dropdown -->
+            <div class="form-group" style="margin-bottom: 1rem">
+              <label class="form-label" style="display: flex; align-items: center; justify-content: space-between">
+                <span>Listing Style</span>
+              </label>
+              <select class="form-input" id="personalitySelect" style="width: 100%">
+                <option value="standard" data-tier="free">Standard</option>
+                <option value="expert" data-tier="free">Expert (Professional)</option>
+                <option value="punchy" data-tier="pro" disabled>🔒 Punchy Seller (Pro)</option>
+                <option value="luxe" data-tier="pro" disabled>🔒 Luxe Boutique (Pro)</option>
+                <option value="streetwear" data-tier="pro" disabled>
+                  🔒 Streetwear/Hype (Pro)
+                </option>
+                <option value="delboy" data-tier="pro" disabled>
+                  🔒 Cheeky Market Trader (Pro)
+                </option>
+              </select>
+              <small style="
+                    color: var(--text-muted);
+                    font-size: 0.85rem;
+                    display: block;
+                    margin-top: 0.5rem;
+                  ">
+                <span id="personalityDescription">Choose the tone and style for your listing description</span>
+              </small>
+            </div>
+            <button class="btn btn-primary" id="generateBtn" style="width: 100%" disabled>
+              Generate Listing
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Section: Generated Listing (Full Width) -->
+      <div class="generated-listing-container">
+        <div class="output-area" id="outputArea">
+          <div id="initialState" class="empty-state">
+            <div class="empty-state-icon">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+                <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+                <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+                <path d="M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </div>
+            <h3>Your generated listing will appear here</h3>
+            <p>Upload an image and click "Generate" to get started</p>
+          </div>
+
+          <div id="loadingState" class="hidden">
+            <h2 class="mb-3">Generating your listing...</h2>
+            <div id="progressSteps" role="status" aria-live="polite" aria-label="Generation progress"
+              style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1rem">
+              <div class="progress-step" data-step="1"
+                style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5">
+                <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex"><svg
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg></span>
+                <span class="progress-text" style="color: var(--text-primary)">Analyzing images...</span>
+              </div>
+              <div class="progress-step" data-step="2"
+                style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5">
+                <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex"><svg
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg></span>
+                <span class="progress-text" style="color: var(--text-primary)">Identifying product...</span>
+              </div>
+              <div class="progress-step" data-step="3"
+                style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5">
+                <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex"><svg
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg></span>
+                <span class="progress-text" style="color: var(--text-primary)">Researching prices...</span>
+              </div>
+              <div class="progress-step" data-step="4"
+                style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5">
+                <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex"><svg
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg></span>
+                <span class="progress-text" style="color: var(--text-primary)">Generating description...</span>
+              </div>
+              <div class="progress-step" data-step="5"
+                style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5">
+                <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex"><svg
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg></span>
+                <span class="progress-text" style="color: var(--text-primary)">Finalizing listing...</span>
+              </div>
+            </div>
+            <div style="margin-top: 2rem; display: flex; justify-content: center">
+              <button id="cancelGenerationBtn" class="btn btn-secondary" onclick="app.cancelGeneration()"
+                style="display: none">
+                Cancel Generation
+              </button>
+            </div>
+            <div class="skeleton skeleton-text" style="width: 60%; margin-top: 1rem"></div>
+            <div class="skeleton skeleton-text" style="width: 80%"></div>
+            <div class="skeleton skeleton-text" style="width: 70%"></div>
+          </div>
+
+          <div id="resultState" class="hidden">
+            <div class="output-header">
+              <h2>Generated Listing</h2>
+              <div class="output-actions" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap">
+                <span id="autoSaveIndicator" style="
+                      color: var(--text-muted);
+                      font-size: 0.875rem;
+                      opacity: 0;
+                      transition: opacity 0.3s;
+                    " aria-live="polite">Saved</span>
+                <button class="btn btn-secondary btn-small" type="button" onclick="app.saveListing()">
+                  Save
+                </button>
+                <button class="btn btn-secondary btn-small" type="button" onclick="app.shareListing()">
+                  Share
+                </button>
+                <button class="btn btn-primary btn-small" type="button" onclick="app.copyAll()">
+                  Copy All
+                </button>
+              </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 1.5rem">
+              <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center">
+                <div style="flex: 1; min-width: 220px">
+                  <label class="form-label" for="platformSelect">Format for platform</label>
+                  <select id="platformSelect" class="form-input">
+                    <option value="vinted">Vinted</option>
+                    <option value="ebay">eBay</option>
+                    <option value="gumtree">Gumtree</option>
+                    <option value="depop">Depop</option>
+                    <option value="facebook">Facebook Marketplace</option>
+                  </select>
+                </div>
+                <div style="flex: 2; min-width: 240px; color: var(--text-muted); font-size: 0.9rem">
+                  Switch platforms after generation to adjust title length, description tone, and
+                  hashtag style.
+                </div>
+              </div>
+            </div>
+
+            <div class="collapsible-section expanded" data-section="media">
+              <div class="collapsible-header" role="button" tabindex="0">
+                <div class="collapsible-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="display: inline-block; vertical-align: middle; margin-right: 4px">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                  </svg>Images & Media
+                  <span id="reviewImageCount" style="font-size: 0.8rem; color: var(--text-muted)">0 photos</span>
+                </div>
+                <div class="collapsible-icon">⌃</div>
+              </div>
+              <div class="collapsible-content">
+                <div class="collapsible-inner">
+                  <div class="review-images" id="reviewImages"></div>
+                  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem">
+                    <button class="btn btn-secondary btn-small" type="button" onclick="app.openCamera()">
+                      Add photo
+                    </button>
+                    <button class="btn btn-secondary btn-small" type="button"
+                      onclick="document.getElementById('imageInput').click()">
+                      Upload
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="collapsible-section expanded" data-section="details">
+              <div class="collapsible-header" role="button" tabindex="0">
+                <div class="collapsible-title">📋 Title & Details</div>
+                <div class="collapsible-icon">⌃</div>
+              </div>
+              <div class="collapsible-content">
+                <div class="collapsible-inner">
+                  <div class="field-group">
+                    <div class="field-header">
+                      <label class="form-label" for="outputTitle">Item Title</label>
+                      <button class="btn btn-secondary btn-small" type="button" onclick="app.copyField('title')"
+                        aria-label="Copy title">
+                        Copy
+                      </button>
+                    </div>
+                    <input type="text" class="form-input" id="outputTitle" maxlength="80"
+                      aria-describedby="titleCharCount titleError" aria-invalid="false" />
+                    <small id="titleCharCount" style="
+                          color: var(--text-muted);
+                          font-size: 0.875rem;
+                          display: block;
+                          margin-top: 0.25rem;
+                        ">0/80 characters</small>
+                    <small id="titleError" class="field-error" style="
+                          display: none;
+                          color: var(--error);
+                          font-size: 0.875rem;
+                          margin-top: 0.25rem;
+                        "></small>
+                  </div>
+                  <div class="field-group">
+                    <div class="field-header">
+                      <label class="form-label" for="outputBrand">Brand</label>
+                      <button class="btn btn-secondary btn-small" type="button" onclick="app.copyField('brand')"
+                        aria-label="Copy brand">
+                        Copy
+                      </button>
+                    </div>
+                    <input type="text" class="form-input" id="outputBrand" aria-describedby="brandError"
+                      aria-invalid="false" />
+                    <small id="brandError" class="field-error" style="
+                          display: none;
+                          color: var(--error);
+                          font-size: 0.875rem;
+                          margin-top: 0.25rem;
+                        "></small>
+                  </div>
+                  <div class="field-group">
+                    <div class="field-header">
+                      <label class="form-label" for="outputCategory">Category</label>
+                      <button class="btn btn-secondary btn-small" type="button" onclick="app.copyField('category')"
+                        aria-label="Copy category">
+                        Copy
+                      </button>
+                    </div>
+                    <input type="text" class="form-input" id="outputCategory" aria-describedby="categoryError"
+                      aria-invalid="false" />
+                    <small id="categoryError" class="field-error" style="
+                          display: none;
+                          color: var(--error);
+                          font-size: 0.875rem;
+                          margin-top: 0.25rem;
+                        "></small>
+                  </div>
+                  <div class="field-group">
+                    <div class="field-header">
+                      <label class="form-label" for="outputCondition">Condition</label>
+                      <button class="btn btn-secondary btn-small" type="button" onclick="app.copyField('condition')">
+                        Copy
+                      </button>
+                    </div>
+                    <input type="text" class="form-input" id="outputCondition" />
+                  </div>
+                  <div id="damageSummary" style="
+                        background: var(--accent-indigo-light);
+                        border-radius: 12px;
+                        padding: 1rem;
+                        display: none;
+                        margin-top: 1rem;
+                      "></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="collapsible-section expanded" data-section="description">
+              <div class="collapsible-header" role="button" tabindex="0">
+                <div class="collapsible-title">📝 Description</div>
+                <div class="collapsible-icon">⌃</div>
+              </div>
+              <div class="collapsible-content">
+                <div class="collapsible-inner">
+                  <div class="field-group">
+                    <div class="field-header">
+                      <label class="form-label" for="outputDescription">Description</label>
+                      <button class="btn btn-secondary btn-small" type="button" onclick="app.copyField('description')"
+                        aria-label="Copy description">
+                        Copy
+                      </button>
+                    </div>
+                    <textarea class="form-input" id="outputDescription" rows="6" maxlength="1000"
+                      aria-describedby="descCharCount descError" aria-invalid="false"></textarea>
+                    <small id="descCharCount" style="
+                          color: var(--text-muted);
+                          font-size: 0.875rem;
+                          display: block;
+                          margin-top: 0.25rem;
+                        ">0/1000 characters</small>
+                    <small id="descError" class="field-error" style="
+                          display: none;
+                          color: var(--error);
+                          font-size: 0.875rem;
+                          margin-top: 0.25rem;
+                        "></small>
+                  </div>
+                  <div class="field-group">
+                    <div class="field-header">
+                      <label class="form-label">Keywords & Hashtags</label>
+                      <button class="btn btn-secondary btn-small" type="button" onclick="app.regenerateKeywords()">
+                        Regenerate
+                      </button>
+                    </div>
+                    <div class="tags-container" id="keywordsTags"></div>
+                  </div>
+                  <div class="field-group">
+                    <label class="form-label">Sources</label>
+                    <ul class="sources-list" id="sourcesList"></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="collapsible-section expanded" data-section="pricing">
+              <div class="collapsible-header" role="button" tabindex="0">
+                <div class="collapsible-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="display: inline-block; vertical-align: middle; margin-right: 4px">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                  </svg>Pricing & Value
+                </div>
+                <div class="collapsible-icon">⌃</div>
+              </div>
+              <div class="collapsible-content">
+                <div class="collapsible-inner">
+                  <div class="field-group">
+                    <div class="field-header">
+                      <label class="form-label">RRP (Retail Price)</label>
+                      <button class="btn btn-secondary btn-small" type="button" onclick="app.copyField('rrp')">
+                        Copy
+                      </button>
+                    </div>
+                    <input type="text" class="form-input" id="outputRRP" />
+                  </div>
+                  <div class="field-group">
+                    <div class="field-header">
+                      <label class="form-label">Recommended Price</label>
+                      <button class="btn btn-secondary btn-small" type="button" onclick="app.copyField('price')">
+                        Copy
+                      </button>
+                    </div>
+                    <input type="text" class="form-input" id="outputPrice" />
+                  </div>
+                  <div class="field-group" id="pricingIntelligenceSection" style="display: none">
+                    <div class="pricing-intelligence-card" id="pricingIntelligenceCard"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Backup: Raw AI Output -->
+            <div class="collapsible-section" data-section="raw-output">
+              <div class="collapsible-header" role="button" tabindex="0">
+                <div class="collapsible-title">🛠️ Raw AI Output (Backup)</div>
+                <div class="collapsible-icon">⌄</div>
+              </div>
+              <div class="collapsible-content" style="display: none">
+                <div class="collapsible-inner">
+                  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem">
+                    If fields are empty, copy the text below manually.
+                  </p>
+                  <textarea id="rawOutput" class="form-textarea" rows="10" readonly
+                    style="font-family: monospace; font-size: 0.8rem"></textarea>
+                  <button class="btn btn-secondary btn-small" type="button" style="margin-top: 0.5rem"
+                    onclick="app.copyField('rawOutput')">
+                    Copy Raw Text
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="collapsible-section expanded" data-section="publish">
+              <div class="collapsible-header" role="button" tabindex="0">
+                <div class="collapsible-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="display: inline-block; vertical-align: middle; margin-right: 4px">
+                    <path d="M5 12h14"></path>
+                    <path d="m12 5 7 7-7 7"></path>
+                  </svg>Publish & Export
+                </div>
+                <div class="collapsible-icon">⌃</div>
+              </div>
+              <div class="collapsible-content">
+                <div class="collapsible-inner">
+                  <div class="field-group">
+                    <label class="form-label">Download Options</label>
+                    <div class="toggle-group">
+                      <span>Generate Hero Image</span>
+                      <label class="toggle-switch">
+                        <input type="checkbox" id="toggleHero" checked />
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                    <div class="toggle-group">
+                      <span>Get Stock Image
+                        <small style="color: var(--text-muted)">(Official product photos)</small></span>
+                      <label class="toggle-switch">
+                        <input type="checkbox" id="toggleStock" checked />
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                    <div class="toggle-group">
+                      <span>Auto-Enhance Photos</span>
+                      <label class="toggle-switch">
+                        <input type="checkbox" id="toggleEnhance" checked />
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                    <div class="toggle-group">
+                      <span>Fix Blurred Images</span>
+                      <label class="toggle-switch">
+                        <input type="checkbox" id="toggleBlur" checked />
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                  </div>
+                  <!-- Export Actions - Three Button Layout -->
+                  <div class="field-group export-actions"
+                    style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem">
+                    <!-- Download Dropdown -->
+                    <div class="dropdown-container">
+                      <button class="btn btn-primary dropdown-toggle" id="downloadBtn" type="button"
+                        onclick="app.toggleDropdown('downloadDropdown')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2" style="vertical-align: middle; margin-right: 4px">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="7 10 12 15 17 10"></polyline>
+                          <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span class="btn-text">Download</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2" style="vertical-align: middle; margin-left: 4px">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </button>
+                      <div class="dropdown-menu" id="downloadDropdown">
+                        <button class="dropdown-item" onclick="app.downloadZip(); app.closeDropdowns()">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                            </path>
+                          </svg>
+                          Download ZIP (all files)
+                        </button>
+                        <button class="dropdown-item" onclick="app.downloadImagesOnly(); app.closeDropdowns()">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                          </svg>
+                          Images only
+                        </button>
+                        <button class="dropdown-item" onclick="app.downloadTextOnly(); app.closeDropdowns()">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                          </svg>
+                          Text file only
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Copy Dropdown -->
+                    <div class="dropdown-container">
+                      <button class="btn btn-secondary dropdown-toggle" type="button"
+                        onclick="app.toggleDropdown('copyDropdown')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2" style="vertical-align: middle; margin-right: 4px">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <span class="btn-text">Copy</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2" style="vertical-align: middle; margin-left: 4px">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </button>
+                      <div class="dropdown-menu" id="copyDropdown">
+                        <button class="dropdown-item" onclick="app.copyAll(); app.closeDropdowns()">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                          Copy all (formatted)
+                        </button>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item"
+                          onclick="app.copyField('title'); app.closeDropdowns()">Title</button>
+                        <button class="dropdown-item"
+                          onclick="app.copyField('description'); app.closeDropdowns()">Description</button>
+                        <button class="dropdown-item"
+                          onclick="app.copyField('price'); app.closeDropdowns()">Price</button>
+                        <button class="dropdown-item"
+                          onclick="app.copyField('keywords'); app.closeDropdowns()">Keywords/Tags</button>
+                      </div>
+                    </div>
+
+                    <!-- Share Dropdown -->
+                    <div class="dropdown-container">
+                      <button class="btn btn-secondary dropdown-toggle" type="button"
+                        onclick="app.toggleDropdown('shareDropdown')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2" style="vertical-align: middle; margin-right: 4px">
+                          <circle cx="18" cy="5" r="3"></circle>
+                          <circle cx="6" cy="12" r="3"></circle>
+                          <circle cx="18" cy="19" r="3"></circle>
+                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                        <span class="btn-text">Share</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2" style="vertical-align: middle; margin-left: 4px">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </button>
+                      <div class="dropdown-menu" id="shareDropdown">
+                        <button class="dropdown-item" onclick="app.shareNative(); app.closeDropdowns()"
+                          id="nativeShareBtn">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                            <polyline points="16 6 12 2 8 6"></polyline>
+                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                          </svg>
+                          Share via...
+                        </button>
+                        <button class="dropdown-item" onclick="app.emailListing(); app.closeDropdowns()">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                            </path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                          </svg>
+                          Email to me
+                        </button>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item" onclick="app.openInPlatform('ebay'); app.closeDropdowns()">
+                          Open in eBay
+                        </button>
+                        <button class="dropdown-item" onclick="app.openInPlatform('vinted'); app.closeDropdowns()">
+                          Open in Vinted
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Mobile: Stack buttons vertically -->
+                  <style>
+                    @media (max-width: 480px) {
+                      .export-actions {
+                        grid-template-columns: 1fr !important;
+                      }
+
+                      .export-actions .btn-text {
+                        display: inline !important;
+                      }
+                    }
+
+                    .dropdown-container {
+                      position: relative;
+                    }
+
+                    .dropdown-toggle {
+                      width: 100%;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      gap: 2px;
+                    }
+
+                    .dropdown-menu {
+                      display: none;
+                      position: absolute;
+                      top: 100%;
+                      left: 0;
+                      right: 0;
+                      min-width: 180px;
+                      background: var(--card-bg, #1a1a2e);
+                      border: 1px solid var(--border-color, #333);
+                      border-radius: 8px;
+                      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                      z-index: 1000;
+                      margin-top: 4px;
+                      padding: 4px 0;
+                    }
+
+                    .dropdown-menu.show {
+                      display: block;
+                    }
+
+                    .dropdown-item {
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                      width: 100%;
+                      padding: 10px 14px;
+                      border: none;
+                      background: none;
+                      color: var(--text-color, #fff);
+                      font-size: 14px;
+                      text-align: left;
+                      cursor: pointer;
+                      transition: background 0.15s;
+                    }
+
+                    .dropdown-item:hover {
+                      background: var(--hover-bg, rgba(255, 255, 255, 0.1));
+                    }
+
+                    .dropdown-divider {
+                      height: 1px;
+                      background: var(--border-color, #333);
+                      margin: 4px 0;
+                    }
+                  </style>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Saved Items View -->
+    <div id="savedItemsView" class="hidden" style="padding: 0 1rem;">
+      <div class="container section">
+        <h1 class="section-title">Saved Items</h1>
+
+        <!-- Search and Filter Bar -->
+        <div class="card" style="margin-bottom: 2rem; padding: 1.5rem">
+          <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center">
+            <!-- Search Input -->
+            <div style="flex: 1; min-width: 200px">
+              <label for="savedItemsSearch" class="form-label"
+                style="display: block; margin-bottom: 0.5rem; font-weight: 500">Search</label>
+              <input type="text" id="savedItemsSearch" class="form-input"
+                placeholder="Search by title, brand, or category..." aria-label="Search saved items"
+                oninput="app.filterSavedItems()" />
+            </div>
+
+            <!-- Platform Filter -->
+            <div style="min-width: 150px">
+              <label for="savedItemsPlatformFilter" class="form-label"
+                style="display: block; margin-bottom: 0.5rem; font-weight: 500">Platform</label>
+              <select id="savedItemsPlatformFilter" class="form-input" aria-label="Filter by platform"
+                onchange="app.filterSavedItems()">
+                <option value="">All Platforms</option>
+                <option value="vinted">Vinted</option>
+                <option value="ebay">eBay</option>
+                <option value="gumtree">Gumtree</option>
+              </select>
+            </div>
+
+            <!-- Sort Filter -->
+            <div style="min-width: 150px">
+              <label for="savedItemsSort" class="form-label"
+                style="display: block; margin-bottom: 0.5rem; font-weight: 500">Sort By</label>
+              <select id="savedItemsSort" class="form-input" aria-label="Sort saved items"
+                onchange="app.filterSavedItems()">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="title">Title A-Z</option>
+                <option value="brand">Brand A-Z</option>
+              </select>
+            </div>
+
+            <!-- Clear Filters Button -->
+            <div style="align-self: flex-end">
+              <button class="btn btn-secondary" onclick="app.clearSavedItemsFilters()" aria-label="Clear all filters">
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <!-- Results Count -->
+          <div id="savedItemsCount" style="margin-top: 1rem; color: var(--text-muted); font-size: 0.875rem"></div>
+        </div>
+
+        <div class="saved-items-grid swipeable-list" id="savedItemsGrid">
+          <!-- Saved items will be populated here -->
+        </div>
+        <div id="loadMoreContainer" class="hidden" style="text-align: center; margin: 2rem 0">
+          <button id="loadMoreBtn" class="btn btn-secondary" onclick="app.loadMoreListings()">
+            Load More
+          </button>
+        </div>
+        <div id="savedItemsEmpty" class="empty-state hidden">
+          <div class="empty-state-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path
+                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+              </path>
+            </svg>
+          </div>
+          <h3>No saved items yet</h3>
+          <p>Generate and save listings to see them here</p>
+        </div>
+        <div id="savedItemsNoResults" class="empty-state hidden">
+          <div class="empty-state-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+          </div>
+          <h3>No items match your search</h3>
+          <p>Try adjusting your filters or search terms</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages View -->
+    <div id="messagesView" class="hidden">
+      <div class="container section">
+        <h1 class="section-title">Unified Inbox</h1>
+        <div id="messagesList"></div>
+        <div id="messagesEmpty" class="empty-state hidden">
+          <div class="empty-state-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+          </div>
+          <h3>No messages right now</h3>
+          <p>Relax — we’ll notify you when buyers reach out.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings / Dashboard View -->
+    <div id="settingsView" class="hidden">
+      <div class="container section">
+        <h1 class="section-title">Dashboard & Settings</h1>
+
+        <!-- User Profile Section -->
+        <div class="card" style="max-width: 800px; margin: 0 auto 2rem">
+          <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem">Profile</h2>
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem">
+            <div id="userAvatar" style="
+                  width: 64px;
+                  height: 64px;
+                  border-radius: 50%;
+                  background: var(--accent-indigo);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 1.5rem;
+                  font-weight: 600;
+                  color: white;
+                ">
+              U
+            </div>
+            <div>
+              <div id="userName" style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem">
+                Loading...
+              </div>
+              <div id="userEmail" style="color: var(--text-muted); font-size: 0.875rem">
+                Loading...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subscription Section -->
+        <div class="card" style="max-width: 800px; margin: 0 auto 2rem">
+          <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+              ">
+            <h2 style="font-size: 1.25rem; margin: 0">Subscription</h2>
+            <span id="subscriptionStatus" class="badge" style="background: var(--success)">Active</span>
+          </div>
+
+          <div id="subscriptionInfo" style="margin-bottom: 1.5rem">
+            <div style="
+                  display: grid;
+                  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                  gap: 1.5rem;
+                  margin-bottom: 1.5rem;
+                ">
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.25rem">
+                  Current Plan
+                </div>
+                <div id="currentPlan" style="font-size: 1.25rem; font-weight: 600">Free</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.25rem">
+                  Status
+                </div>
+                <div id="planStatus" style="font-size: 1.125rem">Active</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.25rem">
+                  Renews
+                </div>
+                <div id="renewalDate" style="font-size: 1.125rem">Never</div>
+              </div>
+            </div>
+
+            <!-- Usage Tracking -->
+            <div style="
+                  background: var(--bg-secondary);
+                  padding: 1rem;
+                  border-radius: 8px;
+                  margin-bottom: 1.5rem;
+                ">
+              <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 0.5rem;
+                  ">
+                <span style="font-weight: 600">Listings This Month</span>
+                <span id="usageCount" style="font-weight: 600; color: var(--accent-indigo)">0</span>
+              </div>
+              <div style="
+                    background: var(--bg-tertiary);
+                    height: 8px;
+                    border-radius: 4px;
+                    overflow: hidden;
+                  ">
+                <div id="usageBar" style="
+                      background: var(--accent-indigo);
+                      height: 100%;
+                      width: 0%;
+                      transition: width 0.3s ease;
+                    "></div>
+              </div>
+              <div id="usageLimit" style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.5rem">
+                of 5 listings used
+              </div>
+            </div>
+
+            <!-- Plan Actions -->
+            <div id="planActions" style="display: flex; gap: 1rem; flex-wrap: wrap">
+              <button id="upgradeBtn" class="btn btn-primary" onclick="app.showUpgradeModal()">
+                Upgrade Plan
+              </button>
+              <button id="manageBillingBtn" class="btn btn-secondary" onclick="app.openBillingPortal()"
+                style="display: none">
+                Manage Billing
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Settings -->
+        <div class="card" style="max-width: 800px; margin: 0 auto 2rem">
+          <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem">Preferences</h2>
+          <div class="toggle-group">
+            <div>
+              <strong>Auto-Download ZIP</strong>
+              <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem">
+                Automatically download ZIP after generation
+              </p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settingAutoDownload" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile View -->
+    <div id="profileView" class="hidden">
+      <div class="container section">
+        <h1 class="section-title">Profile</h1>
+
+        <!-- User Profile Card -->
+        <div class="card" style="max-width: 600px; margin: 0 auto 2rem">
+          <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem">
+            <div id="profileAvatar" style="
+                  width: 80px;
+                  height: 80px;
+                  border-radius: 50%;
+                  background: var(--accent-indigo);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 2rem;
+                  font-weight: 600;
+                  color: white;
+                ">
+              U
+            </div>
+            <div style="flex: 1">
+              <div id="profileName" style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem">
+                Loading...
+              </div>
+              <div id="profileEmail" style="color: var(--text-muted)">Loading...</div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div style="display: flex; flex-direction: column; gap: 0.75rem">
+            <button class="btn btn-primary" onclick="app.navigateToApp('settings')" style="
+                  width: 100%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 0.5rem;
+                ">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor" style="width: 20px; height: 20px">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Account Settings
+            </button>
+            <button class="btn btn-secondary" onclick="app.signOut()" style="
+                  width: 100%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 0.5rem;
+                ">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor" style="width: 20px; height: 20px">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+              </svg>
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+        <!-- Account Information -->
+        <div class="card" style="max-width: 600px; margin: 0 auto">
+          <h2 style="margin-bottom: 1.5rem; font-size: 1.125rem; font-weight: 600">
+            Account Information
+          </h2>
+          <div style="display: flex; flex-direction: column; gap: 1rem">
+            <div style="
+                  display: flex;
+                  justify-content: space-between;
+                  padding: 0.75rem 0;
+                  border-bottom: 1px solid var(--border-color);
+                ">
+              <span style="color: var(--text-muted)">Member since</span>
+              <span id="memberSince" style="font-weight: 500">Loading...</span>
+            </div>
+            <div style="
+                  display: flex;
+                  justify-content: space-between;
+                  padding: 0.75rem 0;
+                  border-bottom: 1px solid var(--border-color);
+                ">
+              <span style="color: var(--text-muted)">Plan</span>
+              <span id="profilePlan" style="font-weight: 500">Loading...</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.75rem 0">
+              <span style="color: var(--text-muted)">Total listings created</span>
+              <span id="totalListings" style="font-weight: 500">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connected Platforms -->
+        <div class="card" style="max-width: 600px; margin: 2rem auto 0">
+          <h2 style="margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600">
+            Connected Platforms
+          </h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem">
+            Connect your marketplace accounts to post listings directly from QuickList
+          </p>
+
+          <!-- eBay Connection -->
+          <div style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 1rem;
+                background: var(--bg-primary);
+                border-radius: 12px;
+                margin-bottom: 1rem;
+              ">
+            <div style="display: flex; align-items: center; gap: 1rem">
+              <div style="
+                    width: 48px;
+                    height: 48px;
+                    background: #e53238;
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 700;
+                    color: white;
+                    font-size: 1.25rem;
+                  ">
+                e
+              </div>
+              <div>
+                <div style="font-weight: 600; margin-bottom: 0.25rem">eBay</div>
+                <div id="ebayStatus" style="font-size: 0.875rem; color: var(--text-muted)">
+                  Not connected
+                </div>
+              </div>
+            </div>
+            <button id="ebayConnectBtn" class="btn btn-primary" onclick="app.connectEbay()" style="min-width: 120px">
+              Connect
+            </button>
+          </div>
+
+          <!-- Other Platforms (Coming Soon) -->
+          <div style="
+                padding: 1rem;
+                background: var(--bg-primary);
+                border-radius: 12px;
+                opacity: 0.6;
+              ">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem">
+              <div style="
+                    width: 48px;
+                    height: 48px;
+                    background: var(--text-muted);
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-size: 1.5rem;
+                  ">
+                📱
+              </div>
+              <div>
+                <div style="font-weight: 600; margin-bottom: 0.25rem">
+                  Vinted, Depop, Facebook
+                </div>
+                <div style="font-size: 0.875rem; color: var(--text-muted)">
+                  Smart Clipboard - No connection needed
+                </div>
+              </div>
+            </div>
+            <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0">
+              These platforms use our Smart Clipboard feature. Just copy your listing and paste it
+              directly into the marketplace app or website.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upgrade Modal -->
+    <div id="upgradeModal" class="modal hidden">
+      <div class="modal-content" style="max-width: 600px">
+        <div style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 1.5rem;
+            ">
+          <h2 style="margin: 0">Upgrade Your Plan</h2>
+          <button class="modal-close" onclick="app.closeUpgradeModal()" aria-label="Close modal">
+            &times;
+          </button>
+        </div>
+        <div id="pricingPlans" style="display: grid; gap: 1rem">
+          <!-- Plans will be populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer id="marketingFooter" class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a class="nav-link" onclick="app.navigateTo('home')">Home</a>
+        <a class="nav-link" onclick="app.navigateTo('photoTips')">Photo Tips</a>
+        <a class="nav-link" onclick="app.navigateTo('checklist')">Seller Checklist</a>
+        <a class="nav-link" onclick="app.navigateTo('pricing')">Pricing</a>
+      </div>
+      <p style="color: var(--text-muted)">&copy; 2025 QuickList AI. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Clerk Sign-In Component Container -->
+  <div id="clerkSignInContainer"></div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmationModal" class="modal">
+    <div class="modal-content" style="max-width: 800px">
+      <div class="modal-header">
+        <h2 class="modal-title">Multiple Items Detected</h2>
+        <button class="modal-close" onclick="app.closeConfirmationModal()">×</button>
+      </div>
+      <p class="mb-3" style="color: var(--text-secondary)">
+        We found multiple potential items. Please select the one you want to list:
+      </p>
+      <div class="confirmation-grid" id="confirmationGrid"></div>
+      <button class="btn btn-primary mt-3" style="width: 100%" onclick="app.confirmSelection()">
+        Continue with Selected Item
+      </button>
+    </div>
+  </div>
+
+  <!-- Product Selection Modal (for uncertain matches) -->
+  <div id="productSelectionModal" class="modal">
+    <div class="modal-content" style="max-width: 900px">
+      <div class="modal-header">
+        <h2 class="modal-title">Select Product Match</h2>
+        <button class="modal-close" onclick="app.closeProductSelectionModal()">×</button>
+      </div>
+      <p class="mb-3" style="color: var(--text-secondary)">
+        We found multiple possible matches. Please select the one that best matches your item:
+      </p>
+      <div id="productAlternativesGrid" style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+          "></div>
+      <button class="btn btn-primary mt-3" style="width: 100%" onclick="app.confirmProductSelection()">
+        Use Selected Product
+      </button>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Delete Item?</h2>
+        <button class="modal-close" onclick="app.closeDeleteModal()">×</button>
+      </div>
+      <p style="color: var(--text-secondary)">
+        Are you sure you want to delete this saved item? This action cannot be undone.
+      </p>
+      <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem">
+        <button class="btn btn-secondary" style="flex: 1" onclick="app.closeDeleteModal()">
+          Cancel
+        </button>
+        <button class="btn btn-primary" style="flex: 1; background: var(--error)" onclick="app.confirmDelete()">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Success Modal -->
+  <div id="exportSuccessModal" class="modal hidden">
+    <div class="modal-content" style="max-width: 480px; text-align: center;">
+      <div style="padding: 2rem 1rem;">
+        <div
+          style="width: 64px; height: 64px; margin: 0 auto 1.5rem; background: var(--success, #10b981); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h2 style="color: var(--text-primary); margin-bottom: 0.75rem; font-size: 1.5rem;">Listing Ready!</h2>
+        <p id="exportSuccessMessage" style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;">
+          Your listing has been copied to clipboard. Now paste it into your marketplace.
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Open marketplace:</p>
+          <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+            <a href="https://www.vinted.co.uk/items/new" target="_blank" rel="noopener" class="btn btn-secondary"
+              style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+              Vinted
+            </a>
+            <a href="https://www.ebay.co.uk/sl/sell" target="_blank" rel="noopener" class="btn btn-secondary"
+              style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+              eBay
+            </a>
+            <a href="https://www.depop.com/products/create/" target="_blank" rel="noopener" class="btn btn-secondary"
+              style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+              Depop
+            </a>
+            <a href="https://www.gumtree.com/postad" target="_blank" rel="noopener" class="btn btn-secondary"
+              style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+              Gumtree
+            </a>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; justify-content: center;">
+          <button class="btn btn-primary" onclick="app.startNewListing()" style="flex: 1; max-width: 200px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              style="margin-right: 6px;">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Create Another
+          </button>
+          <button class="btn btn-secondary" onclick="app.closeExportSuccess()">
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barcode Scanner Modal -->
+  <div id="barcodeScannerModal" class="modal hidden">
+    <div class="modal-content" style="max-width: 640px">
+      <div class="modal-header">
+        <h2 class="modal-title">Scan Barcode</h2>
+        <button class="modal-close" onclick="app.closeBarcodeScanner()">×</button>
+      </div>
+      <div id="barcodeScannerView" style="
+            width: 100%;
+            min-height: 320px;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            overflow: hidden;
+          "></div>
+      <div style="margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem">
+        <span style="color: var(--text-muted)">Result:</span>
+        <strong id="barcodeResult"></strong>
+      </div>
+      <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.5rem">
+        <button class="btn btn-secondary" onclick="app.closeBarcodeScanner()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <!-- QuaggaJS for Barcode Scanning -->
+  <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
+
+  <!-- PWA Features -->
+  <script src="/pwa-features.js" defer></script>
+
+  <!-- Global Error Boundary -->
+  <script>
+    // Initialize Sentry-like error tracking (if SENTRY_DSN is configured)
+    const initErrorTracking = () => {
+      // Check if Sentry is configured (would be set via environment variable)
+      const SENTRY_DSN = null; // Set via build process or server-side config
+      if (SENTRY_DSN && typeof Sentry !== 'undefined') {
+        Sentry.init({ dsn: SENTRY_DSN });
+      }
+    };
+
+    // Global error handler for uncaught exceptions
+    window.onerror = function (message, source, lineno, colno, error) {
+      console.error('Global error caught:', {
+        message,
+        source,
+        lineno,
+        colno,
+        error: error ? error.stack : 'No error object',
+      });
+
+      // Send to Sentry if configured
+      if (typeof Sentry !== 'undefined' && Sentry.captureException) {
+        Sentry.captureException(error || new Error(message));
+      }
+
+      // Show user-friendly error message instead of blank screen
+      showGlobalErrorMessage(
+        'An unexpected error occurred. Please refresh the page and try again.'
+      );
+
+      // Don't let the error bubble up and break the page
+      return true;
+    };
+
+    // Handler for unhandled promise rejections
+    window.addEventListener('unhandledrejection', function (event) {
+      console.error('Unhandled promise rejection:', {
+        reason: event.reason,
+        promise: event.promise,
+      });
+
+      // Send to Sentry if configured
+      if (typeof Sentry !== 'undefined' && Sentry.captureException) {
+        Sentry.captureException(event.reason);
+      }
+
+      // Show user-friendly error message
+      showGlobalErrorMessage(
+        'An unexpected error occurred. Please refresh the page and try again.'
+      );
+
+      // Prevent default browser behavior
+      event.preventDefault();
+    });
+
+    // Function to show user-friendly error message
+    function showGlobalErrorMessage(message) {
+      // Check if toast system is available
+      if (window.app && typeof window.app.showToast === 'function') {
+        window.app.showToast(message, 'error');
+        return;
+      }
+
+      // Fallback: create a simple error notification
+      const existingError = document.getElementById('global-error-message');
+      if (existingError) {
+        existingError.remove();
+      }
+
+      const errorDiv = document.createElement('div');
+      errorDiv.id = 'global-error-message';
+      errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #dc2626;
+                color: white;
+                padding: 16px 24px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000;
+                max-width: 90%;
+                text-align: center;
+                font-family: system-ui, -apple-system, sans-serif;
+                font-size: 14px;
+                line-height: 1.5;
+            `;
+      errorDiv.innerHTML = `
+                <div style="margin-bottom: 8px;">${message}</div>
+                <button onclick="window.location.reload()" style="
+                    background: white;
+                    color: #dc2626;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    font-size: 13px;
+                ">Refresh Page</button>
+            `;
+      document.body.appendChild(errorDiv);
+
+      // Auto-dismiss after 10 seconds
+      setTimeout(() => {
+        if (errorDiv.parentNode) {
+          errorDiv.remove();
+        }
+      }, 10000);
+    }
+
+    // Initialize error tracking
+    initErrorTracking();
+  </script>
+
+  <!-- Clerk SDK -->
+  <script>
+    const loadClerkScript = (publishableKey) => {
+      if (window.Clerk) {
+        return Promise.resolve();
+      }
+      if (window.__clerkScriptPromise) {
+        return window.__clerkScriptPromise;
+      }
+      window.__clerkScriptPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
+        script.crossOrigin = 'anonymous';
+        script.async = true;
+        script.setAttribute('data-clerk-publishable-key', publishableKey);
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load Clerk JS'));
+        document.head.appendChild(script);
+      });
+      return window.__clerkScriptPromise;
+    };
+
+    // Load auth config from server and initialize Clerk
+    (async function initAuth() {
+      // Set a timeout to ensure authReady is dispatched even if initialization fails
+      const CLERK_INIT_TIMEOUT = 10000; // 10 seconds
+      let authReadyDispatched = false;
+
+      const dispatchAuthReady = () => {
+        if (!authReadyDispatched) {
+          authReadyDispatched = true;
+          window.dispatchEvent(new CustomEvent('authReady'));
+        }
+      };
+
+      // Fallback timeout
+      const timeoutId = setTimeout(() => {
+        console.warn('Clerk initialization timed out after 10 seconds, proceeding without Clerk');
+        dispatchAuthReady();
+      }, CLERK_INIT_TIMEOUT);
+
+      try {
+        const response = await fetch('/api/config/auth', {
+          signal: AbortSignal.timeout(5000), // 5 second timeout for config fetch
+        });
+        const config = await response.json();
+
+        // Initialize Clerk if enabled
+        if (config.clerk && config.clerk.enabled && config.clerk.publishableKey) {
+          // Remove trailing $ if present (might be a typo)
+          const publishableKey = config.clerk.publishableKey.replace(/\$$/, '');
+
+          // Load Clerk script with timeout
+          await Promise.race([
+            loadClerkScript(publishableKey),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Clerk script load timeout')), 8000)
+            ),
+          ]);
+
+          // Wait for Clerk to be available with retry logic
+          let retries = 0;
+          const maxRetries = 10;
+          while (!window.Clerk && retries < maxRetries) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            retries++;
+          }
+
+          if (!window.Clerk) {
+            throw new Error('Clerk SDK failed to load after retries');
+          }
+
+          // Load and initialize Clerk with proper waiting
+          await Promise.race([
+            window.Clerk.load({
+              publishableKey: publishableKey,
+              appearance: {
+                variables: {
+                  colorPrimary: '#FF7A5C',
+                  colorBackground: '#ffffff',
+                  colorInputBackground: '#f7f2ea',
+                  colorInputText: '#1a1a2e',
+                  colorText: '#1a1a2e',
+                  fontFamily: "'Manrope', system-ui, sans-serif",
+                  borderRadius: '12px',
+                },
+                elements: {
+                  card: {
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e5e0d8',
+                    borderRadius: '16px',
+                  },
+                  formButtonPrimary: {
+                    backgroundColor: '#6c5ce7',
+                    borderRadius: '10px',
+                  },
+                  footer: {
+                    display: 'none',
+                  },
+                },
+              },
+            }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Clerk.load() timeout')), 5000)
+            ),
+          ]);
+
+          // Store reference to Clerk instance
+          window.clerk = window.Clerk;
+
+          // Ensure Clerk is fully loaded before proceeding
+          if (!window.clerk.loaded) {
+            console.warn('Clerk loaded but not fully ready, waiting...');
+            await new Promise((resolve) => {
+              const checkLoaded = setInterval(() => {
+                if (window.clerk.loaded) {
+                  clearInterval(checkLoaded);
+                  resolve();
+                }
+              }, 100);
+              // Timeout after 2 seconds
+              setTimeout(() => {
+                clearInterval(checkLoaded);
+                resolve();
+              }, 2000);
+            });
+          }
+
+          // Listen for auth state changes
+          if (window.clerk && typeof window.clerk.addListener === 'function') {
+            window.clerk.addListener(({ user, session }) => {
+              if (user && session) {
+                window.dispatchEvent(
+                  new CustomEvent('clerkSignedIn', { detail: { user, session } })
+                );
+              } else {
+                window.dispatchEvent(new CustomEvent('clerkSignedOut'));
+              }
+            });
+          }
+
+          console.log('Clerk initialized successfully');
+          clearTimeout(timeoutId);
+          dispatchAuthReady();
+        } else {
+          console.log('Clerk not configured, using legacy auth');
+          clearTimeout(timeoutId);
+          dispatchAuthReady();
+        }
+      } catch (error) {
+        console.error('Failed to initialize auth:', error);
+        clearTimeout(timeoutId);
+        dispatchAuthReady();
+      }
+    })();
+  </script>
+  <script src="/js/app.js"></script>
+
+  <!-- Bottom Tab Navigation (Mobile Only) -->
+  <!-- Mobile Camera Interface -->
+  <div class="camera-container" id="cameraContainer" role="dialog" aria-label="Camera interface">
+    <div class="camera-controls-top">
+      <button class="btn-secondary" onclick="app.closeCamera()" aria-label="Close camera">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+        Close
+      </button>
+      <button class="btn-secondary" onclick="app.switchCamera()" aria-label="Switch camera">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 4v6h6"></path>
+          <path d="M23 20v-6h-6"></path>
+          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+        </svg>
+        Flip
+      </button>
+    </div>
+    <div class="camera-viewport">
+      <video class="camera-video" id="cameraVideo" autoplay playsinline></video>
+      <div class="camera-overlay"></div>
+      <div class="camera-hint" id="cameraHint">Center your item in the frame</div>
+      <div class="camera-quality-indicator" id="qualityIndicator">
+        <div class="quality-dot"></div>
+        <div class="quality-dot"></div>
+        <div class="quality-dot"></div>
+        <div class="quality-dot"></div>
+        <div class="quality-dot"></div>
+      </div>
+    </div>
+    <div class="camera-controls-bottom">
+      <button class="btn-secondary" onclick="app.openGallery()" aria-label="Open gallery">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        Gallery
+      </button>
+      <button class="btn-secondary" onclick="app.showLabelScanner()" aria-label="Scan label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+          <circle cx="12" cy="13" r="4"></circle>
+        </svg>
+        Scan Label
+      </button>
+      <button class="camera-capture-btn" onclick="app.capturePhoto()" aria-label="Capture photo"></button>
+      <button class="btn-secondary" onclick="app.toggleFlash()" aria-label="Toggle flash">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        Flash
+      </button>
+    </div>
+  </div>
+
+  <!-- Image Source Choice Modal (Mobile) -->
+  <div id="imageSourceModal" class="modal hidden">
+    <div class="modal-content" style="max-width: 400px">
+      <div class="modal-header">
+        <h3>Choose Image Source</h3>
+        <button class="btn-close" onclick="app.closeImageSourceModal()">×</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem">
+        <button class="btn btn-primary" onclick="app.selectImageSource('camera')" style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 0.5rem;
+              padding: 1.25rem;
+            ">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          <span style="font-size: 1.1rem">Take Photo</span>
+        </button>
+
+        <button class="btn btn-secondary" onclick="app.selectImageSource('gallery')" style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 0.5rem;
+              padding: 1.25rem;
+            ">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <span style="font-size: 1.1rem">Choose from Gallery</span>
+        </button>
+
+        <button class="btn btn-secondary" onclick="app.closeImageSourceModal()" style="margin-top: 0.5rem">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Editor Modal -->
+  <div id="imageEditorModal" class="modal hidden">
+    <div class="modal-content" style="max-width: 900px; padding: 0">
+      <div class="modal-header" style="
+            padding: 1rem;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+          ">
+        <h3>Edit Image</h3>
+        <button class="btn-close" onclick="app.closeImageEditor()">×</button>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap">
+        <!-- Image Preview Section -->
+        <div style="flex: 1; min-width: 400px; background: #000; position: relative">
+          <canvas id="imageEditorCanvas"
+            style="max-width: 100%; max-height: 60vh; display: block; margin: 0 auto"></canvas>
+
+          <!-- Crop overlay (hidden by default) -->
+          <div id="cropOverlay" style="
+                display: none;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+              ">
+            <div style="
+                  position: absolute;
+                  border: 2px dashed #fff;
+                  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+                " id="cropBox"></div>
+          </div>
+        </div>
+
+        <!-- Quality Info Sidebar -->
+        <div id="qualityInfoSidebar" style="
+              width: 280px;
+              padding: 1rem;
+              background: var(--bg-secondary);
+              border-left: 1px solid var(--border-color);
+              max-height: 60vh;
+              overflow-y: auto;
+            ">
+          <h4 style="margin: 0 0 1rem 0; font-size: 0.95rem">Image Quality</h4>
+          <div id="qualityScoreDisplay"></div>
+        </div>
+      </div>
+
+      <div style="
+            padding: 1rem;
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+          ">
+        <!-- Tool Tabs -->
+        <div style="
+              display: flex;
+              gap: 0.5rem;
+              margin-bottom: 1rem;
+              border-bottom: 1px solid var(--border-color);
+              padding-bottom: 0.5rem;
+            ">
+          <button class="btn btn-small" id="rotateTab" onclick="app.switchEditorTool('rotate')"
+            style="padding: 0.5rem 1rem; background: var(--primary-color); color: white">
+            Rotate
+          </button>
+          <button class="btn btn-small" id="cropTab" onclick="app.switchEditorTool('crop')"
+            style="padding: 0.5rem 1rem">
+            Crop
+          </button>
+        </div>
+
+        <!-- Rotate Controls -->
+        <div id="rotateControls" style="display: flex; gap: 1rem; margin-bottom: 1rem">
+          <button class="btn btn-secondary" onclick="app.rotateEditorImage(-90)" style="flex: 1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              style="display: inline-block; vertical-align: middle; margin-right: 4px">
+              <path d="M2.5 2v6h6M2 11.5a10 10 0 0 1 18.8-4.3" />
+            </svg>
+            Rotate Left
+          </button>
+          <button class="btn btn-secondary" onclick="app.rotateEditorImage(90)" style="flex: 1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              style="display: inline-block; vertical-align: middle; margin-right: 4px">
+              <path d="M21.5 2v6h-6M22 12.5a10 10 0 0 1-18.8 4.2" />
+            </svg>
+            Rotate Right
+          </button>
+        </div>
+
+        <!-- Crop Controls (hidden by default) -->
+        <div id="cropControls" style="display: none; margin-bottom: 1rem">
+          <p style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: var(--text-muted)">
+            Drag on the image to select crop area
+          </p>
+          <div style="display: flex; gap: 0.5rem">
+            <button class="btn btn-secondary" onclick="app.resetCrop()" style="flex: 1">
+              Reset
+            </button>
+            <button class="btn btn-primary" onclick="app.applyCrop()" style="flex: 1">
+              Apply Crop
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem">
+          <button class="btn btn-secondary" onclick="app.closeImageEditor()" style="flex: 1">
+            Cancel
+          </button>
+          <button class="btn btn-primary" onclick="app.saveImageEdits()" style="flex: 1">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Label Scanner Modal -->
+  <div id="labelScannerModal" class="modal hidden">
+    <div class="modal-content scanner-modal" style="max-width: 500px; padding: 0">
+      <div class="scanner-header" style="padding: 1rem; background: var(--bg-primary)">
+        <h3>Label Scanner</h3>
+        <button class="btn-close" onclick="app.closeLabelScanner()">×</button>
+      </div>
+
+      <div id="labelScannerView" style="
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">
+        <video id="labelScannerVideo" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover"></video>
+        <canvas id="labelScannerCanvas" style="display: none"></canvas>
+
+        <!-- Frame overlay (Apple-style) -->
+        <div style="
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 85%;
+              height: 70%;
+              border: 3px solid rgba(255, 255, 255, 0.8);
+              border-radius: 12px;
+              pointer-events: none;
+            ">
+          <!-- Corner indicators -->
+          <div style="
+                position: absolute;
+                top: -3px;
+                left: -3px;
+                width: 40px;
+                height: 40px;
+                border-top: 5px solid var(--indigo-400);
+                border-left: 5px solid var(--indigo-400);
+                border-radius: 12px 0 0 0;
+              "></div>
+          <div style="
+                position: absolute;
+                top: -3px;
+                right: -3px;
+                width: 40px;
+                height: 40px;
+                border-top: 5px solid var(--indigo-400);
+                border-right: 5px solid var(--indigo-400);
+                border-radius: 0 12px 0 0;
+              "></div>
+          <div style="
+                position: absolute;
+                bottom: -3px;
+                left: -3px;
+                width: 40px;
+                height: 40px;
+                border-bottom: 5px solid var(--indigo-400);
+                border-left: 5px solid var(--indigo-400);
+                border-radius: 0 0 0 12px;
+              "></div>
+          <div style="
+                position: absolute;
+                bottom: -3px;
+                right: -3px;
+                width: 40px;
+                height: 40px;
+                border-bottom: 5px solid var(--indigo-400);
+                border-right: 5px solid var(--indigo-400);
+                border-radius: 0 0 12px 0;
+              "></div>
+        </div>
+
+        <!-- Status indicator -->
+        <div id="labelScannerStatus" style="
+              position: absolute;
+              bottom: 20px;
+              left: 50%;
+              transform: translateX(-50%);
+              background: rgba(0, 0, 0, 0.7);
+              color: white;
+              padding: 0.75rem 1.5rem;
+              border-radius: 20px;
+              font-size: 0.9rem;
+              backdrop-filter: blur(10px);
+            ">
+          Position label within frame
+        </div>
+      </div>
+
+      <div class="scanner-actions" style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-primary)">
+        <button class="btn btn-secondary" onclick="app.closeLabelScanner()" style="flex: 1">
+          Cancel
+        </button>
+        <button class="btn btn-primary" onclick="app.captureLabelImage()" style="flex: 1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="display: inline-block; vertical-align: middle; margin-right: 8px">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          Capture
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sold Price Modal -->
+  <div id="soldPriceModal" class="modal hidden">
+    <div class="modal-content" style="max-width: 400px">
+      <div class="modal-header">
+        <h3>Mark as Sold</h3>
+        <button class="btn-close" onclick="app.closeSoldPriceModal()">×</button>
+      </div>
+
+      <div style="padding: 1rem">
+        <p style="margin-bottom: 1rem; color: var(--text-secondary)">
+          <strong id="soldPriceTitle"></strong>
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Sold Price (optional)</label>
+          <div class="input-with-icon">
+            <span style="
+                  position: absolute;
+                  left: 12px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  color: var(--text-muted);
+                ">£</span>
+            <input type="number" id="soldPriceInput" class="form-input" placeholder="0.00" step="0.01"
+              style="padding-left: 28px" />
+          </div>
+          <small style="color: var(--text-muted); display: block; margin-top: 0.5rem">
+            Track how much this item sold for
+          </small>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem">
+          <button class="btn btn-secondary" onclick="app.closeSoldPriceModal()" style="flex: 1">
+            Cancel
+          </button>
+          <button class="btn btn-primary" onclick="app.confirmSold()" style="flex: 1">
+            Mark as Sold
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upsell Sticky Footer (Free Users) -->
+  <div id="upsellFooter" class="upsell-footer hidden">
+    <div class="upsell-content">
+      <div class="upsell-usage">
+        <div class="upsell-text">
+          <span class="upsell-plan">Free Plan</span>
+          <span class="upsell-count"><span id="upsellUsed">0</span>/<span id="upsellLimit">5</span> listings this
+            month</span>
+        </div>
+        <div class="upsell-bar">
+          <div class="upsell-bar-fill" id="upsellBarFill" style="width: 0%"></div>
+        </div>
+      </div>
+      <div class="upsell-cta">
+        <button class="btn btn-accent upsell-btn" onclick="app.showUpgradeModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="vertical-align: middle; margin-right: 4px">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          Upgrade
+        </button>
+      </div>
+      <button class="upsell-dismiss" onclick="app.dismissUpsell()" aria-label="Dismiss">×</button>
+    </div>
+  </div>
+
+  <style>
+    .upsell-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-secondary, #ffffff);
+      border-top: 1px solid var(--border-color, #e5dccf);
+      padding: 12px 16px;
+      z-index: 999;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+      transform: translateY(0);
+      transition: transform 0.3s ease;
+      font-family: 'Manrope', sans-serif;
+    }
+
+    .upsell-footer.hidden {
+      transform: translateY(100%);
+      pointer-events: none;
+    }
+
+    .upsell-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .upsell-usage {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .upsell-text {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    .upsell-plan {
+      font-weight: 600;
+      color: var(--accent, #FF7A5C);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .upsell-count {
+      color: var(--text-secondary, #475569);
+      font-size: 14px;
+    }
+
+    .upsell-bar {
+      height: 6px;
+      background: var(--bg-tertiary, #f0e6d9);
+      border-radius: 3px;
+      overflow: hidden;
+      max-width: 300px;
+    }
+
+    .upsell-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent, #FF7A5C) 0%, var(--accent-yellow, #FFD93D) 100%);
+      border-radius: 3px;
+      transition: width 0.5s ease, background 0.3s ease;
+    }
+
+    .upsell-bar-fill.warning {
+      background: linear-gradient(90deg, #fdcb6e 0%, #e17055 100%);
+    }
+
+    .upsell-bar-fill.critical {
+      background: linear-gradient(90deg, #e17055 0%, #d63031 100%);
+    }
+
+    .upsell-cta {
+      flex-shrink: 0;
+    }
+
+    .upsell-btn {
+      padding: 10px 20px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .btn-accent {
+      background: var(--accent, #FF7A5C);
+      color: white;
+      border: 2px solid var(--text-primary, #1f2937);
+      border-radius: 10px;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 700;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-accent:hover {
+      background: var(--accent, #FF7A5C);
+      transform: translate(-2px, -2px);
+      box-shadow: 2px 2px 0 0 var(--text-primary, #1f2937);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
+    }
+
+    .upsell-dismiss {
+      background: none;
+      border: none;
+      color: var(--text-muted, #666);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+      margin-left: 8px;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+
+    .upsell-dismiss:hover {
+      opacity: 1;
+    }
+
+    @media (max-width: 480px) {
+      .upsell-content {
+        flex-wrap: wrap;
+      }
+
+      .upsell-usage {
+        width: 100%;
+      }
+
+      .upsell-bar {
+        max-width: 100%;
+      }
+
+      .upsell-cta {
+        flex: 1;
+      }
+
+      .upsell-btn {
+        width: 100%;
+      }
+
+      .upsell-dismiss {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+      }
+
+      .upsell-footer {
+        padding-top: 28px;
+      }
+    }
+
+    /* Add padding to body when footer is visible */
+    body.has-upsell-footer {
+      padding-bottom: 80px;
+    }
+
+    @media (max-width: 480px) {
+      body.has-upsell-footer {
+        padding-bottom: 120px;
+      }
+    }
+  </style>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast" role="alert" aria-live="polite">
+    <div class="toast-icon" id="toastIcon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        style="display: inline-block; vertical-align: middle">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+    <div class="toast-message" id="toastMessage">Success!</div>
+  </div>
+</body>
+
+</html>

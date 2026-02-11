@@ -1,0 +1,14 @@
+# QuickList AI - robots.txt
+# https://quicklist.it.com
+
+User-agent: *
+Allow: /
+
+# Exclude authenticated/dynamic pages
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /saved-items
+Disallow: /profile
+
+# Sitemap location
+Sitemap: https://quicklist.it.com/sitemap.xml
