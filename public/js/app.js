@@ -5426,93 +5426,80 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     }
   },
 
-  // Clerk appearance configuration - Quicklist branded
+  // Clerk appearance configuration - Quicklist branded (light theme)
   getClerkAppearance() {
     return {
       variables: {
         colorPrimary: '#6c5ce7',
-        colorBackground: '#1a1a2e',
-        colorInputBackground: '#16213e',
-        colorInputText: '#ffffff',
-        colorText: '#ffffff',
-        colorTextSecondary: '#a0aec0',
+        colorBackground: '#ffffff',
+        colorInputBackground: '#f7f2ea',
+        colorInputText: '#1a1a2e',
+        colorText: '#1a1a2e',
+        colorTextSecondary: '#64748b',
         colorDanger: '#ef4444',
         colorSuccess: '#10b981',
         colorWarning: '#f59e0b',
-        fontFamily: 'Manrope, system-ui, sans-serif',
+        fontFamily: "'Space Grotesk', 'Outfit', system-ui, sans-serif",
         borderRadius: '12px',
         spacingUnit: '4px',
       },
       elements: {
         rootBox: {
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
         },
         card: {
-          backgroundColor: '#1a1a2e',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          backgroundColor: '#ffffff',
+          border: '1px solid #e5e0d8',
           borderRadius: '16px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
         },
         headerTitle: {
-          color: '#ffffff',
+          color: '#1a1a2e',
           fontSize: '1.5rem',
           fontWeight: '700',
+          fontFamily: "'Space Grotesk', 'Outfit', system-ui, sans-serif",
         },
         headerSubtitle: {
-          color: '#a0aec0',
+          color: '#64748b',
         },
         socialButtonsBlockButton: {
-          backgroundColor: '#16213e',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          backgroundColor: '#f7f2ea',
+          border: '1px solid #e5e0d8',
           borderRadius: '10px',
-          color: '#ffffff',
-          '&:hover': {
-            backgroundColor: '#1e3a5f',
-            borderColor: '#6c5ce7',
-          },
+          color: '#1a1a2e',
         },
         socialButtonsBlockButtonText: {
-          color: '#ffffff',
+          color: '#1a1a2e',
           fontWeight: '500',
         },
         dividerLine: {
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          backgroundColor: '#e5e0d8',
         },
         dividerText: {
-          color: '#a0aec0',
+          color: '#64748b',
         },
         formFieldLabel: {
-          color: '#a0aec0',
+          color: '#1a1a2e',
           fontWeight: '500',
         },
         formFieldInput: {
-          backgroundColor: '#16213e',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          backgroundColor: '#f7f2ea',
+          border: '1px solid #e5e0d8',
           borderRadius: '10px',
-          color: '#ffffff',
-          '&:focus': {
-            borderColor: '#6c5ce7',
-            boxShadow: '0 0 0 3px rgba(108, 92, 231, 0.2)',
-          },
+          color: '#1a1a2e',
         },
         formButtonPrimary: {
           backgroundColor: '#6c5ce7',
           borderRadius: '10px',
           fontWeight: '600',
           textTransform: 'none',
-          '&:hover': {
-            backgroundColor: '#5b4cdb',
-          },
         },
         footerActionLink: {
           color: '#6c5ce7',
           fontWeight: '500',
-          '&:hover': {
-            color: '#a29bfe',
-          },
         },
         identityPreviewText: {
-          color: '#ffffff',
+          color: '#1a1a2e',
         },
         identityPreviewEditButton: {
           color: '#6c5ce7',
@@ -5524,18 +5511,20 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
           color: '#ef4444',
         },
         alertText: {
-          color: '#ffffff',
+          color: '#1a1a2e',
         },
         modalBackdrop: {
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          backdropFilter: 'blur(8px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
+        },
+        footer: {
+          display: 'none',
         },
       },
       layout: {
         socialButtonsPlacement: 'top',
         socialButtonsVariant: 'blockButton',
         showOptionalFields: false,
-        logoPlacement: 'inside',
         shimmer: true,
       },
     };
