@@ -5426,7 +5426,122 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     }
   },
 
-  // Sign in with Clerk - uses Clerk's prebuilt UI
+  // Clerk appearance configuration - Quicklist branded
+  getClerkAppearance() {
+    return {
+      variables: {
+        colorPrimary: '#6c5ce7',
+        colorBackground: '#1a1a2e',
+        colorInputBackground: '#16213e',
+        colorInputText: '#ffffff',
+        colorText: '#ffffff',
+        colorTextSecondary: '#a0aec0',
+        colorDanger: '#ef4444',
+        colorSuccess: '#10b981',
+        colorWarning: '#f59e0b',
+        fontFamily: 'Manrope, system-ui, sans-serif',
+        borderRadius: '12px',
+        spacingUnit: '4px',
+      },
+      elements: {
+        rootBox: {
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+        },
+        card: {
+          backgroundColor: '#1a1a2e',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '16px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+        },
+        headerTitle: {
+          color: '#ffffff',
+          fontSize: '1.5rem',
+          fontWeight: '700',
+        },
+        headerSubtitle: {
+          color: '#a0aec0',
+        },
+        socialButtonsBlockButton: {
+          backgroundColor: '#16213e',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '10px',
+          color: '#ffffff',
+          '&:hover': {
+            backgroundColor: '#1e3a5f',
+            borderColor: '#6c5ce7',
+          },
+        },
+        socialButtonsBlockButtonText: {
+          color: '#ffffff',
+          fontWeight: '500',
+        },
+        dividerLine: {
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        },
+        dividerText: {
+          color: '#a0aec0',
+        },
+        formFieldLabel: {
+          color: '#a0aec0',
+          fontWeight: '500',
+        },
+        formFieldInput: {
+          backgroundColor: '#16213e',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '10px',
+          color: '#ffffff',
+          '&:focus': {
+            borderColor: '#6c5ce7',
+            boxShadow: '0 0 0 3px rgba(108, 92, 231, 0.2)',
+          },
+        },
+        formButtonPrimary: {
+          backgroundColor: '#6c5ce7',
+          borderRadius: '10px',
+          fontWeight: '600',
+          textTransform: 'none',
+          '&:hover': {
+            backgroundColor: '#5b4cdb',
+          },
+        },
+        footerActionLink: {
+          color: '#6c5ce7',
+          fontWeight: '500',
+          '&:hover': {
+            color: '#a29bfe',
+          },
+        },
+        identityPreviewText: {
+          color: '#ffffff',
+        },
+        identityPreviewEditButton: {
+          color: '#6c5ce7',
+        },
+        formFieldSuccessText: {
+          color: '#10b981',
+        },
+        formFieldErrorText: {
+          color: '#ef4444',
+        },
+        alertText: {
+          color: '#ffffff',
+        },
+        modalBackdrop: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(8px)',
+        },
+      },
+      layout: {
+        socialButtonsPlacement: 'top',
+        socialButtonsVariant: 'blockButton',
+        showOptionalFields: false,
+        logoPlacement: 'inside',
+        shimmer: true,
+      },
+    };
+  },
+
+  // Sign in with Clerk - uses Clerk's prebuilt UI with Quicklist branding
   async signInWithClerk(mode = 'signIn') {
     if (!window.Clerk) {
       this.showToast('Authentication system not ready', 'error');
@@ -5439,32 +5554,24 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       return;
     }
 
+    const appearance = this.getClerkAppearance();
+
     try {
       if (mode === 'signUp') {
         await window.Clerk.openSignUp({
-          appearance: {
-            elements: {
-              rootBox: 'clerk-modal-root',
-              card: 'clerk-modal-card',
-            },
-          },
+          appearance: appearance,
+          afterSignUpUrl: window.location.origin,
+          afterSignInUrl: window.location.origin,
         });
       } else {
-        // Use Clerk's openSignIn() method which shows their prebuilt modal
-        // This includes email/password, Google OAuth, and more
         await window.Clerk.openSignIn({
-          // Customize appearance if needed
-          appearance: {
-            elements: {
-              rootBox: 'clerk-modal-root',
-              card: 'clerk-modal-card',
-            },
-          },
+          appearance: appearance,
+          afterSignUpUrl: window.location.origin,
+          afterSignInUrl: window.location.origin,
         });
       }
     } catch (error) {
       console.error('Clerk sign in error:', error);
-      // Only show error if it's not the "already signed in" error
       if (!error.code || error.code !== 'cannot_render_single_session_enabled') {
         this.showToast('Authentication error', 'error');
       }
