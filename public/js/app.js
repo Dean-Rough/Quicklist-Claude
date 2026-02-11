@@ -2429,6 +2429,9 @@ const app = {
 
     // Display stock image if found
     this.displayStockImage(stockImageData || listing.stockImageData);
+    
+    // Display listing quality score
+    this.displayListingScore();
   },
 
   // Display stock image section
@@ -3381,6 +3384,9 @@ ${this.state.currentListing?.keywords?.join(', ')}
 
       this.showToast('ZIP downloaded successfully!');
       this.setWizardPhase('publish');
+      
+      // Show success modal after brief delay
+      setTimeout(() => this.showExportSuccess('downloaded'), 500);
     } catch (error) {
       console.error('Error creating ZIP:', error);
       this.showToast('Error creating ZIP file: ' + error.message, 'error');
@@ -3493,11 +3499,14 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   },
 
   // Copy all listing details
-  async copyAll() {
+  async copyAll(showSuccessModal = true) {
     const text = this.getListingText();
     try {
       await navigator.clipboard.writeText(text);
       this.showToast('Listing copied to clipboard!');
+      if (showSuccessModal) {
+        setTimeout(() => this.showExportSuccess('copied'), 300);
+      }
     } catch (error) {
       // Fallback for older browsers
       const textarea = document.createElement('textarea');
@@ -3507,6 +3516,9 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       document.execCommand('copy');
       document.body.removeChild(textarea);
       this.showToast('Listing copied to clipboard!');
+      if (showSuccessModal) {
+        setTimeout(() => this.showExportSuccess('copied'), 300);
+      }
     }
   },
 
@@ -3554,6 +3566,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
           text: text
         });
         this.showToast('Shared successfully!');
+        setTimeout(() => this.showExportSuccess('shared'), 300);
       } catch (error) {
         if (error.name !== 'AbortError') {
           this.showToast('Share failed', 'error');
@@ -3561,8 +3574,9 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       }
     } else {
       // Fallback: copy to clipboard
-      await this.copyAll();
+      await this.copyAll(false); // Don't show double modal
       this.showToast('Share not supported - copied to clipboard instead');
+      setTimeout(() => this.showExportSuccess('copied'), 300);
     }
   },
 
@@ -3588,13 +3602,13 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       case 'ebay':
         // eBay sell page - they'll need to paste content
         url = 'https://www.ebay.co.uk/sl/sell';
-        this.copyAll(); // Copy listing first
+        this.copyAll(false); // Copy listing first, no modal (they're leaving)
         this.showToast('Listing copied! Paste into eBay form.');
         break;
       case 'vinted':
         // Vinted sell page
         url = 'https://www.vinted.co.uk/items/new';
-        this.copyAll();
+        this.copyAll(false); // No modal
         this.showToast('Listing copied! Paste into Vinted form.');
         break;
     }
@@ -3602,6 +3616,235 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     if (url) {
       window.open(url, '_blank');
     }
+  },
+
+  // ============================================
+  // EXPORT SUCCESS FLOW
+  // ============================================
+
+  // Show export success modal
+  showExportSuccess(action = 'copied') {
+    const modal = document.getElementById('exportSuccessModal');
+    const messageEl = document.getElementById('exportSuccessMessage');
+    
+    const messages = {
+      copied: 'Your listing has been copied to clipboard. Now paste it into your marketplace.',
+      downloaded: 'Your listing files have been downloaded. Upload the images and paste the text into your marketplace.',
+      shared: 'Your listing has been shared successfully.',
+      emailed: 'Your listing has been sent to your email.'
+    };
+    
+    messageEl.textContent = messages[action] || messages.copied;
+    modal.classList.remove('hidden');
+    modal.classList.add('active');
+    
+    // Track conversion
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'export_complete', {
+        'event_category': 'listing',
+        'event_label': action
+      });
+    }
+  },
+
+  // Close export success modal
+  closeExportSuccess() {
+    const modal = document.getElementById('exportSuccessModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('active');
+  },
+
+  // Start new listing (from success modal)
+  startNewListing() {
+    this.closeExportSuccess();
+    
+    // Reset state
+    this.state.uploadedImages = [];
+    this.state.currentListing = null;
+    
+    // Clear UI
+    const previewGrid = document.getElementById('previewGrid');
+    if (previewGrid) previewGrid.innerHTML = '';
+    
+    const itemHint = document.getElementById('itemHint');
+    if (itemHint) itemHint.value = '';
+    
+    const conditionInfo = document.getElementById('conditionInfo');
+    if (conditionInfo) conditionInfo.value = '';
+    
+    // Show initial state
+    this.showInitialState();
+    this.setWizardPhase('photos');
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    this.showToast('Ready for your next listing!', 'success');
+  },
+
+  // ============================================
+  // LISTING QUALITY SCORE
+  // ============================================
+
+  // Calculate listing quality score
+  calculateListingScore() {
+    const score = {
+      total: 0,
+      breakdown: [],
+      suggestions: []
+    };
+    
+    // Title (25 points max)
+    const title = document.getElementById('outputTitle')?.value || '';
+    const titleLength = title.length;
+    if (titleLength >= 40 && titleLength <= 80) {
+      score.total += 25;
+      score.breakdown.push({ label: 'Title length', points: 25, max: 25, status: 'good' });
+    } else if (titleLength >= 20 && titleLength < 40) {
+      score.total += 15;
+      score.breakdown.push({ label: 'Title length', points: 15, max: 25, status: 'ok' });
+      score.suggestions.push('Add more detail to your title (aim for 40-80 characters)');
+    } else if (titleLength > 80) {
+      score.total += 18;
+      score.breakdown.push({ label: 'Title length', points: 18, max: 25, status: 'ok' });
+      score.suggestions.push('Title is a bit long - consider trimming to under 80 characters');
+    } else {
+      score.total += 5;
+      score.breakdown.push({ label: 'Title length', points: 5, max: 25, status: 'poor' });
+      score.suggestions.push('Title is too short - add brand, size, color, or condition');
+    }
+    
+    // Description (25 points max)
+    const description = document.getElementById('outputDescription')?.value || '';
+    const descLength = description.length;
+    const hasKeyDetails = /\b(size|condition|brand|color|material|measurements?)\b/i.test(description);
+    
+    if (descLength >= 150 && hasKeyDetails) {
+      score.total += 25;
+      score.breakdown.push({ label: 'Description', points: 25, max: 25, status: 'good' });
+    } else if (descLength >= 80) {
+      score.total += 18;
+      score.breakdown.push({ label: 'Description', points: 18, max: 25, status: 'ok' });
+      if (!hasKeyDetails) {
+        score.suggestions.push('Add measurements, material, or specific condition details');
+      }
+    } else {
+      score.total += 8;
+      score.breakdown.push({ label: 'Description', points: 8, max: 25, status: 'poor' });
+      score.suggestions.push('Add more description - buyers want details about condition and fit');
+    }
+    
+    // Photos (25 points max)
+    const photoCount = this.state.uploadedImages?.length || 0;
+    const hasBlurry = this.state.uploadedImages?.some(img => img.isBlurry) || false;
+    
+    if (photoCount >= 4 && !hasBlurry) {
+      score.total += 25;
+      score.breakdown.push({ label: 'Photos', points: 25, max: 25, status: 'good' });
+    } else if (photoCount >= 2) {
+      score.total += 15 + (hasBlurry ? 0 : 5);
+      score.breakdown.push({ label: 'Photos', points: 15 + (hasBlurry ? 0 : 5), max: 25, status: 'ok' });
+      if (photoCount < 4) {
+        score.suggestions.push('Add more photos (4+ recommended) - show different angles');
+      }
+      if (hasBlurry) {
+        score.suggestions.push('Some photos are blurry - consider retaking for better quality');
+      }
+    } else {
+      score.total += 5;
+      score.breakdown.push({ label: 'Photos', points: 5, max: 25, status: 'poor' });
+      score.suggestions.push('Add more photos! Listings with 4+ photos sell faster');
+    }
+    
+    // Price & brand completeness (25 points max)
+    const price = document.getElementById('outputPrice')?.value || '';
+    const brand = document.getElementById('outputBrand')?.value || '';
+    const condition = document.getElementById('outputCondition')?.value || '';
+    
+    let completenessPoints = 0;
+    if (price && price !== '£0' && price !== '0') completenessPoints += 10;
+    else score.suggestions.push('Add a price to your listing');
+    
+    if (brand && brand.toLowerCase() !== 'unknown' && brand.toLowerCase() !== 'unbranded') completenessPoints += 10;
+    else score.suggestions.push('Add brand if known - branded items sell better');
+    
+    if (condition) completenessPoints += 5;
+    
+    score.total += completenessPoints;
+    score.breakdown.push({ label: 'Completeness', points: completenessPoints, max: 25, status: completenessPoints >= 20 ? 'good' : completenessPoints >= 10 ? 'ok' : 'poor' });
+    
+    // Determine overall rating
+    if (score.total >= 85) {
+      score.rating = 'excellent';
+      score.label = 'Excellent';
+      score.color = 'var(--success, #10b981)';
+    } else if (score.total >= 65) {
+      score.rating = 'good';
+      score.label = 'Good';
+      score.color = 'var(--success, #10b981)';
+    } else if (score.total >= 45) {
+      score.rating = 'fair';
+      score.label = 'Needs Work';
+      score.color = 'var(--warning, #f59e0b)';
+    } else {
+      score.rating = 'poor';
+      score.label = 'Poor';
+      score.color = 'var(--error, #ef4444)';
+    }
+    
+    return score;
+  },
+
+  // Display listing score badge
+  displayListingScore() {
+    const score = this.calculateListingScore();
+    
+    // Find or create score container
+    let scoreContainer = document.getElementById('listingScoreContainer');
+    if (!scoreContainer) {
+      // Insert after the wizard steps
+      const resultCard = document.querySelector('#resultState .result-card');
+      if (!resultCard) return;
+      
+      scoreContainer = document.createElement('div');
+      scoreContainer.id = 'listingScoreContainer';
+      scoreContainer.style.cssText = 'margin-bottom: 1.5rem;';
+      resultCard.insertBefore(scoreContainer, resultCard.firstChild);
+    }
+    
+    const suggestionsHtml = score.suggestions.length > 0 
+      ? `<div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
+           <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Tips to improve:</p>
+           <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-secondary);">
+             ${score.suggestions.slice(0, 3).map(s => `<li style="margin-bottom: 0.25rem;">${s}</li>`).join('')}
+           </ul>
+         </div>`
+      : '';
+    
+    scoreContainer.innerHTML = `
+      <div style="background: var(--bg-secondary); border-radius: 12px; padding: 1rem; border: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: ${score.color}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; color: white;">
+              ${score.total}
+            </div>
+            <div>
+              <div style="font-weight: 600; color: var(--text-primary); font-size: 1rem;">Listing Score: ${score.label}</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted);">How your listing compares</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            ${score.breakdown.map(b => `
+              <div style="background: var(--bg-tertiary, var(--bg-primary)); padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.75rem;">
+                <span style="color: var(--text-muted);">${b.label}:</span>
+                <span style="color: ${b.status === 'good' ? 'var(--success, #10b981)' : b.status === 'ok' ? 'var(--warning, #f59e0b)' : 'var(--error, #ef4444)'}; font-weight: 600;">${b.points}/${b.max}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        ${suggestionsHtml}
+      </div>
+    `;
   },
 
   // Post listing to eBay

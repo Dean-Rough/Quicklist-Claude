@@ -2746,6 +2746,54 @@
       </div>
     </div>
 
+    <!-- Export Success Modal -->
+    <div id="exportSuccessModal" class="modal hidden">
+      <div class="modal-content" style="max-width: 480px; text-align: center;">
+        <div style="padding: 2rem 1rem;">
+          <div style="width: 64px; height: 64px; margin: 0 auto 1.5rem; background: var(--success, #10b981); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h2 style="color: var(--text-primary); margin-bottom: 0.75rem; font-size: 1.5rem;">Listing Ready!</h2>
+          <p id="exportSuccessMessage" style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;">
+            Your listing has been copied to clipboard. Now paste it into your marketplace.
+          </p>
+          
+          <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Open marketplace:</p>
+            <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+              <a href="https://www.vinted.co.uk/items/new" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+                Vinted
+              </a>
+              <a href="https://www.ebay.co.uk/sl/sell" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+                eBay
+              </a>
+              <a href="https://www.depop.com/products/create/" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+                Depop
+              </a>
+              <a href="https://www.gumtree.com/postad" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+                Gumtree
+              </a>
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 0.75rem; justify-content: center;">
+            <button class="btn btn-primary" onclick="app.startNewListing()" style="flex: 1; max-width: 200px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Create Another
+            </button>
+            <button class="btn btn-secondary" onclick="app.closeExportSuccess()">
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Barcode Scanner Modal -->
     <div id="barcodeScannerModal" class="modal hidden">
       <div class="modal-content" style="max-width: 640px">
