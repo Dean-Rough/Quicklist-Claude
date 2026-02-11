@@ -5430,7 +5430,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   getClerkAppearance() {
     return {
       variables: {
-        colorPrimary: '#6c5ce7',
+        colorPrimary: '#0f766e',
         colorBackground: '#ffffff',
         colorInputBackground: '#f7f2ea',
         colorInputText: '#1a1a2e',
@@ -5495,14 +5495,14 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
           textTransform: 'none',
         },
         footerActionLink: {
-          color: '#6c5ce7',
+          color: '#0f766e',
           fontWeight: '500',
         },
         identityPreviewText: {
           color: '#1a1a2e',
         },
         identityPreviewEditButton: {
-          color: '#6c5ce7',
+          color: '#0f766e',
         },
         formFieldSuccessText: {
           color: '#10b981',
