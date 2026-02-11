@@ -2787,3 +2787,164 @@ select.form-input::-ms-expand {
   color: var(--accent-indigo) !important;
   font-weight: 600 !important;
 }
+
+/* ========================================
+   CLERK NUCLEAR OVERRIDES
+   Higher specificity to beat Clerk's inline styles
+   ======================================== */
+
+/* Root container - force our fonts everywhere */
+[data-clerk-component],
+.cl-rootBox,
+.cl-signIn-root,
+.cl-signUp-root,
+.cl-userButton-root,
+.cl-userProfile-root {
+  font-family: 'Manrope', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  --cl-font-family: 'Manrope', sans-serif !important;
+}
+
+/* Force card background consistency */
+[data-clerk-component] .cl-card,
+.cl-component .cl-card,
+div[class*="cl-"] .cl-card {
+  background: #ffffff !important;
+  border: 1px solid var(--border-color, #e5e7eb) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Force all text to use our colors */
+[data-clerk-component] *,
+.cl-component * {
+  font-family: inherit !important;
+}
+
+/* Primary buttons - nuclear option */
+[data-clerk-component] button[data-localization-key*="continue"],
+[data-clerk-component] button[data-localization-key*="submit"],
+[data-clerk-component] .cl-formButtonPrimary,
+.cl-formButtonPrimary,
+button.cl-formButtonPrimary {
+  background: #0f766e !important;
+  background-color: #0f766e !important;
+  border-radius: 999px !important;
+  font-weight: 600 !important;
+  padding: 0.75rem 1.5rem !important;
+  border: none !important;
+  color: white !important;
+}
+
+[data-clerk-component] button:hover[data-localization-key*="continue"],
+[data-clerk-component] button:hover[data-localization-key*="submit"],
+[data-clerk-component] .cl-formButtonPrimary:hover,
+.cl-formButtonPrimary:hover {
+  background: #0d6b63 !important;
+  background-color: #0d6b63 !important;
+}
+
+/* Social buttons - nuclear */
+[data-clerk-component] .cl-socialButtonsBlockButton,
+.cl-socialButtonsBlockButton,
+button.cl-socialButtonsBlockButton {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 999px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+}
+
+[data-clerk-component] .cl-socialButtonsBlockButton:hover,
+.cl-socialButtonsBlockButton:hover {
+  background: #f9fafb !important;
+}
+
+/* Form inputs - nuclear */
+[data-clerk-component] input[type="text"],
+[data-clerk-component] input[type="email"],
+[data-clerk-component] input[type="password"],
+[data-clerk-component] .cl-formFieldInput,
+.cl-formFieldInput,
+input.cl-formFieldInput {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 1rem !important;
+  color: #1f2937 !important;
+}
+
+[data-clerk-component] input:focus,
+[data-clerk-component] .cl-formFieldInput:focus,
+.cl-formFieldInput:focus {
+  border-color: #0f766e !important;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15) !important;
+  outline: none !important;
+}
+
+/* Labels */
+[data-clerk-component] label,
+[data-clerk-component] .cl-formFieldLabel,
+.cl-formFieldLabel {
+  color: #1f2937 !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+}
+
+/* Hide Clerk branding aggressively */
+[data-clerk-component] .cl-internal-b3fm6y,
+[data-clerk-component] [class*="powered"],
+[data-clerk-component] [class*="secured"],
+.cl-internal-b3fm6y,
+a[href*="clerk.com"],
+div[class*="cl-"][class*="footer"] a[href*="clerk"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* User button dropdown */
+.cl-userButtonPopoverCard,
+[data-clerk-component] .cl-userButtonPopoverCard {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12) !important;
+}
+
+.cl-userButtonPopoverActionButton,
+[data-clerk-component] .cl-userButtonPopoverActionButton {
+  font-family: 'Manrope', sans-serif !important;
+  color: #1f2937 !important;
+  padding: 0.75rem 1rem !important;
+}
+
+.cl-userButtonPopoverActionButton:hover,
+[data-clerk-component] .cl-userButtonPopoverActionButton:hover {
+  background: #f3f4f6 !important;
+}
+
+/* Avatar styling */
+.cl-avatarBox,
+[data-clerk-component] .cl-avatarBox {
+  border-radius: 50% !important;
+  border: 2px solid #e5e7eb !important;
+}
+
+/* OTP/Code inputs */
+[data-clerk-component] .cl-otpCodeFieldInput,
+.cl-otpCodeFieldInput {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+}
+
+[data-clerk-component] .cl-otpCodeFieldInput:focus,
+.cl-otpCodeFieldInput:focus {
+  border-color: #0f766e !important;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15) !important;
+}
