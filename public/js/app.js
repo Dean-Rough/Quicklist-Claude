@@ -6127,11 +6127,15 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       .join('');
 
     modal.classList.remove('hidden');
+    modal.classList.add('active');
   },
 
   closeUpgradeModal() {
     const modal = document.getElementById('upgradeModal');
-    if (modal) modal.classList.add('hidden');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('active');
+    }
   },
 
   // Pricing configuration loaded from server
