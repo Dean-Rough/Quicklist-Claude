@@ -2627,13 +2627,14 @@ select.form-input::-ms-expand {
   backdrop-filter: blur(4px) !important;
 }
 
-/* Clerk card */
+/* Clerk card - match site card spacing */
 .cl-card {
   background: var(--bg-secondary) !important;
   border: 1px solid var(--border-color) !important;
-  border-radius: 16px !important;
+  border-radius: 12px !important;
   box-shadow: var(--shadow-strong) !important;
   font-family: 'Manrope', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  padding: 2rem !important;
 }
 
 /* Clerk headings */
@@ -2641,70 +2642,96 @@ select.form-input::-ms-expand {
   font-family: 'Space Grotesk', 'Outfit', sans-serif !important;
   color: var(--text-primary) !important;
   font-weight: 700 !important;
+  font-size: 1.5rem !important;
+  margin-bottom: 0.5rem !important;
 }
 
 .cl-headerSubtitle {
   color: var(--text-secondary) !important;
   font-family: 'Manrope', sans-serif !important;
+  font-size: 0.95rem !important;
+  margin-bottom: 1.5rem !important;
 }
 
-/* Clerk social buttons */
+/* Clerk social buttons - match site btn-secondary */
 .cl-socialButtonsBlockButton {
-  background: var(--bg-tertiary) !important;
+  background: var(--bg-secondary) !important;
   border: 1px solid var(--border-color) !important;
-  border-radius: 10px !important;
+  border-radius: 999px !important;
   color: var(--text-primary) !important;
   font-family: 'Manrope', sans-serif !important;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  padding: 0.75rem 1.5rem !important;
   transition: all 0.2s ease !important;
 }
 
 .cl-socialButtonsBlockButton:hover {
-  background: var(--bg-hover) !important;
-  border-color: var(--accent-indigo) !important;
+  background: var(--bg-tertiary) !important;
+}
+
+/* Clerk form field row spacing */
+.cl-formFieldRow {
+  margin-bottom: 1rem !important;
 }
 
 /* Clerk form inputs */
 .cl-formFieldInput {
-  background: var(--bg-tertiary) !important;
+  background: var(--bg-secondary) !important;
   border: 1px solid var(--border-color) !important;
-  border-radius: 10px !important;
+  border-radius: 8px !important;
   color: var(--text-primary) !important;
   font-family: 'Manrope', sans-serif !important;
+  font-size: 1rem !important;
+  padding: 0.75rem 1rem !important;
 }
 
 .cl-formFieldInput:focus {
   border-color: var(--accent-indigo) !important;
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15) !important;
+  outline: none !important;
 }
 
 .cl-formFieldLabel {
   color: var(--text-primary) !important;
   font-family: 'Manrope', sans-serif !important;
   font-weight: 500 !important;
+  font-size: 0.9rem !important;
+  margin-bottom: 0.5rem !important;
 }
 
-/* Clerk primary button */
+/* Clerk primary button - match site btn-primary (pill) */
 .cl-formButtonPrimary {
   background: var(--accent-indigo) !important;
-  border-radius: 10px !important;
+  border-radius: 999px !important;
   font-family: 'Manrope', sans-serif !important;
   font-weight: 600 !important;
+  font-size: 1rem !important;
+  padding: 0.75rem 1.5rem !important;
   text-transform: none !important;
+  margin-top: 1rem !important;
+  transition: all 0.2s !important;
 }
 
 .cl-formButtonPrimary:hover {
   background: var(--accent-indigo-hover) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.22) !important;
 }
 
 /* Clerk footer/branding - hide it */
 .cl-footer,
 .cl-footerAction,
-.cl-internal-b3fm6y {
+.cl-internal-b3fm6y,
+.cl-footerPages {
   display: none !important;
 }
 
 /* Clerk divider */
+.cl-dividerRow {
+  margin: 1.5rem 0 !important;
+}
+
 .cl-dividerLine {
   background: var(--border-color) !important;
 }
@@ -2712,6 +2739,7 @@ select.form-input::-ms-expand {
 .cl-dividerText {
   color: var(--text-muted) !important;
   font-family: 'Manrope', sans-serif !important;
+  font-size: 0.85rem !important;
 }
 
 /* Clerk links */
@@ -2721,17 +2749,41 @@ select.form-input::-ms-expand {
   font-weight: 500 !important;
 }
 
+.cl-footerActionLink:hover,
+.cl-formFieldAction:hover {
+  text-decoration: underline !important;
+}
+
 /* Clerk error/success states */
 .cl-formFieldErrorText {
   color: var(--error) !important;
+  font-size: 0.85rem !important;
+  margin-top: 0.25rem !important;
 }
 
 .cl-formFieldSuccessText {
   color: var(--success) !important;
 }
 
-/* Make social button icons larger */
+/* Social button icons */
 .cl-socialButtonsBlockButton svg {
   width: 20px !important;
   height: 20px !important;
+  margin-right: 0.5rem !important;
+}
+
+/* Alternative action (Already have account?) */
+.cl-footerAction__signIn,
+.cl-footerAction__signUp {
+  display: block !important;
+  text-align: center !important;
+  margin-top: 1.5rem !important;
+  font-size: 0.9rem !important;
+  color: var(--text-secondary) !important;
+}
+
+.cl-footerAction__signIn a,
+.cl-footerAction__signUp a {
+  color: var(--accent-indigo) !important;
+  font-weight: 600 !important;
 }
