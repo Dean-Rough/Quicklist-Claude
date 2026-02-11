@@ -2948,3 +2948,34 @@ div[class*="cl-"][class*="footer"] a[href*="clerk"] {
   border-color: #0f766e !important;
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15) !important;
 }
+
+/* Fix tiny Google logo in social buttons */
+[data-clerk-component] .cl-socialButtonsBlockButton img,
+[data-clerk-component] .cl-socialButtonsBlockButton svg,
+.cl-socialButtonsBlockButton img,
+.cl-socialButtonsBlockButton svg,
+.cl-socialButtonsProviderIcon,
+[data-clerk-component] .cl-socialButtonsProviderIcon {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+}
+
+/* Hide "Last used" badge */
+[data-clerk-component] .cl-socialButtonsBlockButton__lastUsed,
+.cl-socialButtonsBlockButton__lastUsed,
+[data-clerk-component] [class*="lastUsed"],
+[class*="cl-"][class*="lastUsed"],
+.cl-badge,
+[data-clerk-component] .cl-badge {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Alternative: if badge is a pseudo-element or span */
+.cl-socialButtonsBlockButton span[class*="last"],
+.cl-socialButtonsBlockButton div[class*="badge"],
+[data-clerk-component] .cl-socialButtonsBlockButton span:last-child:not(:first-child) {
+  display: none !important;
+}
