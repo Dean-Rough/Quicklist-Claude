@@ -334,34 +334,45 @@
             Three simple steps from photo to professional listing. No writing, no research, no
             hassle.
           </p>
-          <div class="steps">
-            <div class="step">
+          <div class="bento-grid">
+            <!-- Step 1 -->
+            <div class="bento-cell bento-span-4 bento-cream">
               <div id="step1-animation" class="step-image"
-                style="border-radius: 12px; overflow: hidden; background: var(--bg-tertiary)"
+                style="height: 200px; margin-bottom: 1.5rem; border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.05)"
                 aria-label="Animated illustration of scanning and photographing items"></div>
-              <div class="step-number">1</div>
+              <div class="step-number"
+                style="background: var(--dark); color: var(--cream); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; margin-bottom: 1rem;">
+                1</div>
               <h3>Upload Your Photos</h3>
               <p>
                 Take photos of your item from different angles. Our AI reads labels, tags, and
                 codes automatically. No need for perfect lighting or backgrounds.
               </p>
             </div>
-            <div class="step">
+
+            <!-- Step 2 -->
+            <div class="bento-cell bento-span-4 bento-lavender">
               <div id="step2-animation" class="step-image"
-                style="border-radius: 12px; overflow: hidden; background: var(--bg-tertiary)"
+                style="height: 200px; margin-bottom: 1.5rem; border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.05)"
                 aria-label="Animated illustration of AI processing in real-time"></div>
-              <div class="step-number">2</div>
+              <div class="step-number"
+                style="background: var(--dark); color: var(--cream); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; margin-bottom: 1rem;">
+                2</div>
               <h3>AI Generates Everything</h3>
               <p>
                 Our AI identifies your product, writes the description, suggests competitive
                 prices, and finds the perfect keywords. All in seconds.
               </p>
             </div>
-            <div class="step">
+
+            <!-- Step 3 -->
+            <div class="bento-cell bento-span-4 bento-green">
               <div id="step3-animation" class="step-image"
-                style="border-radius: 12px; overflow: hidden; background: var(--bg-tertiary)"
+                style="height: 200px; margin-bottom: 1.5rem; border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.05)"
                 aria-label="Animated illustration of completed listing"></div>
-              <div class="step-number">3</div>
+              <div class="step-number"
+                style="background: var(--dark); color: var(--cream); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; margin-bottom: 1rem;">
+                3</div>
               <h3>Download & List</h3>
               <p>
                 Review your professional listing, make any edits, then download everything in a
@@ -888,7 +899,7 @@
 
       <!-- Bottom Section: Generated Listing (Full Width) -->
       <div class="generated-listing-container">
-        <div class="output-area" id="outputArea">
+        <div class="output-area bento-cell" id="outputArea">
           <div id="initialState" class="empty-state">
             <div class="empty-state-icon">
               <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1594,138 +1605,28 @@
       <div class="container section">
         <h1 class="section-title">Dashboard & Settings</h1>
 
-        <!-- User Profile Section -->
-        <div class="card" style="max-width: 800px; margin: 0 auto 2rem">
-          <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem">Profile</h2>
-          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem">
-            <div id="userAvatar" style="
-                  width: 64px;
-                  height: 64px;
-                  border-radius: 50%;
-                  background: var(--accent-indigo);
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: 1.5rem;
-                  font-weight: 600;
-                  color: white;
-                ">
-              U
-            </div>
-            <div>
-              <div id="userName" style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem">
-                Loading...
-              </div>
-              <div id="userEmail" style="color: var(--text-muted); font-size: 0.875rem">
-                Loading...
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Subscription Section -->
-        <div class="card" style="max-width: 800px; margin: 0 auto 2rem">
-          <div style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 1.5rem;
-              ">
-            <h2 style="font-size: 1.25rem; margin: 0">Subscription</h2>
-            <span id="subscriptionStatus" class="badge" style="background: var(--success)">Active</span>
-          </div>
-
-          <div id="subscriptionInfo" style="margin-bottom: 1.5rem">
-            <div style="
-                  display: grid;
-                  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                  gap: 1.5rem;
-                  margin-bottom: 1.5rem;
-                ">
-              <div>
-                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.25rem">
-                  Current Plan
-                </div>
-                <div id="currentPlan" style="font-size: 1.25rem; font-weight: 600">Free</div>
-              </div>
-              <div>
-                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.25rem">
-                  Status
-                </div>
-                <div id="planStatus" style="font-size: 1.125rem">Active</div>
-              </div>
-              <div>
-                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.25rem">
-                  Renews
-                </div>
-                <div id="renewalDate" style="font-size: 1.125rem">Never</div>
-              </div>
-            </div>
-
-            <!-- Usage Tracking -->
-            <div style="
-                  background: var(--bg-secondary);
-                  padding: 1rem;
-                  border-radius: 8px;
-                  margin-bottom: 1.5rem;
-                ">
-              <div style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 0.5rem;
-                  ">
-                <span style="font-weight: 600">Listings This Month</span>
-                <span id="usageCount" style="font-weight: 600; color: var(--accent-indigo)">0</span>
-              </div>
-              <div style="
-                    background: var(--bg-tertiary);
-                    height: 8px;
-                    border-radius: 4px;
-                    overflow: hidden;
-                  ">
-                <div id="usageBar" style="
-                      background: var(--accent-indigo);
-                      height: 100%;
-                      width: 0%;
-                      transition: width 0.3s ease;
-                    "></div>
-              </div>
-              <div id="usageLimit" style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.5rem">
-                of 5 listings used
-              </div>
-            </div>
-
-            <!-- Plan Actions -->
-            <div id="planActions" style="display: flex; gap: 1rem; flex-wrap: wrap">
-              <button id="upgradeBtn" class="btn btn-primary" onclick="app.showUpgradeModal()">
-                Upgrade Plan
-              </button>
-              <button id="manageBillingBtn" class="btn btn-secondary" onclick="app.openBillingPortal()"
-                style="display: none">
-                Manage Billing
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Account Settings -->
-        <div class="card" style="max-width: 800px; margin: 0 auto 2rem">
-          <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem">Preferences</h2>
-          <div class="toggle-group">
-            <div>
-              <strong>Auto-Download ZIP</strong>
-              <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem">
-                Automatically download ZIP after generation
-              </p>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingAutoDownload" />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-        </div>
+        </button>
       </div>
+    </div>
+    </div>
+
+    <!-- Account Settings -->
+    <div class="card" style="max-width: 800px; margin: 0 auto 2rem">
+      <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem">Preferences</h2>
+      <div class="toggle-group">
+        <div>
+          <strong>Auto-Download ZIP</strong>
+          <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem">
+            Automatically download ZIP after generation
+          </p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="settingAutoDownload" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    </div>
     </div>
 
     <!-- Profile View -->

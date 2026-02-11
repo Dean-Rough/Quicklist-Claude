@@ -343,7 +343,7 @@ const app = {
     // Position tooltip
     const tooltipEl = tooltip.querySelector('.onboarding-tooltip');
     const targetRect = target.getBoundingClientRect();
-    
+
     if (step.position === 'bottom') {
       tooltipEl.style.top = `${targetRect.bottom + window.scrollY + 12}px`;
       tooltipEl.style.left = `${Math.max(16, Math.min(targetRect.left + targetRect.width / 2 - 150, window.innerWidth - 316))}px`;
@@ -987,28 +987,25 @@ const app = {
                     <div class="image-thumbnail" style="position: relative;">
                         <img src="${img.url}" alt="Uploaded">
                         <button class="image-thumbnail-delete" onclick="app.deleteImage('${img.id}')" aria-label="Delete image">×</button>
-                        ${
-                          img.status === 'checking'
-                            ? '<div class="image-thumbnail-status">Checking...</div>'
-                            : img.isBlurry
-                              ? '<div class="image-thumbnail-status warning"><span style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Blur Detected</div>'
-                              : ''
-                        }
-                        ${
-                          img.qualityScore !== undefined
-                            ? `
-                            <div style="position: absolute; bottom: 5px; right: 5px; background: ${
-                              img.qualityScore >= 80
-                                ? 'var(--success-color)'
-                                : img.qualityScore >= 60
-                                  ? 'var(--warning-color)'
-                                  : 'var(--error-color)'
-                            }; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                        ${img.status === 'checking'
+            ? '<div class="image-thumbnail-status">Checking...</div>'
+            : img.isBlurry
+              ? '<div class="image-thumbnail-status warning"><span style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Blur Detected</div>'
+              : ''
+          }
+                        ${img.qualityScore !== undefined
+            ? `
+                            <div style="position: absolute; bottom: 5px; right: 5px; background: ${img.qualityScore >= 80
+              ? 'var(--success-color)'
+              : img.qualityScore >= 60
+                ? 'var(--warning-color)'
+                : 'var(--error-color)'
+            }; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600;">
                                 ${img.qualityScore}
                             </div>
                         `
-                            : ''
-                        }
+            : ''
+          }
                     </div>
                 `
       )
@@ -1278,9 +1275,8 @@ const app = {
                                 ${this.renderQualityBar('Angle/View', quality.angle)}
                             </div>
 
-                            ${
-                              quality.criticalIssues && quality.criticalIssues.length > 0
-                                ? `
+                            ${quality.criticalIssues && quality.criticalIssues.length > 0
+        ? `
                                 <div class="critical-issues" style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin: 20px 0;">
                                     <h4 style="color: var(--error-color);">Critical Issues:</h4>
                                     <ul style="margin: 10px 0;">
@@ -1288,12 +1284,11 @@ const app = {
                                     </ul>
                                 </div>
                             `
-                                : ''
-                            }
+        : ''
+      }
 
-                            ${
-                              quality.recommendations && quality.recommendations.length > 0
-                                ? `
+                            ${quality.recommendations && quality.recommendations.length > 0
+        ? `
                                 <div class="recommendations" style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px;">
                                     <h4>Recommendations to Improve:</h4>
                                     <ul style="margin: 10px 0;">
@@ -1301,8 +1296,8 @@ const app = {
                                     </ul>
                                 </div>
                             `
-                                : ''
-                            }
+        : ''
+      }
                         </div>
                         <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
                             <button class="btn btn-secondary" onclick="app.retakePhoto('${imageData.id}')">
@@ -1436,25 +1431,23 @@ const app = {
                                 <div class="damage-condition-badge condition-${conditionClass}">
                                     ${damageData.overallCondition}
                                 </div>
-                                ${
-                                  damageData.conditionJustification
-                                    ? `
+                                ${damageData.conditionJustification
+        ? `
                                     <p style="margin-top: 1rem; color: var(--text-secondary);">
                                         ${damageData.conditionJustification}
                                     </p>
                                 `
-                                    : ''
-                                }
+        : ''
+      }
                             </div>
 
-                            ${
-                              damageData.damageFound
-                                ? `
+                            ${damageData.damageFound
+        ? `
                                 <div class="damage-items">
                                     <h3>${damageData.damages.length} Issue${damageData.damages.length !== 1 ? 's' : ''} Detected</h3>
                                     ${damageData.damages
-                                      .map(
-                                        (damage, i) => `
+          .map(
+            (damage, i) => `
                                         <div class="damage-item severity-${damage.severity}">
                                             <div class="damage-header">
                                                 <span class="damage-type">${this.formatDamageType(damage.type)}</span>
@@ -1465,33 +1458,31 @@ const app = {
                                             <div class="damage-details">
                                                 <p><strong>Location:</strong> ${damage.location}</p>
                                                 <p><strong>Description:</strong> ${damage.description}</p>
-                                                ${
-                                                  damage.estimatedSize
-                                                    ? `
+                                                ${damage.estimatedSize
+                ? `
                                                     <p><strong>Size:</strong> ${damage.estimatedSize}</p>
                                                 `
-                                                    : ''
-                                                }
-                                                ${
-                                                  damage.confidence !== undefined
-                                                    ? `
+                : ''
+              }
+                                                ${damage.confidence !== undefined
+                ? `
                                                     <p><strong>Confidence:</strong> ${Math.round(damage.confidence * 100)}%</p>
                                                 `
-                                                    : ''
-                                                }
+                : ''
+              }
                                             </div>
                                         </div>
                                     `
-                                      )
-                                      .join('')}
+          )
+          .join('')}
                                 </div>
                             `
-                                : `
+        : `
                                 <div style="background: var(--success-color); color: white; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>No visible damage or defects detected
                                 </div>
                             `
-                            }
+      }
 
                             <div class="damage-disclosure">
                                 <h4>📝 Suggested Condition Disclosure</h4>
@@ -1503,9 +1494,8 @@ const app = {
                                 </button>
                             </div>
 
-                            ${
-                              damageData.recommendations && damageData.recommendations.length > 0
-                                ? `
+                            ${damageData.recommendations && damageData.recommendations.length > 0
+        ? `
                                 <div class="damage-recommendations">
                                     <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>Photo Recommendations</h4>
                                     <ul>
@@ -1513,12 +1503,11 @@ const app = {
                                     </ul>
                                 </div>
                             `
-                                : ''
-                            }
+        : ''
+      }
 
-                            ${
-                              damageData.honestyScore !== undefined
-                                ? `
+                            ${damageData.honestyScore !== undefined
+        ? `
                                 <div class="honesty-score">
                                     <h4>Transparency Score</h4>
                                     <div class="honesty-score-bar">
@@ -1527,8 +1516,8 @@ const app = {
                                     <p>${damageData.honestyScore}/100 - ${this.getHonestyMessage(damageData.honestyScore)}</p>
                                 </div>
                             `
-                                : ''
-                            }
+        : ''
+      }
 
                             <div class="damage-actions">
                                 <button class="btn btn-secondary" onclick="app.retakePhotosForDamage()">
@@ -2543,12 +2532,12 @@ const app = {
     // Show pricing section for all platforms (enhanced display)
     const suggestedPrice = document.getElementById('outputPrice')?.value || listing.price || '';
     const rrp = document.getElementById('outputRRP')?.value || listing.rrp || '';
-    
+
     if (pricingIntelligence || suggestedPrice) {
       pricingSection.style.display = 'block';
 
       let html = '';
-      
+
       // Universal pricing explanation header
       html += `
         <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
@@ -2563,7 +2552,7 @@ const app = {
           </div>
         </div>
       `;
-      
+
       // Show RRP comparison if available
       if (rrp && rrp !== '£0' && rrp !== suggestedPrice) {
         const rrpNum = parseFloat(rrp.replace(/[^0-9.]/g, ''));
@@ -2582,7 +2571,7 @@ const app = {
           `;
         }
       }
-      
+
       // Detailed pricing intel for eBay
       if (pricingIntelligence && platform === 'ebay') {
         html += '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1rem;">';
@@ -2661,7 +2650,7 @@ const app = {
 
     // Display stock image if found
     this.displayStockImage(stockImageData || listing.stockImageData);
-    
+
     // Display listing quality score
     this.displayListingScore();
   },
@@ -2716,15 +2705,14 @@ const app = {
                             <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
                                 <strong>Confidence:</strong> ${stockImageData.confidence || 'LOW'}
                             </p>
-                            ${
-                              stockImageData.alternatives && stockImageData.alternatives.length > 0
-                                ? `
+                            ${stockImageData.alternatives && stockImageData.alternatives.length > 0
+        ? `
                                 <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
                                     <strong>Alternatives:</strong> ${stockImageData.alternatives.length} found
                                 </p>
                             `
-                                : ''
-                            }
+        : ''
+      }
                             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
                                 <button class="btn btn-primary" onclick="app.openStockImage('${stockImageData.stockImageUrl}')">
                                     View Full Size
@@ -2732,16 +2720,15 @@ const app = {
                                 <button class="btn btn-secondary" onclick="app.downloadStockImage('${stockImageData.stockImageUrl}', '${(document.getElementById('outputTitle').value || 'product').replace(/[^a-z0-9]/gi, '_')}')">
                                     Download Image
                                 </button>
-                                ${
-                                  stockImageData.alternatives &&
-                                  stockImageData.alternatives.length > 0
-                                    ? `
+                                ${stockImageData.alternatives &&
+        stockImageData.alternatives.length > 0
+        ? `
                                     <button class="btn btn-secondary" onclick="app.showStockImageAlternatives(${JSON.stringify(stockImageData.alternatives).replace(/"/g, '&quot;')})">
                                         View Alternatives
                                     </button>
                                 `
-                                    : ''
-                                }
+        : ''
+      }
                             </div>
                         </div>
                     </div>
@@ -2795,11 +2782,11 @@ const app = {
     const hasValidData = pricingData.soldCount > 0;
     const predictedPrice = listing.pricingConfidence
       ? {
-          recommendedPrice: parseFloat(listing.price.replace('£', '')),
-          confidence: listing.pricingConfidence,
-          reasoning: listing.pricingReasoning,
-          marketInsights: listing.marketInsights,
-        }
+        recommendedPrice: parseFloat(listing.price.replace('£', '')),
+        confidence: listing.pricingConfidence,
+        reasoning: listing.pricingReasoning,
+        marketInsights: listing.marketInsights,
+      }
       : null;
 
     pricingSection.innerHTML = `
@@ -2810,9 +2797,8 @@ const app = {
                         </h3>
                     </div>
 
-                    ${
-                      hasValidData
-                        ? `
+                    ${hasValidData
+        ? `
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
                             <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
                                 <div style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Average Sold Price</div>
@@ -2840,9 +2826,8 @@ const app = {
                             </div>
                         </div>
 
-                        ${
-                          predictedPrice
-                            ? `
+                        ${predictedPrice
+          ? `
                             <div style="background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple)); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
                                 <h4 style="margin: 0 0 1rem 0; color: white;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>AI-Optimized Pricing</h4>
                                 <div style="display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;">
@@ -2862,9 +2847,8 @@ const app = {
                                         </div>
                                     </div>
                                 </div>
-                                ${
-                                  predictedPrice.marketInsights
-                                    ? `
+                                ${predictedPrice.marketInsights
+            ? `
                                     <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
                                         <span style="background: rgba(255,255,255,0.2); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">
                                             Demand: ${predictedPrice.marketInsights.demand}
@@ -2877,19 +2861,19 @@ const app = {
                                         </span>
                                     </div>
                                 `
-                                    : ''
-                                }
+            : ''
+          }
                             </div>
                         `
-                            : ''
-                        }
+          : ''
+        }
 
                         <div style="margin-bottom: 1.5rem;">
                             <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Pricing Strategy Options</h4>
                             <div style="display: grid; gap: 0.75rem;">
                                 ${pricingData.pricePoints
-                                  .map(
-                                    (pp) => `
+          .map(
+            (pp) => `
                                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: var(--bg-secondary); border-radius: 8px; cursor: pointer; transition: background 0.2s;"
                                          onclick="document.getElementById('outputPrice').value = '£${pp.price.toFixed(2)}'; app.showToast('Price updated to £${pp.price.toFixed(2)}', 'success');">
                                         <div style="display: flex; align-items: center; gap: 1rem;">
@@ -2906,21 +2890,20 @@ const app = {
                                         </div>
                                     </div>
                                 `
-                                  )
-                                  .join('')}
+          )
+          .join('')}
                             </div>
                         </div>
 
-                        ${
-                          pricingData.soldExamples && pricingData.soldExamples.length > 0
-                            ? `
+                        ${pricingData.soldExamples && pricingData.soldExamples.length > 0
+          ? `
                             <div>
                                 <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Recently Sold Similar Items</h4>
                                 <div style="display: grid; gap: 0.5rem;">
                                     ${pricingData.soldExamples
-                                      .slice(0, 3)
-                                      .map(
-                                        (ex) => `
+            .slice(0, 3)
+            .map(
+              (ex) => `
                                         <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
                                             <a href="${ex.url}" target="_blank" style="color: var(--accent-indigo); text-decoration: none; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                                 ${ex.title}
@@ -2931,17 +2914,16 @@ const app = {
                                             </div>
                                         </div>
                                     `
-                                      )
-                                      .join('')}
+            )
+            .join('')}
                                 </div>
                             </div>
                         `
-                            : ''
-                        }
+          : ''
+        }
 
-                        ${
-                          predictedPrice && predictedPrice.reasoning
-                            ? `
+                        ${predictedPrice && predictedPrice.reasoning
+          ? `
                             <details style="margin-top: 1rem;">
                                 <summary style="cursor: pointer; color: var(--accent-indigo); font-weight: 500;">
                                     How we calculated your price...
@@ -2951,16 +2933,16 @@ const app = {
                                 </ul>
                             </details>
                         `
-                            : ''
-                        }
+          : ''
+        }
                     `
-                        : `
+        : `
                         <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
                             <p>No pricing data available for this item</p>
                             <p style="font-size: 0.9rem; margin-top: 0.5rem;">Try a more generic title or select eBay as the platform</p>
                         </div>
                     `
-                    }
+      }
                 `;
   },
 
@@ -2976,8 +2958,8 @@ const app = {
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
                             ${alternatives
-                              .map(
-                                (url, index) => `
+        .map(
+          (url, index) => `
                                 <div style="border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
                                     <img src="${url}" alt="Alternative ${index + 1}" 
                                          style="width: 100%; height: 200px; object-fit: cover; cursor: pointer;"
@@ -2991,8 +2973,8 @@ const app = {
                                     </div>
                                 </div>
                             `
-                              )
-                              .join('')}
+        )
+        .join('')}
                         </div>
                     </div>
                 `;
@@ -3616,7 +3598,7 @@ ${this.state.currentListing?.keywords?.join(', ')}
 
       this.showToast('ZIP downloaded successfully!');
       this.setWizardPhase('publish');
-      
+
       // Show success modal after brief delay
       setTimeout(() => this.showExportSuccess('downloaded'), 500);
     } catch (error) {
@@ -3635,10 +3617,10 @@ ${this.state.currentListing?.keywords?.join(', ')}
   toggleDropdown(dropdownId) {
     const dropdown = document.getElementById(dropdownId);
     const wasOpen = dropdown.classList.contains('show');
-    
+
     // Close all dropdowns first
     this.closeDropdowns();
-    
+
     // Toggle the clicked one
     if (!wasOpen) {
       dropdown.classList.add('show');
@@ -3649,7 +3631,7 @@ ${this.state.currentListing?.keywords?.join(', ')}
     }
   },
 
-  handleOutsideClick: function(e) {
+  handleOutsideClick: function (e) {
     if (!e.target.closest('.dropdown-container')) {
       window.app.closeDropdowns();
     }
@@ -3665,32 +3647,32 @@ ${this.state.currentListing?.keywords?.join(', ')}
   async downloadImagesOnly() {
     const btn = document.getElementById('downloadBtn');
     btn.disabled = true;
-    
+
     try {
       const zip = new JSZip();
-      
+
       for (let i = 0; i < this.state.uploadedImages.length; i++) {
         const img = this.state.uploadedImages[i];
         const blob = await fetch(img.url).then(r => r.blob());
         zip.file(`image-${i + 1}.jpg`, blob);
       }
-      
+
       const content = await zip.generateAsync({ type: 'blob' });
       const title = document.getElementById('outputTitle').value || 'quicklist';
       const filename = title.trim().split(/\s+/).slice(0, 3).map(w => w.replace(/[^a-z0-9]/gi, '').toLowerCase()).filter(w => w).join('-') || 'quicklist';
-      
+
       const url = URL.createObjectURL(content);
       const a = document.createElement('a');
       a.href = url;
       a.download = `${filename}-images.zip`;
       a.click();
       URL.revokeObjectURL(url);
-      
+
       this.showToast('Images downloaded!');
     } catch (error) {
       this.showToast('Error downloading images: ' + error.message, 'error');
     }
-    
+
     btn.disabled = false;
   },
 
@@ -3700,14 +3682,14 @@ ${this.state.currentListing?.keywords?.join(', ')}
     const blob = new Blob([listingText], { type: 'text/plain' });
     const title = document.getElementById('outputTitle').value || 'quicklist';
     const filename = title.trim().split(/\s+/).slice(0, 3).map(w => w.replace(/[^a-z0-9]/gi, '').toLowerCase()).filter(w => w).join('-') || 'quicklist';
-    
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `${filename}-listing.txt`;
     a.click();
     URL.revokeObjectURL(url);
-    
+
     this.showToast('Text file downloaded!');
   },
 
@@ -3771,7 +3753,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         text = this.state.currentListing?.keywords?.join(', ') || '';
         break;
     }
-    
+
     try {
       await navigator.clipboard.writeText(text);
       this.showToast(`${field.charAt(0).toUpperCase() + field.slice(1)} copied!`);
@@ -3790,7 +3772,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   async shareNative() {
     const title = document.getElementById('outputTitle').value || 'My Listing';
     const text = this.getListingText();
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -3818,7 +3800,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     const text = this.getListingText();
     const subject = encodeURIComponent(`Quicklist: ${title}`);
     const body = encodeURIComponent(text);
-    
+
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
     this.showToast('Opening email...');
   },
@@ -3828,7 +3810,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     const title = document.getElementById('outputTitle').value || '';
     const description = document.getElementById('outputDescription').value || '';
     const price = document.getElementById('outputPrice').value || '';
-    
+
     let url = '';
     switch (platform) {
       case 'ebay':
@@ -3844,7 +3826,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         this.showToast('Listing copied! Paste into Vinted form.');
         break;
     }
-    
+
     if (url) {
       window.open(url, '_blank');
     }
@@ -3858,18 +3840,18 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   showExportSuccess(action = 'copied') {
     const modal = document.getElementById('exportSuccessModal');
     const messageEl = document.getElementById('exportSuccessMessage');
-    
+
     const messages = {
       copied: 'Your listing has been copied to clipboard. Now paste it into your marketplace.',
       downloaded: 'Your listing files have been downloaded. Upload the images and paste the text into your marketplace.',
       shared: 'Your listing has been shared successfully.',
       emailed: 'Your listing has been sent to your email.'
     };
-    
+
     messageEl.textContent = messages[action] || messages.copied;
     modal.classList.remove('hidden');
     modal.classList.add('active');
-    
+
     // Track conversion
     if (typeof gtag !== 'undefined') {
       gtag('event', 'export_complete', {
@@ -3889,28 +3871,28 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   // Start new listing (from success modal)
   startNewListing() {
     this.closeExportSuccess();
-    
+
     // Reset state
     this.state.uploadedImages = [];
     this.state.currentListing = null;
-    
+
     // Clear UI
     const previewGrid = document.getElementById('previewGrid');
     if (previewGrid) previewGrid.innerHTML = '';
-    
+
     const itemHint = document.getElementById('itemHint');
     if (itemHint) itemHint.value = '';
-    
+
     const conditionInfo = document.getElementById('conditionInfo');
     if (conditionInfo) conditionInfo.value = '';
-    
+
     // Show initial state
     this.showInitialState();
     this.setWizardPhase('photos');
-    
+
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    
+
     this.showToast('Ready for your next listing!', 'success');
   },
 
@@ -3925,7 +3907,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       breakdown: [],
       suggestions: []
     };
-    
+
     // Title (25 points max)
     const title = document.getElementById('outputTitle')?.value || '';
     const titleLength = title.length;
@@ -3945,12 +3927,12 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       score.breakdown.push({ label: 'Title length', points: 5, max: 25, status: 'poor' });
       score.suggestions.push('Title is too short - add brand, size, color, or condition');
     }
-    
+
     // Description (25 points max)
     const description = document.getElementById('outputDescription')?.value || '';
     const descLength = description.length;
     const hasKeyDetails = /\b(size|condition|brand|color|material|measurements?)\b/i.test(description);
-    
+
     if (descLength >= 150 && hasKeyDetails) {
       score.total += 25;
       score.breakdown.push({ label: 'Description', points: 25, max: 25, status: 'good' });
@@ -3965,11 +3947,11 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       score.breakdown.push({ label: 'Description', points: 8, max: 25, status: 'poor' });
       score.suggestions.push('Add more description - buyers want details about condition and fit');
     }
-    
+
     // Photos (25 points max)
     const photoCount = this.state.uploadedImages?.length || 0;
     const hasBlurry = this.state.uploadedImages?.some(img => img.isBlurry) || false;
-    
+
     if (photoCount >= 4 && !hasBlurry) {
       score.total += 25;
       score.breakdown.push({ label: 'Photos', points: 25, max: 25, status: 'good' });
@@ -3987,24 +3969,24 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       score.breakdown.push({ label: 'Photos', points: 5, max: 25, status: 'poor' });
       score.suggestions.push('Add more photos! Listings with 4+ photos sell faster');
     }
-    
+
     // Price & brand completeness (25 points max)
     const price = document.getElementById('outputPrice')?.value || '';
     const brand = document.getElementById('outputBrand')?.value || '';
     const condition = document.getElementById('outputCondition')?.value || '';
-    
+
     let completenessPoints = 0;
     if (price && price !== '£0' && price !== '0') completenessPoints += 10;
     else score.suggestions.push('Add a price to your listing');
-    
+
     if (brand && brand.toLowerCase() !== 'unknown' && brand.toLowerCase() !== 'unbranded') completenessPoints += 10;
     else score.suggestions.push('Add brand if known - branded items sell better');
-    
+
     if (condition) completenessPoints += 5;
-    
+
     score.total += completenessPoints;
     score.breakdown.push({ label: 'Completeness', points: completenessPoints, max: 25, status: completenessPoints >= 20 ? 'good' : completenessPoints >= 10 ? 'ok' : 'poor' });
-    
+
     // Determine overall rating
     if (score.total >= 85) {
       score.rating = 'excellent';
@@ -4023,28 +4005,28 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       score.label = 'Poor';
       score.color = 'var(--error, #ef4444)';
     }
-    
+
     return score;
   },
 
   // Display listing score badge
   displayListingScore() {
     const score = this.calculateListingScore();
-    
+
     // Find or create score container
     let scoreContainer = document.getElementById('listingScoreContainer');
     if (!scoreContainer) {
       // Insert after the wizard steps
       const resultCard = document.querySelector('#resultState .result-card');
       if (!resultCard) return;
-      
+
       scoreContainer = document.createElement('div');
       scoreContainer.id = 'listingScoreContainer';
       scoreContainer.style.cssText = 'margin-bottom: 1.5rem;';
       resultCard.insertBefore(scoreContainer, resultCard.firstChild);
     }
-    
-    const suggestionsHtml = score.suggestions.length > 0 
+
+    const suggestionsHtml = score.suggestions.length > 0
       ? `<div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Tips to improve:</p>
            <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-secondary);">
@@ -4052,7 +4034,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
            </ul>
          </div>`
       : '';
-    
+
     scoreContainer.innerHTML = `
       <div style="background: var(--bg-secondary); border-radius: 12px; padding: 1rem; border: 1px solid var(--border-color);">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
@@ -4890,8 +4872,8 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     // Use filtered listings if filters are active, otherwise use all listings
     const listingsToRender =
       this.state.filteredSavedListings.length > 0 ||
-      document.getElementById('savedItemsSearch')?.value ||
-      document.getElementById('savedItemsPlatformFilter')?.value
+        document.getElementById('savedItemsSearch')?.value ||
+        document.getElementById('savedItemsPlatformFilter')?.value
         ? this.state.filteredSavedListings
         : this.state.savedListings;
 
@@ -4929,9 +4911,9 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         const primaryImage = listing.images?.[0]?.url || listing.images?.[0]?.data || '';
         const createdDate = listing.created_at
           ? new Date(listing.created_at).toLocaleDateString(undefined, {
-              month: 'short',
-              day: 'numeric',
-            })
+            month: 'short',
+            day: 'numeric',
+          })
           : 'Draft';
         const statusLabel = listing.status === 'sold' ? ' • Sold' : '';
         return `
@@ -5850,7 +5832,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     // Only show for free users who haven't dismissed it this session
     const dismissed = sessionStorage.getItem('upsellDismissed');
     const isFree = !subscription.planType || subscription.planType === 'free';
-    
+
     if (!isFree || dismissed) {
       footer.classList.add('hidden');
       document.body.classList.remove('has-upsell-footer');
@@ -5864,7 +5846,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
     if (usedEl) usedEl.textContent = usage.listingsCreated || 0;
     if (limitEl) limitEl.textContent = usage.limit || 5;
-    
+
     const percentage = usage.percentage || 0;
     if (barFill) {
       barFill.style.width = `${percentage}%`;
@@ -6028,7 +6010,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
     // Build plans array from backend config
     const plans = [];
-    
+
     if (!this.pricingConfig?.configured) {
       // Stripe not configured - show informational message
       plansContainer.innerHTML = `
@@ -6043,7 +6025,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
     // Build plans from API config
     const tierConfig = this.pricingConfig.tiers;
-    
+
     if (tierConfig.casual) {
       plans.push({
         id: 'casual',
@@ -6062,7 +6044,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         current: currentPlan === 'casual',
       });
     }
-    
+
     if (tierConfig.pro) {
       plans.push({
         id: 'pro',
@@ -6082,7 +6064,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         featured: tierConfig.pro.featured,
       });
     }
-    
+
     if (tierConfig.max) {
       plans.push({
         id: 'max',
@@ -6116,11 +6098,10 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
                         <ul style="list-style: none; padding: 0; margin-bottom: 1.5rem;">
                             ${plan.features.map((f) => `<li style="padding: 0.5rem 0; border-bottom: 1px solid var(--bg-secondary);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle"><polyline points="20 6 9 17 4 12"></polyline></svg> ${f}</li>`).join('')}
                         </ul>
-                        ${
-                          plan.current
-                            ? '<button class="btn btn-secondary" disabled>Current Plan</button>'
-                            : `<button class="btn ${plan.featured ? 'btn-primary' : 'btn-secondary'}" onclick="app.handlePlanSelection('${plan.id}', '${plan.priceId}')">Upgrade to ${plan.name}</button>`
-                        }
+                        ${plan.current
+            ? '<button class="btn btn-secondary" disabled>Current Plan</button>'
+            : `<button class="btn ${plan.featured ? 'btn-primary' : 'btn-secondary'}" onclick="app.handlePlanSelection('${plan.id}', '${plan.priceId}')">Upgrade to ${plan.name}</button>`
+          }
                     </div>
                 `
       )
@@ -7009,17 +6990,17 @@ function initLazyAnimations() {
   const lazyAnimations = [
     {
       id: 'step1-animation',
-      path: '/json_anim/scan-to-pay-illustration-in-line-art-style-2025-10-20-04-28-23-utc.json',
+      path: '/json_anim/new/woman-shopping-online-with-smartphone-2025-10-20-04-32-45-utc.json',
       label: 'Scanning and photographing items',
     },
     {
       id: 'step2-animation',
-      path: '/json_anim/online-shopping-time-line-art-illustration-2025-10-20-03-11-10-utc.json',
+      path: '/json_anim/new/virtual-marketplace-illustration-2025-10-20-03-04-06-utc.json',
       label: 'AI processing in real-time',
     },
     {
       id: 'step3-animation',
-      path: '/json_anim/shopping-receipt-illustration-in-line-art-style-2025-10-20-04-34-46-utc.json',
+      path: '/json_anim/new/hand-holding-retail-shopping-bags-illustration-2025-10-20-05-59-48-utc.json',
       label: 'Completed listing',
     },
     {
