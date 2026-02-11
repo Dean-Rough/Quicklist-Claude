@@ -59,7 +59,7 @@
     <meta property="twitter:image" content="https://quicklist.it.com/hero-image.jpg" />
 
     <!-- Additional SEO -->
-    <meta name="theme-color" content="#0f766e" />
+    <meta name="theme-color" content="#FF7A5C" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="QuickList" />
@@ -70,7 +70,7 @@
     <link rel="apple-touch-icon" href="/icons/icon-152.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png" />
-    <meta name="msapplication-TileColor" content="#0f766e" />
+    <meta name="msapplication-TileColor" content="#FF7A5C" />
     <meta name="msapplication-TileImage" content="/icons/icon-144.png" />
 
     <!-- Content Security Policy -->
@@ -2920,7 +2920,7 @@
                 publishableKey: publishableKey,
                 appearance: {
                   variables: {
-                    colorPrimary: '#0f766e',
+                    colorPrimary: '#FF7A5C',
                     colorBackground: '#ffffff',
                     colorInputBackground: '#f7f2ea',
                     colorInputText: '#1a1a2e',
@@ -3592,7 +3592,7 @@
       }
       .upsell-plan {
         font-weight: 600;
-        color: var(--accent-indigo, #0f766e);
+        color: var(--accent, #FF7A5C);
         font-size: 13px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -3610,7 +3610,7 @@
       }
       .upsell-bar-fill {
         height: 100%;
-        background: linear-gradient(90deg, var(--accent-indigo, #0f766e) 0%, #14b8a6 100%);
+        background: linear-gradient(90deg, var(--accent, #FF7A5C) 0%, var(--accent-yellow, #FFD93D) 100%);
         border-radius: 3px;
         transition: width 0.5s ease, background 0.3s ease;
       }
@@ -3629,14 +3629,18 @@
         white-space: nowrap;
       }
       .btn-accent {
-        background: var(--accent-indigo, #0f766e);
+        background: var(--accent, #FF7A5C);
         color: white;
-        border: none;
-        border-radius: 999px;
+        border: 2px solid var(--text-primary, #1f2937);
+        border-radius: 10px;
         font-family: 'Manrope', sans-serif;
+        font-weight: 700;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
       }
       .btn-accent:hover {
-        background: var(--accent-indigo-hover, #0b5f57);
+        background: var(--accent, #FF7A5C);
+        transform: translate(-2px, -2px);
+        box-shadow: 2px 2px 0 0 var(--text-primary, #1f2937);
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
       }

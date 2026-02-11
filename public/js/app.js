@@ -5430,15 +5430,15 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   getClerkAppearance() {
     return {
       variables: {
-        colorPrimary: '#0f766e',
+        colorPrimary: '#FF7A5C',
         colorBackground: '#ffffff',
         colorInputBackground: '#f7f2ea',
         colorInputText: '#1a1a2e',
         colorText: '#1a1a2e',
         colorTextSecondary: '#64748b',
-        colorDanger: '#ef4444',
-        colorSuccess: '#10b981',
-        colorWarning: '#f59e0b',
+        colorDanger: '#FF6B6B',
+        colorSuccess: '#6BCB8E',
+        colorWarning: '#FFD93D',
         fontFamily: "'Manrope', system-ui, sans-serif",
         borderRadius: '12px',
         spacingUnit: '4px',
@@ -5464,13 +5464,13 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         },
         socialButtonsBlockButton: {
           backgroundColor: '#f7f2ea',
-          border: '1px solid #e5e0d8',
+          border: '1.5px solid #e5e0d8',
           borderRadius: '10px',
           color: '#1a1a2e',
         },
         socialButtonsBlockButtonText: {
           color: '#1a1a2e',
-          fontWeight: '500',
+          fontWeight: '600',
         },
         dividerLine: {
           backgroundColor: '#e5e0d8',
@@ -5484,28 +5484,28 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         },
         formFieldInput: {
           backgroundColor: '#f7f2ea',
-          border: '1px solid #e5e0d8',
+          border: '1.5px solid #e5e0d8',
           borderRadius: '10px',
           color: '#1a1a2e',
         },
         formButtonPrimary: {
-          backgroundColor: '#6c5ce7',
+          backgroundColor: '#FF7A5C',
           borderRadius: '10px',
-          fontWeight: '600',
+          fontWeight: '700',
           textTransform: 'none',
         },
         footerActionLink: {
-          color: '#0f766e',
-          fontWeight: '500',
+          color: '#FF7A5C',
+          fontWeight: '600',
         },
         identityPreviewText: {
           color: '#1a1a2e',
         },
         identityPreviewEditButton: {
-          color: '#0f766e',
+          color: '#FF7A5C',
         },
         formFieldSuccessText: {
-          color: '#10b981',
+          color: '#6BCB8E',
         },
         formFieldErrorText: {
           color: '#ef4444',

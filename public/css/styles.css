@@ -5,23 +5,47 @@
 }
 
 :root {
+  /* Backgrounds - keep the warm cream */
   --bg-primary: #f7f2ea;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f0e6d9;
   --bg-hover: #e7dbc9;
-  --accent-indigo: #0f766e;
-  --accent-indigo-hover: #0b5f57;
-  --accent-indigo-light: rgba(15, 118, 110, 0.12);
-  --accent-purple: #f97316;
+  
+  /* Primary accent - Coral from price tags */
+  --accent: #FF7A5C;
+  --accent-hover: #E8694D;
+  --accent-light: rgba(255, 122, 92, 0.12);
+  
+  /* Secondary accents from hero image */
+  --accent-mint: #6BCB8E;
+  --accent-yellow: #FFD93D;
+  --accent-blue: #5B89B5;
+  
+  /* Legacy aliases */
+  --accent-indigo: var(--accent);
+  --accent-indigo-hover: var(--accent-hover);
+  --accent-indigo-light: var(--accent-light);
+  --accent-purple: var(--accent-yellow);
+  
+  /* Text */
   --text-primary: #1f2937;
   --text-secondary: #475569;
-  --text-muted: #525b67; /* Darkened from #6b7280 for WCAG AA compliance (4.5:1 ratio) */
+  --text-muted: #525b67;
+  
+  /* Borders */
   --border-color: #e5dccf;
-  --success: #15803d;
-  --warning: #d97706;
-  --error: #dc2626;
+  --border-dark: #1f2937;
+  
+  /* Status */
+  --success: #6BCB8E;
+  --warning: #FFD93D;
+  --error: #FF6B6B;
+  
+  /* Shadows */
   --shadow-soft: 0 12px 32px rgba(15, 23, 42, 0.08);
   --shadow-strong: 0 20px 60px rgba(15, 23, 42, 0.18);
+  --shadow-chunky: 4px 4px 0 0 var(--text-primary);
+  
   --glass: rgba(247, 242, 234, 0.9);
 }
 
@@ -30,7 +54,7 @@ body {
   font-size: 1.0625rem;
   background:
     radial-gradient(1200px 600px at 8% -10%, rgba(249, 115, 22, 0.08), transparent 60%),
-    radial-gradient(900px 600px at 90% -5%, rgba(15, 118, 110, 0.1), transparent 55%),
+    radial-gradient(900px 600px at 90% -5%, rgba(255, 122, 92, 0.1), transparent 55%),
     var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.65;
@@ -364,7 +388,7 @@ body.loading::after {
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(600px 400px at 15% 20%, rgba(15, 118, 110, 0.18), transparent 65%),
+    radial-gradient(600px 400px at 15% 20%, rgba(255, 122, 92, 0.15), transparent 65%),
     radial-gradient(700px 500px at 85% 10%, rgba(249, 115, 22, 0.16), transparent 60%);
   opacity: 1;
   z-index: 0;
@@ -568,7 +592,7 @@ body.loading::after {
   font-weight: 700;
   margin: 0 auto 1rem;
   color: white;
-  box-shadow: 0 10px 22px rgba(15, 118, 110, 0.25);
+  box-shadow: 0 10px 22px rgba(255, 122, 92, 0.25);
 }
 
 /* Modal */
@@ -2003,7 +2027,7 @@ select.form-input::-ms-expand {
   color: white;
   padding: 12px 20px;
   border-radius: 50px;
-  box-shadow: 0 8px 20px rgba(15, 118, 110, 0.2);
+  box-shadow: 0 8px 20px rgba(255, 122, 92, 0.2);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2071,7 +2095,7 @@ select.form-input::-ms-expand {
 .pull-to-refresh-spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid rgba(15, 118, 110, 0.28);
+  border: 3px solid rgba(255, 122, 92, 0.28);
   border-top-color: var(--accent-indigo);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -2112,7 +2136,7 @@ select.form-input::-ms-expand {
 }
 
 .voice-input-button:hover {
-  background: rgba(15, 118, 110, 0.12);
+  background: rgba(255, 122, 92, 0.12);
 }
 
 .voice-input-button.listening {
@@ -2720,7 +2744,7 @@ select.form-input::-ms-expand {
 
 .cl-formFieldInput:focus {
   border-color: var(--accent-indigo) !important;
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(255, 122, 92, 0.15) !important;
   outline: none !important;
 }
 
@@ -2748,7 +2772,7 @@ select.form-input::-ms-expand {
 .cl-formButtonPrimary:hover {
   background: var(--accent-indigo-hover) !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.22) !important;
+  box-shadow: 0 12px 24px rgba(255, 122, 92, 0.22) !important;
 }
 
 /* Clerk footer/branding - hide it */
@@ -2857,8 +2881,8 @@ div[class*="cl-"] .cl-card {
 [data-clerk-component] .cl-formButtonPrimary,
 .cl-formButtonPrimary,
 button.cl-formButtonPrimary {
-  background: #0f766e !important;
-  background-color: #0f766e !important;
+  background: #FF7A5C !important;
+  background-color: #FF7A5C !important;
   border-radius: 999px !important;
   font-weight: 600 !important;
   padding: 0.75rem 1.5rem !important;
@@ -2870,8 +2894,8 @@ button.cl-formButtonPrimary {
 [data-clerk-component] button:hover[data-localization-key*="submit"],
 [data-clerk-component] .cl-formButtonPrimary:hover,
 .cl-formButtonPrimary:hover {
-  background: #0d6b63 !important;
-  background-color: #0d6b63 !important;
+  background: #E8694D !important;
+  background-color: #E8694D !important;
 }
 
 /* Social buttons - nuclear */
@@ -2909,8 +2933,8 @@ input.cl-formFieldInput {
 [data-clerk-component] input:focus,
 [data-clerk-component] .cl-formFieldInput:focus,
 .cl-formFieldInput:focus {
-  border-color: #0f766e !important;
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15) !important;
+  border-color: #FF7A5C !important;
+  box-shadow: 0 0 0 3px rgba(255, 122, 92, 0.15) !important;
   outline: none !important;
 }
 
@@ -2977,8 +3001,8 @@ div[class*="cl-"][class*="footer"] a[href*="clerk"] {
 
 [data-clerk-component] .cl-otpCodeFieldInput:focus,
 .cl-otpCodeFieldInput:focus {
-  border-color: #0f766e !important;
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15) !important;
+  border-color: #FF7A5C !important;
+  box-shadow: 0 0 0 3px rgba(255, 122, 92, 0.15) !important;
 }
 
 /* Fix tiny Google logo in social buttons */
