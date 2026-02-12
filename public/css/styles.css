@@ -723,7 +723,7 @@ body.loading::after {
 }
 
 .hero-text {
-  text-align: left;
+  text-align: center;
 }
 
 .hero-image-container {
@@ -767,12 +767,15 @@ body.loading::after {
   margin-bottom: 2.5rem;
   line-height: 1.5;
   max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .hero-cta-group {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .hero-cta-group .btn {
@@ -853,6 +856,7 @@ body.loading::after {
 /* Section */
 .section {
   padding: var(--space-section) 0;
+  text-align: center;
 }
 
 .section-title {
@@ -860,6 +864,20 @@ body.loading::after {
   font-weight: 800;
   text-align: center;
   letter-spacing: -0.02em;
+}
+
+/* Center text in marketing sections */
+#marketingView .bento-cell,
+#marketingView .section,
+.how-it-works,
+.pricing-section,
+.testimonials-section {
+  text-align: center;
+}
+
+#marketingView .bento-cell p,
+#marketingView .bento-cell h3 {
+  text-align: center;
 }
 
 /* Grid Layout */
@@ -1215,6 +1233,7 @@ select.form-input::-ms-expand {
 
 .footer-brand {
   max-width: 300px;
+  text-align: left;
 }
 
 .footer-logo {
