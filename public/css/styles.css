@@ -1,7 +1,10 @@
 /* ============================================
    QUICKLIST — BENTO GRID UI
-   Manrope Font Family + Dark Theme + Bento Grid
-   Design System: Manrope 400/600/700/800
+   Typography: Manrope + IBM Plex Mono
+   - H tags + Menu: Manrope Bold (700)
+   - Paragraphs: Manrope Reg (400)
+   - Buttons: Manrope Reg (400)
+   - Misc/Tags: IBM Plex Mono Reg (400)
    ============================================ */
 
 * {
@@ -87,16 +90,20 @@
   --card-bg: var(--bg-secondary);
   --hover-bg: var(--bg-hover);
   --text-color: var(--text-primary);
+
+  /* Typography */
+  --font-body: 'Manrope', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Consolas', monospace;
 }
 
 html,
 body {
-  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
   font-weight: 400;
   font-size: 1rem;
   background: var(--bg-primary);
   color: var(--text-primary);
-  line-height: 1.1;
+  line-height: 1.5;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -114,8 +121,8 @@ h5,
 h6,
 .section-title,
 .hero h1 {
-  font-family: 'Manrope', system-ui, sans-serif;
-  font-weight: 800;
+  font-family: var(--font-body);
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
   margin-bottom: 0.8em;
@@ -431,7 +438,7 @@ p {
 }
 
 .nav-link {
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-weight: 400;
   color: var(--cream);
   text-decoration: none;
@@ -449,7 +456,7 @@ p {
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: var(--radius-bento);
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.15s ease, background 0.15s ease;
@@ -1059,7 +1066,7 @@ body.loading::after {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-size: 0.95rem;
 }
 
@@ -1153,7 +1160,7 @@ select.form-input::-ms-expand {
 }
 
 .footer-logo {
-  font-family: 'Manrope', sans-serif;
+  font-family: var(--font-body);
   font-size: 1.5rem;
   font-weight: 800;
   color: var(--cream);
@@ -1533,7 +1540,7 @@ select.form-input::-ms-expand {
   padding: 0.5rem 1rem;
   border-radius: var(--radius-bento);
   font-size: 0.85rem;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-weight: 400;
 }
 
@@ -3263,18 +3270,18 @@ select.form-input::-ms-expand {
   border: 1px solid var(--border-color) !important;
   border-radius: 12px !important;
   box-shadow: none !important;
-  font-family: 'Manrope', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-family: var(--font-body) !important;
   padding: 2rem !important;
 }
 
-/* Clerk headings - Manrope only, weight 800 */
+/* Clerk headings - Manrope Bold (700) */
 .cl-headerTitle,
 [data-clerk-component] .cl-headerTitle,
 .cl-signIn-root .cl-headerTitle,
 .cl-signUp-root .cl-headerTitle {
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-family: var(--font-body) !important;
   color: var(--cream) !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   font-size: 1.5rem !important;
   margin-bottom: 0.5rem !important;
 }
@@ -3284,7 +3291,7 @@ select.form-input::-ms-expand {
 .cl-signIn-root .cl-headerSubtitle,
 .cl-signUp-root .cl-headerSubtitle {
   color: var(--cream) !important;
-  font-family: 'Manrope', sans-serif !important;
+  font-family: var(--font-body) !important;
   font-size: 0.95rem !important;
   margin-bottom: 1.5rem !important;
   opacity: 0.8 !important;
@@ -3330,7 +3337,7 @@ button.cl-socialButtonsBlockButton,
   border: 1px solid var(--border-color) !important;
   border-radius: 999px !important;
   color: var(--cream) !important;
-  font-family: 'Manrope', sans-serif !important;
+  font-family: var(--font-body) !important;
   font-weight: 600 !important;
   font-size: 1rem !important;
   padding: 0.75rem 1.5rem !important;
@@ -3362,7 +3369,7 @@ button.cl-socialButtonsBlockButton,
   border: 1px solid var(--border-color) !important;
   border-radius: 8px !important;
   color: var(--text-primary) !important;
-  font-family: 'Manrope', sans-serif !important;
+  font-family: var(--font-body) !important;
   font-size: 1rem !important;
   padding: 0.75rem 1rem !important;
 }
@@ -3375,7 +3382,7 @@ button.cl-socialButtonsBlockButton,
 
 .cl-formFieldLabel {
   color: var(--text-primary) !important;
-  font-family: 'Manrope', sans-serif !important;
+  font-family: var(--font-body) !important;
   font-weight: 500 !important;
   font-size: 0.9rem !important;
   margin-bottom: 0.5rem !important;
@@ -3385,7 +3392,7 @@ button.cl-socialButtonsBlockButton,
 .cl-formButtonPrimary {
   background: var(--accent-indigo) !important;
   border-radius: 999px !important;
-  font-family: 'Manrope', sans-serif !important;
+  font-family: var(--font-body) !important;
   font-weight: 600 !important;
   font-size: 1rem !important;
   padding: 0.75rem 1.5rem !important;
@@ -3419,7 +3426,7 @@ button.cl-socialButtonsBlockButton,
 
 .cl-dividerText {
   color: var(--text-muted) !important;
-  font-family: 'Manrope', sans-serif !important;
+  font-family: var(--font-body) !important;
   font-size: 0.85rem !important;
 }
 
@@ -3484,8 +3491,8 @@ button.cl-socialButtonsBlockButton,
 .cl-signUp-root,
 .cl-userButton-root,
 .cl-userProfile-root {
-  font-family: 'Manrope', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
-  --cl-font-family: 'Manrope', sans-serif !important;
+  font-family: var(--font-body) !important;
+  --cl-font-family: var(--font-body) !important;
 }
 
 /* Force card background consistency */
@@ -3501,7 +3508,7 @@ div[class*="cl-"] .cl-card {
 [data-clerk-component] *,
 .cl-component *,
 [class*="cl-"] {
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-family: var(--font-body) !important;
 }
 
 /* Kill any blue/teal text Clerk tries to inject */
@@ -3612,7 +3619,7 @@ div[class*="cl-"][class*="footer"] a[href*="clerk"] {
 
 .cl-userButtonPopoverActionButton,
 [data-clerk-component] .cl-userButtonPopoverActionButton {
-  font-family: 'Manrope', sans-serif !important;
+  font-family: var(--font-body) !important;
   color: var(--cream) !important;
   padding: 0.75rem 1rem !important;
 }
