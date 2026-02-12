@@ -723,7 +723,7 @@ body.loading::after {
 }
 
 .hero-text {
-  text-align: center;
+  text-align: left;
 }
 
 .hero-image-container {
@@ -767,15 +767,12 @@ body.loading::after {
   margin-bottom: 2.5rem;
   line-height: 1.5;
   max-width: 540px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .hero-cta-group {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
-  justify-content: center;
 }
 
 .hero-cta-group .btn {
@@ -856,28 +853,29 @@ body.loading::after {
 /* Section */
 .section {
   padding: var(--space-section) 0;
-  text-align: center;
 }
 
 .section-title {
   font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 800;
+  font-weight: 700;
   text-align: center;
   letter-spacing: -0.02em;
 }
 
-/* Center text in marketing sections */
-#marketingView .bento-cell,
-#marketingView .section,
-.how-it-works,
-.pricing-section,
-.testimonials-section {
-  text-align: center;
-}
+/* Mobile: center text in marketing sections */
+@media (max-width: 768px) {
+  #marketingView .bento-cell,
+  #marketingView .section,
+  .how-it-works,
+  .pricing-section,
+  .testimonials-section {
+    text-align: center;
+  }
 
-#marketingView .bento-cell p,
-#marketingView .bento-cell h3 {
-  text-align: center;
+  #marketingView .bento-cell p,
+  #marketingView .bento-cell h3 {
+    text-align: center;
+  }
 }
 
 /* Grid Layout */
