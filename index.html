@@ -315,7 +315,7 @@
             </div>
           </div>
           <div class="hero-image-container">
-            <div id="hero-animation" aria-label="Animated illustration of an online marketplace"></div>
+            <img src="/images/stock-sorting.jpg" alt="Person sorting through clothes ready to sell" loading="eager" />
           </div>
         </div>
       </section>
@@ -336,12 +336,12 @@
           </p>
           <div class="bento-grid">
             <!-- Step 1 -->
-            <div class="bento-cell bento-span-4 bento-cream">
+            <div class="bento-cell bento-span-4 bento-cream" style="text-align: center;">
               <div id="step1-animation" class="step-image"
-                style="height: 200px; margin-bottom: 1.5rem; border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.05)"
+                style="height: 200px; margin: 0 auto 1.5rem; border-radius: 12px; overflow: hidden; max-width: 280px;"
                 aria-label="Animated illustration of scanning and photographing items"></div>
               <div class="step-number"
-                style="background: var(--dark); color: var(--cream); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; margin-bottom: 1rem;">
+                style="background: var(--dark); color: var(--cream); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; margin: 0 auto 1rem;">
                 1</div>
               <h3>Upload Your Photos</h3>
               <p>
@@ -351,12 +351,12 @@
             </div>
 
             <!-- Step 2 -->
-            <div class="bento-cell bento-span-4 bento-lavender">
+            <div class="bento-cell bento-span-4 bento-lavender" style="text-align: center;">
               <div id="step2-animation" class="step-image"
-                style="height: 200px; margin-bottom: 1.5rem; border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.05)"
+                style="height: 200px; margin: 0 auto 1.5rem; border-radius: 12px; overflow: hidden; max-width: 280px;"
                 aria-label="Animated illustration of AI processing in real-time"></div>
               <div class="step-number"
-                style="background: var(--dark); color: var(--cream); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; margin-bottom: 1rem;">
+                style="background: var(--dark); color: var(--cream); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; margin: 0 auto 1rem;">
                 2</div>
               <h3>AI Generates Everything</h3>
               <p>
@@ -366,12 +366,12 @@
             </div>
 
             <!-- Step 3 -->
-            <div class="bento-cell bento-span-4 bento-green">
+            <div class="bento-cell bento-span-4 bento-green" style="text-align: center;">
               <div id="step3-animation" class="step-image"
-                style="height: 200px; margin-bottom: 1.5rem; border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.05)"
+                style="height: 200px; margin: 0 auto 1.5rem; border-radius: 12px; overflow: hidden; max-width: 280px;"
                 aria-label="Animated illustration of completed listing"></div>
               <div class="step-number"
-                style="background: var(--dark); color: var(--cream); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; margin-bottom: 1rem;">
+                style="background: var(--dark); color: var(--cream); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; margin: 0 auto 1rem;">
                 3</div>
               <h3>Download & List</h3>
               <p>
@@ -1874,13 +1874,34 @@
   <!-- Footer -->
   <footer id="marketingFooter" class="footer">
     <div class="container">
-      <div class="footer-links">
-        <a class="nav-link" onclick="app.navigateTo('home')">Home</a>
-        <a class="nav-link" onclick="app.navigateTo('photoTips')">Photo Tips</a>
-        <a class="nav-link" onclick="app.navigateTo('checklist')">Seller Checklist</a>
-        <a class="nav-link" onclick="app.navigateTo('pricing')">Pricing</a>
+      <div class="footer-content">
+        <div class="footer-brand">
+          <div class="footer-logo">QuickList AI</div>
+          <p class="footer-tagline">Turn your clutter into cash with AI-powered listings.</p>
+        </div>
+        <nav class="footer-nav">
+          <div class="footer-nav-group">
+            <h4>Product</h4>
+            <a onclick="app.navigateTo('home')">Home</a>
+            <a onclick="app.navigateTo('pricing')">Pricing</a>
+            <a onclick="app.showAuthModal()">Get Started</a>
+          </div>
+          <div class="footer-nav-group">
+            <h4>Resources</h4>
+            <a onclick="app.navigateTo('photoTips')">Photo Tips</a>
+            <a onclick="app.navigateTo('checklist')">Seller Checklist</a>
+          </div>
+        </nav>
       </div>
-      <p style="color: var(--text-muted)">&copy; 2025 QuickList AI. All rights reserved.</p>
+      <div class="footer-bottom">
+        <p>&copy; 2025 QuickList AI. All rights reserved.</p>
+        <div class="footer-platforms">
+          <span>Works with</span>
+          <span class="platform-badge">Vinted</span>
+          <span class="platform-badge">eBay</span>
+          <span class="platform-badge">Gumtree</span>
+        </div>
+      </div>
     </div>
   </footer>
 
