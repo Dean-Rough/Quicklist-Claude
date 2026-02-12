@@ -1327,6 +1327,20 @@ select.form-input::-ms-expand {
   opacity: 1;
 }
 
+/* QuickList Logo SVG */
+.logo-svg {
+  height: 28px;
+  width: auto;
+  color: var(--cream);
+}
+
+.footer-logo-svg {
+  height: 24px;
+  width: auto;
+  color: var(--cream);
+  margin-bottom: 0.75rem;
+}
+
 /* Footer Mobile */
 @media (max-width: 768px) {
   .footer {
