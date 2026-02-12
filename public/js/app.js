@@ -2271,6 +2271,9 @@ const app = {
   updateImageEnhancementToggle(userTier = 'free') {
     const toggle = document.getElementById('imageEnhancement');
     const description = document.getElementById('enhancementDescription');
+    const studioControls = document.getElementById('studioControls');
+    const studioBackground = document.getElementById('studioBackground');
+    const studioLighting = document.getElementById('studioLighting');
     if (!toggle) return;
 
     const tierLevels = { free: 0, starter: 1, casual: 2, pro: 3, business: 4, max: 4 };
@@ -2283,12 +2286,22 @@ const app = {
         description.textContent =
           'AI-powered image improvements, auto-tagging, OCR, and quality analysis';
       }
+      // Enable studio controls for Pro and Max tiers
+      if (studioControls) {
+        studioControls.style.display = 'block';
+        if (studioBackground) studioBackground.disabled = false;
+        if (studioLighting) studioLighting.disabled = false;
+      }
     } else {
       toggle.disabled = true;
       toggle.checked = false;
       if (description) {
         description.innerHTML =
           'Upgrade to <strong>Pro</strong> or <strong>Max</strong> for AI image enhancements';
+      }
+      // Hide studio controls for free/casual tiers
+      if (studioControls) {
+        studioControls.style.display = 'none';
       }
     }
   },
@@ -3240,8 +3253,32 @@ ${description}
         canvas.height = 1200;
         const ctx = canvas.getContext('2d');
 
-        // Create neutral studio background
-        ctx.fillStyle = '#F5F5F5';
+        // Get user-selected background and lighting options
+        const backgroundType = document.getElementById('studioBackground')?.value || 'neutral';
+        const lightingType = document.getElementById('studioLighting')?.value || 'soft';
+
+        // Apply background based on selection
+        switch (backgroundType) {
+          case 'white':
+            ctx.fillStyle = '#FFFFFF';
+            break;
+          case 'gradient':
+            const gradient = ctx.createLinearGradient(0, 0, 0, 1200);
+            gradient.addColorStop(0, '#F8F8F8');
+            gradient.addColorStop(1, '#E0E0E0');
+            ctx.fillStyle = gradient;
+            break;
+          case 'warm':
+            ctx.fillStyle = '#FFF8F0';
+            break;
+          case 'cool':
+            ctx.fillStyle = '#F0F5FF';
+            break;
+          case 'neutral':
+          default:
+            ctx.fillStyle = '#F5F5F5';
+            break;
+        }
         ctx.fillRect(0, 0, 1200, 1200);
 
         // Calculate image size to fit (80% of canvas)
@@ -3256,10 +3293,30 @@ ${description}
         const x = (1200 - width) / 2;
         const y = (1200 - height) / 2;
 
-        // Draw image with shadow
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
-        ctx.shadowBlur = 20;
-        ctx.shadowOffsetY = 10;
+        // Apply lighting/shadow based on selection
+        switch (lightingType) {
+          case 'dramatic':
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = 30;
+            ctx.shadowOffsetY = 20;
+            ctx.shadowOffsetX = 10;
+            break;
+          case 'none':
+            // No shadow
+            ctx.shadowColor = 'transparent';
+            break;
+          case 'glow':
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+            ctx.shadowBlur = 40;
+            break;
+          case 'soft':
+          default:
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetY = 10;
+            break;
+        }
+        
         ctx.drawImage(img, x, y, width, height);
 
         canvas.toBlob(resolve, 'image/jpeg', 0.95);

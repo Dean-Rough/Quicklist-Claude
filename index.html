@@ -785,6 +785,47 @@
               </small>
             </div>
 
+            <!-- Studio Photo Controls (Pro & Max only) -->
+            <div class="form-group" id="studioControls" style="margin-top: 1rem; display: none;">
+              <label class="form-label">
+                Studio Photo Background
+                <small style="color: var(--text-muted)">(Pro & Max only)</small>
+              </label>
+              <select class="form-input" id="studioBackground" disabled>
+                <option value="neutral">Neutral Gray</option>
+                <option value="white">Pure White</option>
+                <option value="gradient">Gradient Fade</option>
+                <option value="warm">Warm Tone</option>
+                <option value="cool">Cool Tone</option>
+              </select>
+              <small style="
+                    color: var(--text-muted);
+                    font-size: 0.85rem;
+                    display: block;
+                    margin-top: 0.5rem;
+                  ">
+                Choose background style for hero image generation
+              </small>
+              
+              <label class="form-label" style="margin-top: 1rem;">
+                Lighting Style
+              </label>
+              <select class="form-input" id="studioLighting" disabled>
+                <option value="soft">Soft Shadow</option>
+                <option value="dramatic">Dramatic Shadow</option>
+                <option value="none">No Shadow</option>
+                <option value="glow">Soft Glow</option>
+              </select>
+              <small style="
+                    color: var(--text-muted);
+                    font-size: 0.85rem;
+                    display: block;
+                    margin-top: 0.5rem;
+                  ">
+                Adjust shadow and lighting effects
+              </small>
+            </div>
+
             <div class="image-grid" id="imageGrid"></div>
           </div>
         </div>
