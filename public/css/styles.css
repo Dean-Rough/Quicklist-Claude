@@ -699,8 +699,9 @@ body.loading::after {
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(600px 400px at 15% 20%, rgba(234, 193, 25, 0.08), transparent 65%),
-    radial-gradient(700px 500px at 85% 10%, rgba(158, 214, 223, 0.06), transparent 60%);
+    radial-gradient(600px 400px at 15% 20%, rgba(234, 193, 25, 0.12), transparent 65%),
+    radial-gradient(700px 500px at 85% 10%, rgba(158, 214, 223, 0.08), transparent 60%),
+    radial-gradient(400px 300px at 50% 80%, rgba(234, 167, 200, 0.06), transparent 50%);
   opacity: 1;
   z-index: 0;
 }
@@ -723,10 +724,11 @@ body.loading::after {
 
 .hero-image-container {
   position: relative;
-  border-radius: 20px;
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: var(--shadow-strong);
   aspect-ratio: 4/3;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  border: 1px solid var(--border-color);
 }
 
 .hero-image-container img,
@@ -745,17 +747,22 @@ body.loading::after {
 
 .hero h1 {
   font-size: 3.5rem;
-  font-weight: 700;
-  line-height: 1.1;
+  font-weight: 800;
+  line-height: 1.05;
   color: var(--cream);
+  margin-bottom: 1.5rem;
+}
+
+.hero h1 span {
+  color: var(--yellow);
 }
 
 .hero p {
   font-size: 1.25rem;
   color: var(--text-secondary);
   margin-bottom: 2.5rem;
-  line-height: 1.1;
-  max-width: 600px;
+  line-height: 1.5;
+  max-width: 540px;
 }
 
 .hero-cta-group {
@@ -764,26 +771,78 @@ body.loading::after {
   flex-wrap: wrap;
 }
 
+.hero-cta-group .btn {
+  font-size: 1rem;
+  padding: 1rem 1.75rem;
+}
+
+/* Hero Mobile */
 @media (max-width: 968px) {
+  .hero {
+    min-height: auto;
+    padding: 2rem 0;
+  }
+
   .hero-content {
     grid-template-columns: 1fr;
     text-align: center;
+    gap: 2.5rem;
+    padding: 3rem 1.5rem;
   }
 
   .hero-text {
     text-align: center;
+    order: 1;
+  }
+
+  .hero-image-container {
+    order: 2;
+    aspect-ratio: 16/10;
+    max-width: 400px;
+    margin: 0 auto;
   }
 
   .hero h1 {
-    font-size: 2.5rem;
+    font-size: 2.25rem;
+    margin-bottom: 1rem;
   }
 
   .hero p {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    max-width: none;
+    line-height: 1.6;
   }
 
   .hero-cta-group {
     justify-content: center;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .hero-cta-group .btn {
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-content {
+    padding: 2rem 1rem;
+  }
+
+  .hero h1 {
+    font-size: 1.875rem;
+  }
+
+  .hero p {
+    font-size: 1rem;
+  }
+
+  .hero-image-container {
+    aspect-ratio: 4/3;
+    border-radius: 16px;
   }
 }
 
