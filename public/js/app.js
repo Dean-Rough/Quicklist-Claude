@@ -223,19 +223,19 @@ const app = {
   onboardingSteps: [
     {
       target: '#photoUploader',
-      title: '📸 Step 1: Upload Photos',
+      title: 'Step 1: Upload Photos',
       content: 'Drag and drop your item photos here, or tap to select. More angles = better listings!',
       position: 'bottom'
     },
     {
       target: '#generateBtn',
-      title: '✨ Step 2: Let AI Work',
+      title: 'Step 2: AI Magic',
       content: 'Our AI analyzes your photos and generates a complete listing with title, description, and pricing.',
       position: 'top'
     },
     {
       target: '.export-actions, #downloadBtn',
-      title: '🚀 Step 3: Export & Sell',
+      title: 'Step 3: Export & Sell',
       content: 'Download, copy, or share your listing. Then paste it into Vinted, eBay, or any marketplace!',
       position: 'top'
     }
@@ -1485,7 +1485,7 @@ const app = {
       }
 
                             <div class="damage-disclosure">
-                                <h4>📝 Suggested Condition Disclosure</h4>
+                                <h4>Suggested Condition Disclosure</h4>
                                 <div class="damage-disclosure-text">
                                     ${damageData.conditionDisclosure}
                                 </div>
