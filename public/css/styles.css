@@ -3267,28 +3267,69 @@ select.form-input::-ms-expand {
   padding: 2rem !important;
 }
 
-/* Clerk headings */
-.cl-headerTitle {
-  font-family: 'Space Grotesk', 'Outfit', sans-serif !important;
-  color: var(--text-primary) !important;
-  font-weight: 700 !important;
+/* Clerk headings - Manrope only, weight 800 */
+.cl-headerTitle,
+[data-clerk-component] .cl-headerTitle,
+.cl-signIn-root .cl-headerTitle,
+.cl-signUp-root .cl-headerTitle {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  color: var(--cream) !important;
+  font-weight: 800 !important;
   font-size: 1.5rem !important;
   margin-bottom: 0.5rem !important;
 }
 
-.cl-headerSubtitle {
-  color: var(--text-secondary) !important;
+.cl-headerSubtitle,
+[data-clerk-component] .cl-headerSubtitle,
+.cl-signIn-root .cl-headerSubtitle,
+.cl-signUp-root .cl-headerSubtitle {
+  color: var(--cream) !important;
   font-family: 'Manrope', sans-serif !important;
   font-size: 0.95rem !important;
   margin-bottom: 1.5rem !important;
+  opacity: 0.8 !important;
 }
 
-/* Clerk social buttons - match site btn-secondary */
-.cl-socialButtonsBlockButton {
+/* Clerk close button - clean styling */
+.cl-modalCloseButton,
+[data-clerk-component] .cl-modalCloseButton,
+button.cl-modalCloseButton {
+  background: transparent !important;
+  border: none !important;
+  color: var(--cream) !important;
+  opacity: 0.6 !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.cl-modalCloseButton:hover,
+[data-clerk-component] .cl-modalCloseButton:hover {
+  opacity: 1 !important;
+  background: var(--bg-tertiary) !important;
+}
+
+.cl-modalCloseButton svg,
+[data-clerk-component] .cl-modalCloseButton svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* Clerk social buttons - AGGRESSIVE override for text color */
+.cl-socialButtonsBlockButton,
+[data-clerk-component] .cl-socialButtonsBlockButton,
+button.cl-socialButtonsBlockButton,
+.cl-signIn-root .cl-socialButtonsBlockButton,
+.cl-signUp-root .cl-socialButtonsBlockButton {
   background: var(--bg-secondary) !important;
   border: 1px solid var(--border-color) !important;
   border-radius: 999px !important;
-  color: var(--text-primary) !important;
+  color: var(--cream) !important;
   font-family: 'Manrope', sans-serif !important;
   font-weight: 600 !important;
   font-size: 1rem !important;
@@ -3296,7 +3337,17 @@ select.form-input::-ms-expand {
   transition: all 0.2s ease !important;
 }
 
-.cl-socialButtonsBlockButton:hover {
+/* Force cream color on ALL text inside social buttons */
+.cl-socialButtonsBlockButton *,
+.cl-socialButtonsBlockButton span,
+.cl-socialButtonsBlockButton div,
+[data-clerk-component] .cl-socialButtonsBlockButton *,
+[data-clerk-component] .cl-socialButtonsBlockButton span {
+  color: var(--cream) !important;
+}
+
+.cl-socialButtonsBlockButton:hover,
+[data-clerk-component] .cl-socialButtonsBlockButton:hover {
   background: var(--bg-tertiary) !important;
 }
 
@@ -3317,7 +3368,7 @@ select.form-input::-ms-expand {
 }
 
 .cl-formFieldInput:focus {
-  border-color: var(--accent-indigo) !important;
+  border-color: var(--yellow) !important;
   box-shadow: none !important;
   outline: none !important;
 }
@@ -3374,14 +3425,17 @@ select.form-input::-ms-expand {
 
 /* Clerk links */
 .cl-footerActionLink,
-.cl-formFieldAction {
-  color: var(--accent-indigo) !important;
+.cl-formFieldAction,
+[data-clerk-component] a {
+  color: var(--yellow) !important;
   font-weight: 500 !important;
 }
 
 .cl-footerActionLink:hover,
-.cl-formFieldAction:hover {
+.cl-formFieldAction:hover,
+[data-clerk-component] a:hover {
   text-decoration: underline !important;
+  color: var(--accent-hover) !important;
 }
 
 /* Clerk error/success states */
@@ -3414,7 +3468,7 @@ select.form-input::-ms-expand {
 
 .cl-footerAction__signIn a,
 .cl-footerAction__signUp a {
-  color: var(--accent-indigo) !important;
+  color: var(--yellow) !important;
   font-weight: 600 !important;
 }
 
@@ -3443,10 +3497,22 @@ div[class*="cl-"] .cl-card {
   box-shadow: none !important;
 }
 
-/* Force all text to use our colors */
+/* Force all text to use our fonts and colors */
 [data-clerk-component] *,
-.cl-component * {
-  font-family: inherit !important;
+.cl-component *,
+[class*="cl-"] {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+/* Kill any blue/teal text Clerk tries to inject */
+[data-clerk-component] span,
+[data-clerk-component] div,
+[data-clerk-component] p,
+[data-clerk-component] a:not([href]),
+.cl-socialButtonsBlockButtonText,
+[data-clerk-component] .cl-socialButtonsBlockButtonText,
+.cl-socialButtonsBlockButton__text {
+  color: var(--cream) !important;
 }
 
 /* Primary buttons - nuclear option */
