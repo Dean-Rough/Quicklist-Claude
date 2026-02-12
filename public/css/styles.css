@@ -1,56 +1,8 @@
 /* ============================================
    QUICKLIST — BENTO GRID UI
-   Maison Font Family + Dark Theme + Bento Grid
+   Manrope Font Family + Dark Theme + Bento Grid
+   Design System: Manrope 400/600/700/800
    ============================================ */
-
-/* @font-face declarations */
-@font-face {
-  font-family: 'Maison';
-  src: url('/fonts/Maison-Bold.otf') format('opentype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Maison';
-  src: url('/fonts/Maison-BoldOblique.otf') format('opentype');
-  font-weight: 700;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Maison';
-  src: url('/fonts/Maison-Regular.otf') format('opentype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Maison';
-  src: url('/fonts/Maison-RegularOblique.otf') format('opentype');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Maison Mono';
-  src: url('/fonts/MaisonMono-Bold.otf') format('opentype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Maison Mono';
-  src: url('/fonts/MaisonMono-Regular.otf') format('opentype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
 
 * {
   margin: 0;
@@ -137,8 +89,9 @@
   --text-color: var(--text-primary);
 }
 
+html,
 body {
-  font-family: 'Maison', system-ui, -apple-system, sans-serif;
+  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
   font-weight: 400;
   font-size: 1rem;
   background: var(--bg-primary);
@@ -147,6 +100,10 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* iOS scroll fix */
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  min-height: 100vh;
 }
 
 h1,
@@ -157,8 +114,8 @@ h5,
 h6,
 .section-title,
 .hero h1 {
-  font-family: 'Maison', system-ui, sans-serif;
-  font-weight: 700;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.1;
   margin-bottom: 0.8em;
@@ -474,7 +431,7 @@ p {
 }
 
 .nav-link {
-  font-family: 'Maison Mono', monospace;
+  font-family: 'Courier New', monospace;
   font-weight: 400;
   color: var(--cream);
   text-decoration: none;
@@ -492,7 +449,7 @@ p {
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: var(--radius-bento);
-  font-family: 'Maison Mono', monospace;
+  font-family: 'Courier New', monospace;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.15s ease, background 0.15s ease;
@@ -599,6 +556,7 @@ p {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .mobile-menu.active {
@@ -965,6 +923,7 @@ body.loading::after {
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--border-color);
 }
 
@@ -1010,6 +969,7 @@ body.loading::after {
   max-width: 400px !important;
   max-height: 90vh !important;
   overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 /* Form */
@@ -1031,7 +991,7 @@ body.loading::after {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-family: 'Maison Mono', monospace;
+  font-family: 'Courier New', monospace;
   font-size: 0.95rem;
 }
 
@@ -1201,12 +1161,64 @@ select.form-input::-ms-expand {
   border-radius: 8px;
   overflow: hidden;
   border: 2px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.image-thumbnail:hover {
+  border-color: var(--accent);
+  transform: scale(1.02);
+}
+
+.image-thumbnail.main-image {
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
 }
 
 .image-thumbnail img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.main-image-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: var(--accent);
+  color: var(--dark);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+}
+
+.main-image-badge svg {
+  width: 14px;
+  height: 14px;
+}
+
+.set-main-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--cream);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.image-thumbnail:hover .set-main-badge {
+  opacity: 1;
 }
 
 .image-thumbnail-delete {
@@ -1322,7 +1334,7 @@ select.form-input::-ms-expand {
   padding: 0.5rem 1rem;
   border-radius: var(--radius-bento);
   font-size: 0.85rem;
-  font-family: 'Maison Mono', monospace;
+  font-family: 'Courier New', monospace;
   font-weight: 400;
 }
 
@@ -1564,6 +1576,7 @@ select.form-input::-ms-expand {
   gap: 1rem;
   max-height: 400px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .confirmation-item {
@@ -3051,7 +3064,7 @@ select.form-input::-ms-expand {
   border: 1px solid var(--border-color) !important;
   border-radius: 12px !important;
   box-shadow: none !important;
-  font-family: 'Maison', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-family: 'Manrope', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
   padding: 2rem !important;
 }
 
@@ -3066,7 +3079,7 @@ select.form-input::-ms-expand {
 
 .cl-headerSubtitle {
   color: var(--text-secondary) !important;
-  font-family: 'Maison', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-size: 0.95rem !important;
   margin-bottom: 1.5rem !important;
 }
@@ -3077,7 +3090,7 @@ select.form-input::-ms-expand {
   border: 1px solid var(--border-color) !important;
   border-radius: 999px !important;
   color: var(--text-primary) !important;
-  font-family: 'Maison', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-weight: 600 !important;
   font-size: 1rem !important;
   padding: 0.75rem 1.5rem !important;
@@ -3099,7 +3112,7 @@ select.form-input::-ms-expand {
   border: 1px solid var(--border-color) !important;
   border-radius: 8px !important;
   color: var(--text-primary) !important;
-  font-family: 'Maison', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-size: 1rem !important;
   padding: 0.75rem 1rem !important;
 }
@@ -3112,7 +3125,7 @@ select.form-input::-ms-expand {
 
 .cl-formFieldLabel {
   color: var(--text-primary) !important;
-  font-family: 'Maison', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-weight: 500 !important;
   font-size: 0.9rem !important;
   margin-bottom: 0.5rem !important;
@@ -3122,7 +3135,7 @@ select.form-input::-ms-expand {
 .cl-formButtonPrimary {
   background: var(--accent-indigo) !important;
   border-radius: 999px !important;
-  font-family: 'Maison', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-weight: 600 !important;
   font-size: 1rem !important;
   padding: 0.75rem 1.5rem !important;
@@ -3156,7 +3169,7 @@ select.form-input::-ms-expand {
 
 .cl-dividerText {
   color: var(--text-muted) !important;
-  font-family: 'Maison', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-size: 0.85rem !important;
 }
 
@@ -3218,8 +3231,8 @@ select.form-input::-ms-expand {
 .cl-signUp-root,
 .cl-userButton-root,
 .cl-userProfile-root {
-  font-family: 'Maison', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
-  --cl-font-family: 'Maison', sans-serif !important;
+  font-family: 'Manrope', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  --cl-font-family: 'Manrope', sans-serif !important;
 }
 
 /* Force card background consistency */
@@ -3334,7 +3347,7 @@ div[class*="cl-"][class*="footer"] a[href*="clerk"] {
 
 .cl-userButtonPopoverActionButton,
 [data-clerk-component] .cl-userButtonPopoverActionButton {
-  font-family: 'Maison', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   color: var(--cream) !important;
   padding: 0.75rem 1rem !important;
 }
@@ -3396,4 +3409,59 @@ div[class*="cl-"][class*="footer"] a[href*="clerk"] {
 .cl-socialButtonsBlockButton div[class*="badge"],
 [data-clerk-component] .cl-socialButtonsBlockButton span:last-child:not(:first-child) {
   display: none !important;
+}
+
+/* ============================================
+   iOS SCROLL FIX
+   Fix for iOS Safari scroll issues
+   ============================================ */
+
+/* Ensure main content areas are scrollable */
+#appView,
+#marketingView,
+main {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+/* Prevent iOS bounce issues */
+html {
+  overflow: hidden;
+  height: 100%;
+}
+
+body {
+  overflow-y: scroll;
+  height: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Allow touch scrolling on all scrollable containers */
+.scrollable,
+.modal-content,
+.mobile-menu,
+.collapsible-content,
+.image-grid,
+.review-images {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+/* Prevent horizontal scroll blocking vertical */
+.input-panels-container,
+.bento-grid,
+.pricing-grid {
+  touch-action: pan-y;
+}
+
+/* Fix for iOS input zoom */
+@supports (-webkit-touch-callout: none) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+  }
 }

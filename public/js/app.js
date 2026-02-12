@@ -924,6 +924,7 @@ const app = {
           url: URL.createObjectURL(resizedFile),
           status: 'checking',
           isBlurry: false,
+          isMain: this.state.uploadedImages.length === 0, // First image is main by default
           originalSize: originalSize,
           resizedSize: resizedSize,
           sizeSaved: sizeSaved,
@@ -983,10 +984,14 @@ const app = {
 
     grid.innerHTML = this.state.uploadedImages
       .map(
-        (img) => `
-                    <div class="image-thumbnail" style="position: relative;">
+        (img, index) => `
+                    <div class="image-thumbnail ${img.isMain ? 'main-image' : ''}" style="position: relative;" onclick="app.setMainImage('${img.id}')">
                         <img src="${img.url}" alt="Uploaded">
-                        <button class="image-thumbnail-delete" onclick="app.deleteImage('${img.id}')" aria-label="Delete image">×</button>
+                        <button class="image-thumbnail-delete" onclick="event.stopPropagation(); app.deleteImage('${img.id}')" aria-label="Delete image">×</button>
+                        ${img.isMain
+            ? '<div class="main-image-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Main</div>'
+            : '<div class="set-main-badge">Set as Main</div>'
+          }
                         ${img.status === 'checking'
             ? '<div class="image-thumbnail-status">Checking...</div>'
             : img.isBlurry
@@ -1012,6 +1017,15 @@ const app = {
       .join('');
 
     this.renderReviewImages();
+  },
+
+  // Set main image (for studio processing and thumbnail)
+  setMainImage(id) {
+    this.state.uploadedImages = this.state.uploadedImages.map(img => ({
+      ...img,
+      isMain: img.id === id
+    }));
+    this.renderImageGrid();
   },
 
   // Delete image
@@ -3792,6 +3806,11 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       this.showToast('Share not supported - copied to clipboard instead');
       setTimeout(() => this.showExportSuccess('copied'), 300);
     }
+  },
+
+  // Alias for shareNative (used in HTML)
+  async shareListing() {
+    return this.shareNative();
   },
 
   // Email listing to user
