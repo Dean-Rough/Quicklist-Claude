@@ -3377,6 +3377,18 @@ select.form-input::-ms-expand {
   padding: 2rem !important;
 }
 
+/* Clerk logo - add QuickList logo above title */
+.cl-card::before,
+[data-clerk-component] .cl-card::before {
+  content: '';
+  display: block;
+  width: 140px;
+  height: 32px;
+  background: url('/brand/logo-quicklist-cream.svg') no-repeat center;
+  background-size: contain;
+  margin: 0 auto 1.5rem auto;
+}
+
 /* Clerk headings - Manrope Bold (700) */
 .cl-headerTitle,
 [data-clerk-component] .cl-headerTitle,
