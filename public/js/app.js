@@ -5290,8 +5290,8 @@ ${this.state.currentListing?.keywords?.join(', ')}
       priceId = this.pricingConfig.tiers[planType].priceId;
     }
 
-    if (!priceId || priceId.startsWith('price_')) {
-      // Still a placeholder - Stripe not configured
+    if (!priceId || !priceId.startsWith('price_')) {
+      // No valid Stripe price ID available
       this.showToast('Payment system is being configured. Please try again later.', 'warning');
       return;
     }
