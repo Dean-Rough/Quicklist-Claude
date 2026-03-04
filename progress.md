@@ -1,11 +1,13 @@
 # Progress log — Quicklist UX + Growth Push
 
 ## 2026-02-07
+
 - Created PM plan: task_plan.md
 - Decision: batch-friendly top-level flow will be Catalogue → New Batch → Review Groups → Generate → Export → Archive.
 - Decision: listing personality dropdown visible on all tiers; Starter can choose Standard/Expert only; Pro/Max can choose all presets.
 
 ### Personality Dropdown Implementation (COMPLETE)
+
 - ✅ Added HTML dropdown in `public/index.html` with 6 presets:
   - Standard (free) - Clear, balanced descriptions
   - Expert (free) - Professional, fact-focused
@@ -24,6 +26,7 @@
   - Personality prompts injected into Gemini system prompt
 
 ### Next Steps
+
 - [ ] Test the dropdown in preview deployment
 - [ ] Image enhancement simplification (Hero Image as headline feature)
 - [ ] Create PR for this feature branch

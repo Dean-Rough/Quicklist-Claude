@@ -1,6 +1,17 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FWSBPTC7CS"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag('js', new Date());
+      gtag('config', 'G-FWSBPTC7CS');
+    </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -25,13 +36,13 @@
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://quicklist.ai/" />
+    <meta property="og:url" content="https://quicklist.it.com/" />
     <meta property="og:title" content="QuickList AI - Turn Clutter into Cash with AI" />
     <meta
       property="og:description"
       content="AI-powered product listing generator for Vinted, eBay, and Gumtree. Upload photos, get professional listings in seconds. Free to start."
     />
-    <meta property="og:image" content="https://quicklist.ai/hero-image.jpg" />
+    <meta property="og:image" content="https://quicklist.it.com/hero-image.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="QuickList AI" />
@@ -39,35 +50,39 @@
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://quicklist.ai/" />
+    <meta property="twitter:url" content="https://quicklist.it.com/" />
     <meta property="twitter:title" content="QuickList AI - AI-Powered Listing Generator" />
     <meta
       property="twitter:description"
       content="Turn your clutter into cash. AI generates professional listings for Vinted, eBay, and Gumtree from photos. Free to start."
     />
-    <meta property="twitter:image" content="https://quicklist.ai/hero-image.jpg" />
+    <meta property="twitter:image" content="https://quicklist.it.com/hero-image.jpg" />
 
     <!-- Additional SEO -->
     <meta name="theme-color" content="#0f766e" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="QuickList" />
-    <link rel="canonical" href="https://quicklist.ai/" />
+    <link rel="canonical" href="https://quicklist.it.com/" />
 
     <!-- PWA Configuration -->
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/icons/icon-152.svg" />
-    <link rel="icon" type="image/svg+xml" href="/icons/icon-32.svg" />
-    <link rel="icon" type="image/svg+xml" sizes="16x16" href="/icons/icon-16.svg" />
-    <meta name="msapplication-TileColor" content="#10b981" />
-    <meta name="msapplication-TileImage" content="/icons/icon-144.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-152.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png" />
+    <meta name="msapplication-TileColor" content="#0f766e" />
+    <meta name="msapplication-TileImage" content="/icons/icon-144.png" />
 
     <!-- Content Security Policy -->
     <!-- CSP temporarily disabled for development -->
     <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.clerk.dev https://*.clerk.accounts.dev https://*.clerk.dev https://*.lottiefiles.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' http://localhost:3000 https://api.clerk.dev https://*.clerk.accounts.dev https://*.clerk.dev https://clerk.clerk.com; frame-src 'self' https://accounts.clerk.dev https://*.clerk.accounts.dev; worker-src 'self' blob:;"> -->
 
     <!-- Cloudinary Media Editor SDK -->
-    <script src="https://media-editor.cloudinary.com/latest/all.js" type="text/javascript"></script>
+    <script
+      src="https://media-editor.cloudinary.com/latest/all.js"
+      type="text/javascript"
+      defer
+    ></script>
 
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
@@ -81,11 +96,6 @@
           "@type": "Offer",
           "price": "0",
           "priceCurrency": "GBP"
-        },
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.8",
-          "ratingCount": "127"
         },
         "description": "AI-powered product listing generator that creates professional marketplace listings from photos. Supports Vinted, eBay, and Gumtree.",
         "featureList": [
@@ -104,10 +114,10 @@
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "QuickList AI",
-        "url": "https://quicklist.ai/",
+        "url": "https://quicklist.it.com/",
         "potentialAction": {
           "@type": "SearchAction",
-          "target": "https://quicklist.ai/?q={search_term_string}",
+          "target": "https://quicklist.it.com/?q={search_term_string}",
           "query-input": "required name=search_term_string"
         }
       }
@@ -148,6 +158,8 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://media-editor.cloudinary.com" />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
       rel="stylesheet"
@@ -155,9 +167,24 @@
     <link rel="stylesheet" href="/css/styles.css" />
 
     <!-- Lottie/Bodymovin for Animations -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"
+      defer
+    ></script>
   </head>
   <body>
+    <!-- Skip Link for Accessibility -->
+    <a href="#marketingView" class="skip-link">Skip to main content</a>
+
+    <!-- Screen Reader Announcements (Live Region) -->
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      class="sr-only"
+      id="announcements"
+    ></div>
+
     <!-- Offline Indicator -->
     <div id="offlineIndicator" class="offline-indicator">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -174,7 +201,7 @@
     </div>
 
     <!-- Install PWA Button -->
-    <button id="installPWA" class="install-pwa-button">
+    <button id="installPWA" class="install-pwa-button" aria-label="Install QuickList app">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
         <path
           d="M18 1.01L8 1c-1.1 0-2 .9-2 2v3h2V5h10v14H8v-1H6v3c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM10 15h2V8H5v2h3.59L3 15.59 4.41 17 10 11.41z"
@@ -193,6 +220,8 @@
           class="hamburger-btn"
           onclick="app.toggleMobileMenu()"
           aria-label="Toggle mobile menu"
+          aria-expanded="false"
+          aria-controls="mobileMenu"
         >
           <svg
             class="icon icon-menu"
@@ -265,6 +294,8 @@
           class="hamburger-btn"
           onclick="app.toggleMobileMenu()"
           aria-label="Toggle mobile menu"
+          aria-expanded="false"
+          aria-controls="appMobileMenu"
         >
           <svg
             class="icon icon-menu"
@@ -297,7 +328,12 @@
           <a class="nav-link" onclick="app.navigateToApp('settings')" aria-label="Open settings"
             >Settings</a
           >
-          <button class="btn btn-secondary" onclick="app.signOut()" style="margin-left: auto">
+          <button
+            class="btn btn-secondary"
+            onclick="app.signOut()"
+            style="margin-left: auto"
+            aria-label="Sign out of QuickList"
+          >
             Sign Out
           </button>
         </nav>
@@ -332,7 +368,7 @@
     </nav>
 
     <!-- Marketing Views -->
-    <main id="marketingView">
+    <main id="marketingView" tabindex="-1">
       <!-- Home / Landing Page -->
       <div id="homeView">
         <!-- Hero Section -->
@@ -468,8 +504,8 @@
                 <div class="step-number">2</div>
                 <h3>AI Generates Everything</h3>
                 <p>
-                  Our advanced AI identifies your product, writes compelling descriptions, suggests
-                  competitive prices, and finds the perfect keywords. All in seconds.
+                  Our AI identifies your product, writes the description, suggests competitive
+                  prices, and finds the perfect keywords. All in seconds.
                 </p>
               </div>
               <div class="step">
@@ -509,13 +545,12 @@
                 margin: 0 auto 3rem;
               "
             >
-              Professional-grade tools that make selling effortless. Used by thousands of sellers
-              across the UK.
+              Tools that save you time listing items for sale. Used by UK sellers across the UK.
             </p>
             <div class="grid grid-3">
               <div class="card">
                 <h3>AI-Powered Descriptions</h3>
-                <p>Get compelling, marketplace-ready descriptions that actually sell.</p>
+                <p>Marketplace-ready descriptions in the style buyers respond to.</p>
               </div>
               <div class="card">
                 <h3>Optimized Titles & Categories</h3>
@@ -523,7 +558,7 @@
               </div>
               <div class="card">
                 <h3>Data-Driven Pricing</h3>
-                <p>Smart price suggestions based on real market data.</p>
+                <p>Price suggestions based on recent sold listings on eBay and Vinted.</p>
               </div>
               <div class="card">
                 <h3>Professional Images</h3>
@@ -544,48 +579,6 @@
               <div class="card">
                 <h3>Multi-Platform Support</h3>
                 <p>Generate listings optimized for Vinted, eBay, and Gumtree.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Social Proof / Lifestyle -->
-        <section class="section" style="background: var(--bg-secondary)">
-          <div class="container">
-            <h2 class="section-title">Join Thousands Already Selling Smarter</h2>
-            <p
-              style="
-                text-align: center;
-                color: var(--text-secondary);
-                font-size: 1.1rem;
-                max-width: 800px;
-                margin: 0 auto 3rem;
-              "
-            >
-              From vintage finds to everyday items, QuickList AI helps sellers turn their clutter
-              into cash.
-            </p>
-            <div class="grid grid-3" style="gap: 1.5rem">
-              <div style="border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-soft)">
-                <img
-                  src="/stock images/pexels-anastasia-shuraeva-8084487.jpg"
-                  alt="Person photographing items to sell"
-                  style="width: 100%; height: 300px; object-fit: cover"
-                />
-              </div>
-              <div style="border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-soft)">
-                <img
-                  src="/stock images/pexels-ketut-subiyanto-4545965.jpg"
-                  alt="Seller packing items for shipment"
-                  style="width: 100%; height: 300px; object-fit: cover"
-                />
-              </div>
-              <div style="border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-soft)">
-                <img
-                  src="/stock images/jason-leung-hLhqjV-J9YQ-unsplash.jpg"
-                  alt="Organized closet ready for selling"
-                  style="width: 100%; height: 300px; object-fit: cover"
-                />
               </div>
             </div>
           </div>
@@ -722,8 +715,7 @@
                   margin-right: auto;
                 "
               >
-                Join thousands of sellers using QuickList AI to create professional listings in
-                seconds. Start your first listing in under 60 seconds.
+                Upload a photo and see what our AI generates. Takes about a minute to try.
               </p>
               <button
                 class="btn"
@@ -870,7 +862,13 @@
                   <li>Basic price suggestions</li>
                   <li>Standard image tools</li>
                 </ul>
-                <button class="btn btn-secondary" onclick="app.showAuthModal()">Get Started</button>
+                <button
+                  class="btn btn-secondary"
+                  onclick="app.showAuthModal()"
+                  aria-label="Get started with QuickList"
+                >
+                  Get Started
+                </button>
               </div>
               <div class="pricing-card">
                 <div class="pricing-tier">Casual</div>
@@ -1025,7 +1023,7 @@
             <div class="card">
               <h2 class="mb-3">Listing Details</h2>
               <div class="form-group">
-                <label class="form-label"
+                <label class="form-label" for="itemHint"
                   >Item Name or Model
                   <small style="color: var(--text-muted)">(Optional)</small></label
                 >
@@ -1064,7 +1062,7 @@
                 >
               </div>
               <div class="form-group">
-                <label class="form-label"
+                <label class="form-label" for="conditionInfo"
                   >Further Info <small style="color: var(--text-muted)">(Optional)</small></label
                 >
                 <div class="input-with-icon">
@@ -1127,9 +1125,35 @@
                   Scan Label to Extract Product Info
                 </button>
               </div>
+              <!-- Target Platform Selector -->
+              <div class="form-group" style="margin-bottom: 1rem">
+                <label class="form-label" for="platformSelectInput">
+                  <span>Target Platform</span>
+                </label>
+                <select class="form-input" id="platformSelectInput" style="width: 100%">
+                  <option value="vinted">Vinted</option>
+                  <option value="ebay">eBay</option>
+                  <option value="gumtree">Gumtree</option>
+                  <option value="depop">Depop</option>
+                  <option value="facebook">Facebook Marketplace</option>
+                </select>
+                <small
+                  style="
+                    color: var(--text-muted);
+                    font-size: 0.85rem;
+                    display: block;
+                    margin-top: 0.5rem;
+                  "
+                >
+                  AI will optimize title length and keywords for your chosen platform
+                </small>
+              </div>
               <!-- Listing Personality Dropdown -->
               <div class="form-group" style="margin-bottom: 1rem">
-                <label class="form-label" style="display: flex; align-items: center; justify-content: space-between">
+                <label
+                  class="form-label"
+                  style="display: flex; align-items: center; justify-content: space-between"
+                >
                   <span>Listing Style</span>
                 </label>
                 <select class="form-input" id="personalitySelect" style="width: 100%">
@@ -1137,11 +1161,24 @@
                   <option value="expert" data-tier="free">Expert (Professional)</option>
                   <option value="punchy" data-tier="pro" disabled>🔒 Punchy Seller (Pro)</option>
                   <option value="luxe" data-tier="pro" disabled>🔒 Luxe Boutique (Pro)</option>
-                  <option value="streetwear" data-tier="pro" disabled>🔒 Streetwear/Hype (Pro)</option>
-                  <option value="delboy" data-tier="pro" disabled>🔒 Cheeky Market Trader (Pro)</option>
+                  <option value="streetwear" data-tier="pro" disabled>
+                    🔒 Streetwear/Hype (Pro)
+                  </option>
+                  <option value="delboy" data-tier="pro" disabled>
+                    🔒 Cheeky Market Trader (Pro)
+                  </option>
                 </select>
-                <small style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-top: 0.5rem">
-                  <span id="personalityDescription">Choose the tone and style for your listing description</span>
+                <small
+                  style="
+                    color: var(--text-muted);
+                    font-size: 0.85rem;
+                    display: block;
+                    margin-top: 0.5rem;
+                  "
+                >
+                  <span id="personalityDescription"
+                    >Choose the tone and style for your listing description</span
+                  >
                 </small>
               </div>
               <button class="btn btn-primary" id="generateBtn" style="width: 100%" disabled>
@@ -1208,6 +1245,9 @@
               <h2 class="mb-3">Generating your listing...</h2>
               <div
                 id="progressSteps"
+                role="status"
+                aria-live="polite"
+                aria-label="Generation progress"
                 style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1rem"
               >
                 <div
@@ -2007,6 +2047,111 @@
             </div>
           </div>
 
+          <!-- Dashboard Metrics Section -->
+          <div class="card" style="max-width: 800px; margin: 0 auto 2rem">
+            <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem">Overview</h2>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 1.5rem;
+                margin-bottom: 1.5rem;
+              "
+            >
+              <div
+                style="
+                  background: var(--bg-secondary);
+                  padding: 1rem;
+                  border-radius: 8px;
+                  text-align: center;
+                "
+              >
+                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem">
+                  Revenue (7 days)
+                </div>
+                <div
+                  id="statRevenue"
+                  style="font-size: 1.5rem; font-weight: 700; color: var(--success)"
+                >
+                  £0.00
+                </div>
+                <div
+                  id="statRevenueTrend"
+                  style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem"
+                >
+                  —
+                </div>
+              </div>
+              <div
+                style="
+                  background: var(--bg-secondary);
+                  padding: 1rem;
+                  border-radius: 8px;
+                  text-align: center;
+                "
+              >
+                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem">
+                  Active Listings
+                </div>
+                <div
+                  id="statListings"
+                  style="font-size: 1.5rem; font-weight: 700; color: var(--accent-indigo)"
+                >
+                  —
+                </div>
+                <div
+                  id="statListingsTrend"
+                  style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem"
+                >
+                  —
+                </div>
+              </div>
+              <div
+                style="
+                  background: var(--bg-secondary);
+                  padding: 1rem;
+                  border-radius: 8px;
+                  text-align: center;
+                "
+              >
+                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem">
+                  Unread Messages
+                </div>
+                <div
+                  id="statMessages"
+                  style="font-size: 1.5rem; font-weight: 700; color: var(--warning)"
+                >
+                  —
+                </div>
+                <div
+                  id="statMessagesTrend"
+                  style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem"
+                >
+                  —
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div style="margin-bottom: 1rem">
+              <h3 style="font-size: 1rem; margin-bottom: 0.75rem">Recent Activity</h3>
+              <div
+                id="dashboardActivity"
+                style="display: flex; flex-direction: column; gap: 0.75rem"
+              >
+                <p style="color: var(--text-muted)">Loading activity...</p>
+              </div>
+            </div>
+
+            <!-- Tips -->
+            <div>
+              <h3 style="font-size: 1rem; margin-bottom: 0.75rem">Tips</h3>
+              <ul id="dashboardTips" style="margin: 0; padding-left: 0; list-style: none">
+                <li style="color: var(--text-secondary)">• Loading tips...</li>
+              </ul>
+            </div>
+          </div>
+
           <!-- Subscription Section -->
           <div class="card" style="max-width: 800px; margin: 0 auto 2rem">
             <div
@@ -2775,10 +2920,6 @@
         }
       })();
     </script>
-
-    <!-- Toast System (before app.js) -->
-    <script src="/js/toast-system.js"></script>
-
     <script src="/js/app.js"></script>
 
     <!-- Bottom Tab Navigation (Mobile Only) -->
@@ -3329,32 +3470,5 @@
       </div>
       <div class="toast-message" id="toastMessage">Success!</div>
     </div>
-
-    <!-- PWA Service Worker Registration -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker
-            .register('/service-worker.js')
-            .then((registration) => {
-              console.log('Service Worker registered successfully:', registration.scope);
-
-              // Check for updates periodically
-              setInterval(() => {
-                registration.update();
-              }, 60000); // Check every minute
-            })
-            .catch((error) => {
-              console.error('Service Worker registration failed:', error);
-            });
-        });
-
-        // Listen for service worker updates
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          console.log('New service worker activated - reloading page');
-          window.location.reload();
-        });
-      }
-    </script>
   </body>
 </html>
