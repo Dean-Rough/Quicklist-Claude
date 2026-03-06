@@ -58,14 +58,14 @@
   --teal: #9ED6DF;
   --green: #245E55;
   --red: #C63F3E;
-  --dark: #1D1D1B;
+  --dark: #0e261d;
   --white: #FFFFFF;
 
   /* === Semantic mappings === */
-  --bg-primary: #1D1D1B;
-  --bg-secondary: #2a2a28;
-  --bg-tertiary: #333331;
-  --bg-hover: #3d3d3b;
+  --bg-primary: #0e261d;
+  --bg-secondary: #182e24;
+  --bg-tertiary: #213b2f;
+  --bg-hover: #2c4e3f;
 
   /* Primary accent */
   --accent: #EAC119;
@@ -780,6 +780,8 @@ body.loading::after {
   width: 100%;
   height: 100%;
   display: block;
+  object-fit: contain;
+  object-position: left center;
   transition: opacity 0.25s ease;
 }
 
