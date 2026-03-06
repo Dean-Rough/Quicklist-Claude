@@ -4,10 +4,10 @@
  */
 
 // Cache configuration
-const CACHE_VERSION = 'v3'; // Bumped to bust stale caches
-const STATIC_CACHE = 'quicklist-static-v3';
-const DYNAMIC_CACHE = 'quicklist-dynamic-v3';
-const IMAGE_CACHE = 'quicklist-images-v3';
+const CACHE_VERSION = 'v4';
+const STATIC_CACHE = 'quicklist-static-v4';
+const DYNAMIC_CACHE = 'quicklist-dynamic-v4';
+const IMAGE_CACHE = 'quicklist-images-v4';
 
 // Cache these files on install
 const STATIC_ASSETS = [
@@ -15,12 +15,17 @@ const STATIC_ASSETS = [
   '/index.html',
   '/offline.html',
   '/manifest.json',
+  '/css/styles.css',
+  '/js/app.js',
+  '/pwa-features.js',
+  '/fonts/Maison-Regular-subset.woff2',
+  '/fonts/Maison-Bold-subset.woff2',
+  '/fonts/MaisonMono-Regular-subset.woff2',
+  '/fonts/MaisonMono-Bold-subset.woff2',
   '/utils/clipboard.js',
   '/components/PlatformSelector.js',
   '/components/ListingCard.js',
   '/components/BottomNav.js',
-  'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
 ];
 
 // Install event - cache static assets
@@ -106,6 +111,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Fonts - cache first for repeat visits
+  if (request.destination === 'font' || url.pathname.match(/\.(woff2?|otf|ttf)$/i)) {
+    event.respondWith(cacheFirstStrategy(request, STATIC_CACHE));
+    return;
+  }
+
   // JavaScript files - ALWAYS network first (we deploy often)
   if (url.pathname.endsWith('.js') && !url.hostname.includes('cdnjs')) {
     event.respondWith(networkFirstStrategy(request));
@@ -118,10 +129,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // External static assets (CDNs, fonts) - cache first
+  // External static assets still used at runtime - cache first
   if (
-    url.hostname.includes('fonts.googleapis.com') ||
-    url.hostname.includes('fonts.gstatic.com') ||
     url.hostname.includes('cdnjs.cloudflare.com')
   ) {
     event.respondWith(cacheFirstStrategy(request, STATIC_CACHE));

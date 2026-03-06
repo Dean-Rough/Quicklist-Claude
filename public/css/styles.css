@@ -164,7 +164,7 @@ p {
   border-radius: var(--radius-bento);
   padding: 1.5rem;
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease;
   grid-column: span 12;
 }
 
@@ -735,6 +735,27 @@ body.loading::after {
   border: 1px solid var(--border-color);
 }
 
+.logo-animation-shell {
+  position: relative;
+  display: block;
+}
+
+.logo-fallback {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transition: opacity 0.25s ease;
+}
+
+.logo-animation-shell svg {
+  position: absolute;
+  inset: 0;
+}
+
+.logo-animation-shell.animation-loaded .logo-fallback {
+  opacity: 0;
+}
+
 .hero-image-container img,
 .hero-image-container lottie-player,
 .hero-image-container #hero-animation {
@@ -744,9 +765,62 @@ body.loading::after {
   display: block;
 }
 
+.hero-poster {
+  position: relative;
+  z-index: 0;
+  transition: opacity 0.25s ease;
+}
+
+#hero-animation {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.hero-image-container.animation-loaded .hero-poster {
+  opacity: 0;
+}
+
 #hero-animation svg {
   width: 100% !important;
   height: 100% !important;
+}
+
+.step-image {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.step-image svg {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.animation-fallback {
+  display: grid;
+  gap: 0.75rem;
+  place-items: center;
+  text-align: center;
+  color: rgba(29, 29, 27, 0.7);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  transition: opacity 0.25s ease;
+}
+
+.bento-lavender .animation-fallback,
+.bento-green .animation-fallback {
+  color: rgba(234, 228, 218, 0.9);
+}
+
+.animation-fallback-emoji {
+  font-size: 2rem;
+}
+
+.step-image.animation-loaded .animation-fallback {
+  opacity: 0;
 }
 
 .hero h1 {
@@ -1545,7 +1619,7 @@ select.form-input::-ms-expand {
   background: rgba(0, 0, 0, 0.8);
   color: var(--cream);
   padding: 0.25rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 0.75rem;
   text-align: center;
 }
@@ -1576,7 +1650,7 @@ select.form-input::-ms-expand {
 .output-area {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-bento);
   padding: 2rem;
   min-height: 600px;
 }
@@ -1680,7 +1754,7 @@ select.form-input::-ms-expand {
   right: 0;
   bottom: 0;
   background: var(--bg-tertiary);
-  border-radius: 24px;
+  border-radius: var(--radius-full);
   transition: 0.3s;
 }
 
@@ -1720,13 +1794,13 @@ select.form-input::-ms-expand {
 .saved-item-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-bento);
   overflow: hidden;
   transition: transform 0.2s;
 }
 
 .saved-item-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
 }
 
 .saved-item-image {
@@ -1823,7 +1897,7 @@ select.form-input::-ms-expand {
 
 .pricing-card.featured {
   border-color: var(--yellow);
-  transform: scale(1.05);
+  border-width: 2px;
   box-shadow: none;
 }
 
@@ -1962,7 +2036,7 @@ select.form-input::-ms-expand {
   border-left: 3px solid var(--accent-indigo);
   padding: 0.75rem;
   margin-top: 1rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -2143,7 +2217,7 @@ select.form-input::-ms-expand {
 .swipeable-card {
   position: relative;
   background: var(--bg-secondary);
-  border-radius: 12px;
+  border-radius: var(--radius-bento);
   overflow: visible;
   touch-action: pan-y;
   user-select: none;
@@ -2154,7 +2228,7 @@ select.form-input::-ms-expand {
   z-index: 2;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-bento);
   padding: 16px;
   transition: transform 0.3s ease-out;
   display: flex;
@@ -2220,7 +2294,7 @@ select.form-input::-ms-expand {
 .collapsible-section {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-bento);
   margin-bottom: 12px;
   overflow: hidden;
 }
@@ -2620,7 +2694,7 @@ select.form-input::-ms-expand {
   top: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(90deg, #dc2626, #ef4444);
+  background: var(--red);
   color: var(--cream);
   padding: 12px;
   text-align: center;
@@ -2681,7 +2755,7 @@ select.form-input::-ms-expand {
   background: var(--accent-indigo);
   color: var(--cream);
   padding: 12px 20px;
-  border-radius: 50px;
+  border-radius: var(--radius-full);
   box-shadow: none;
   display: flex;
   align-items: center;
@@ -2697,7 +2771,7 @@ select.form-input::-ms-expand {
 }
 
 .install-pwa-button:hover {
-  transform: translateX(0) scale(1.05);
+  transform: translateX(0) translateY(-2px);
 }
 
 /* Pull to Refresh */
@@ -2754,7 +2828,7 @@ select.form-input::-ms-expand {
 .pull-to-refresh-spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid rgba(255, 122, 92, 0.28);
+  border: 3px solid rgba(234, 193, 25, 0.28);
   border-top-color: var(--accent-indigo);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -2795,30 +2869,37 @@ select.form-input::-ms-expand {
 }
 
 .voice-input-button:hover {
-  background: rgba(255, 122, 92, 0.12);
+  background: var(--accent-light);
 }
 
 .voice-input-button.listening {
-  color: #dc2626;
+  color: var(--error);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
 /* Share Button */
 .share-button {
   background: var(--bg-tertiary);
-  border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-bento);
   color: var(--text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s;
+  transition: transform 0.15s ease, background 0.15s ease;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .share-button:hover {
   background: var(--bg-hover);
+  border-color: var(--cream);
+  transform: translateY(-2px);
 }
 
 /* Dashboard & Messages */
@@ -2832,8 +2913,8 @@ select.form-input::-ms-expand {
 .stat-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 1.25rem;
+  border-radius: var(--radius-bento);
+  padding: 1.5rem;
 }
 
 .stat-card h3 {
@@ -2857,8 +2938,8 @@ select.form-input::-ms-expand {
 .message-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 1rem;
+  border-radius: var(--radius-bento);
+  padding: 1.5rem;
   margin-bottom: 1rem;
 }
 
@@ -2939,12 +3020,23 @@ select.form-input::-ms-expand {
 }
 
 .onboarding-tooltip button {
-  background: var(--accent-indigo);
-  color: var(--cream);
+  background: var(--yellow);
+  color: var(--dark);
   border: none;
-  padding: 8px 20px;
-  border-radius: 6px;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-bento);
   cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.onboarding-tooltip button:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
 }
 
 .onboarding-highlight {
@@ -3082,8 +3174,8 @@ select.form-input::-ms-expand {
 }
 
 .condition-good {
-  background: #10b981;
-  color: var(--cream);
+  background: var(--teal);
+  color: var(--dark);
 }
 
 .condition-fair {
@@ -3117,7 +3209,7 @@ select.form-input::-ms-expand {
 }
 
 .damage-item.severity-minor {
-  border-left-color: #fbbf24;
+  border-left-color: var(--yellow);
 }
 
 .damage-item.severity-normal_wear {
@@ -3138,7 +3230,7 @@ select.form-input::-ms-expand {
 
 .damage-severity {
   padding: 0.25rem 0.5rem;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -3155,8 +3247,8 @@ select.form-input::-ms-expand {
 }
 
 .severity-minor {
-  background: #fbbf24;
-  color: #78350f;
+  background: var(--yellow);
+  color: var(--dark);
 }
 
 .severity-normal_wear {
@@ -3184,8 +3276,8 @@ select.form-input::-ms-expand {
 }
 
 .damage-disclosure-text {
-  background: white;
-  border-radius: 8px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
   padding: 1rem;
   margin: 0.5rem 0;
   font-size: 0.9rem;
@@ -3194,22 +3286,22 @@ select.form-input::-ms-expand {
 }
 
 .damage-recommendations {
-  background: #fef3c7;
-  border-radius: 12px;
+  background: var(--accent-light);
+  border-radius: var(--radius-bento);
   padding: 1rem;
   margin: 1.5rem 0;
-  border-left: 4px solid #f59e0b;
+  border-left: 4px solid var(--yellow);
 }
 
 .damage-recommendations h4 {
-  color: #92400e;
+  color: var(--yellow);
   margin-bottom: 0.5rem;
 }
 
 .damage-recommendations ul {
   margin: 0.5rem 0;
   padding-left: 1.5rem;
-  color: #78350f;
+  color: var(--text-secondary);
 }
 
 .damage-actions {
@@ -3221,7 +3313,7 @@ select.form-input::-ms-expand {
 
 .honesty-score {
   background: var(--bg-secondary);
-  border-radius: 12px;
+  border-radius: var(--radius-bento);
   padding: 1rem;
   margin-top: 1.5rem;
 }
@@ -3237,7 +3329,7 @@ select.form-input::-ms-expand {
 
 .honesty-score-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent-indigo), var(--accent-purple));
+  background: var(--yellow);
   transition: width 0.3s ease;
 }
 

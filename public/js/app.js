@@ -105,6 +105,178 @@ const app = {
     }
   },
 
+  scriptPromises: {},
+
+  loadScriptOnce(src, { crossOrigin = 'anonymous' } = {}) {
+    if (this.scriptPromises[src]) {
+      return this.scriptPromises[src];
+    }
+
+    this.scriptPromises[src] = new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing?.dataset.loaded === 'true') {
+        resolve(existing);
+        return;
+      }
+
+      const script = existing || document.createElement('script');
+      const handleLoad = () => {
+        script.dataset.loaded = 'true';
+        resolve(script);
+      };
+      const handleError = () => {
+        delete this.scriptPromises[src];
+        reject(new Error(`Failed to load script: ${src}`));
+      };
+
+      script.addEventListener('load', handleLoad, { once: true });
+      script.addEventListener('error', handleError, { once: true });
+
+      if (!existing) {
+        script.src = src;
+        script.async = true;
+        script.defer = true;
+        if (crossOrigin) {
+          script.crossOrigin = crossOrigin;
+        }
+        document.head.appendChild(script);
+      }
+    });
+
+    return this.scriptPromises[src];
+  },
+
+  async ensureJSZip() {
+    if (window.JSZip) {
+      return window.JSZip;
+    }
+
+    await this.loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    return window.JSZip;
+  },
+
+  async ensureQuagga() {
+    if (window.Quagga) {
+      return window.Quagga;
+    }
+
+    await this.loadScriptOnce('https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js');
+    return window.Quagga;
+  },
+
+  async ensureLottie() {
+    if (window.lottie) {
+      return window.lottie;
+    }
+
+    await this.loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js');
+    return window.lottie;
+  },
+
+  async ensureClerkReady() {
+    if (window.Clerk) {
+      return window.Clerk;
+    }
+
+    if (!window.quicklistAuth?.ensureLoaded) {
+      throw new Error('Authentication system unavailable');
+    }
+
+    const clerk = await window.quicklistAuth.ensureLoaded();
+    await this.checkClerkAuth();
+    return clerk;
+  },
+
+  shouldLoadRichAnimations() {
+    const connection =
+      navigator.connection || navigator.mozConnection || navigator.webkitConnection || null;
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const lowBandwidth = /(^|slow-)2g/.test(connection?.effectiveType || '');
+    const saveData = Boolean(connection?.saveData);
+    const lowMemory = typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 4;
+    const smallViewport = window.innerWidth < 1024;
+
+    return !(prefersReducedMotion || lowBandwidth || saveData || lowMemory || smallViewport);
+  },
+
+  scheduleMarketingAnimations() {
+    if (!this.shouldLoadRichAnimations()) {
+      return;
+    }
+
+    const startAnimations = () => {
+      this.ensureLottie()
+        .then(() => {
+          this.initLogoAnimations();
+          this.initHeroAnimation();
+          initLazyAnimations();
+        })
+        .catch((error) => {
+          console.warn('Animation enhancement unavailable:', error);
+        });
+    };
+
+    const queueAnimations = () => {
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(startAnimations, { timeout: 2500 });
+      } else {
+        setTimeout(startAnimations, 600);
+      }
+    };
+
+    if (document.readyState === 'complete') {
+      queueAnimations();
+      return;
+    }
+
+    window.addEventListener('load', queueAnimations, { once: true });
+  },
+
+  initLogoAnimations() {
+    if (typeof window.lottie === 'undefined') return;
+
+    [
+      { id: 'logo-animation-1', path: '/brand/Quicklist Anim White Trimed.json' },
+      { id: 'logo-animation-2', path: '/brand/Quicklist Anim White Trimed.json' },
+    ].forEach(({ id, path }) => {
+      const container = document.getElementById(id);
+      if (!container) return;
+
+      try {
+        window.lottie.loadAnimation({
+          container,
+          renderer: 'svg',
+          loop: true,
+          autoplay: true,
+          path,
+        });
+        container.classList.add('animation-loaded');
+      } catch (error) {
+        console.error(`Failed to load ${id}:`, error);
+      }
+    });
+  },
+
+  initHeroAnimation() {
+    if (typeof window.lottie === 'undefined') return;
+
+    const heroAnimContainer = document.getElementById('hero-animation');
+    if (!heroAnimContainer) return;
+
+    try {
+      window.lottie.loadAnimation({
+        container: heroAnimContainer,
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        path: '/json_anim/online-marketplace-website-in-browser-window-2025-11-05-04-21-50-utc.json',
+      });
+      heroAnimContainer.closest('.hero-image-container')?.classList.add('animation-loaded');
+    } catch (error) {
+      console.error('Failed to load hero animation:', error);
+    }
+  },
+
   // Initialize app
   // Register service worker for PWA functionality
   async registerServiceWorker() {
@@ -429,18 +601,22 @@ const app = {
     // Setup Clerk event listeners BEFORE waiting for auth
     this.setupClerkListeners();
 
-    // Wait for auth to be ready (Clerk or legacy)
+    // Auth bootstrap is lazy. Only wait briefly if a bootstrap event is still pending.
     await new Promise((resolve) => {
-      if (document.readyState === 'complete') {
-        window.addEventListener('authReady', resolve, { once: true });
-        // Timeout after 2 seconds if auth doesn't initialize
-        setTimeout(resolve, 2000);
-      } else {
-        window.addEventListener('load', () => {
-          window.addEventListener('authReady', resolve, { once: true });
-          setTimeout(resolve, 2000);
-        });
+      if (window.quicklistAuthReady) {
+        resolve();
+        return;
       }
+
+      const timeoutId = setTimeout(resolve, 250);
+      window.addEventListener(
+        'authReady',
+        () => {
+          clearTimeout(timeoutId);
+          resolve();
+        },
+        { once: true }
+      );
     });
 
     // Check Clerk auth FIRST before showing any view
@@ -3584,7 +3760,8 @@ ${description}
     btn.innerHTML = '<span class="spinner"></span> Processing images...';
 
     try {
-      const zip = new JSZip();
+      const JSZipLib = await this.ensureJSZip();
+      const zip = new JSZipLib();
       const imagesFolder = zip.folder('images');
       const generateHero = document.getElementById('toggleHero').checked;
       const fixBlur = document.getElementById('toggleBlur').checked;
@@ -3720,7 +3897,8 @@ ${this.state.currentListing?.keywords?.join(', ')}
     btn.disabled = true;
 
     try {
-      const zip = new JSZip();
+      const JSZipLib = await this.ensureJSZip();
+      const zip = new JSZipLib();
 
       for (let i = 0; i < this.state.uploadedImages.length; i++) {
         const img = this.state.uploadedImages[i];
@@ -5497,7 +5675,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         colorDanger: '#FF6B6B',
         colorSuccess: '#6BCB8E',
         colorWarning: '#FFD93D',
-        fontFamily: "'Manrope', system-ui, sans-serif",
+        fontFamily: "'Maison', system-ui, sans-serif",
         borderRadius: '12px',
         spacingUnit: '4px',
       },
@@ -5515,7 +5693,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
           color: '#1a1a2e',
           fontSize: '1.5rem',
           fontWeight: '800',
-          fontFamily: "'Manrope', system-ui, sans-serif",
+          fontFamily: "'Maison', system-ui, sans-serif",
         },
         headerSubtitle: {
           color: '#64748b',
@@ -5590,12 +5768,19 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
   // Sign in with Clerk - uses Clerk's prebuilt UI with Quicklist branding
   async signInWithClerk(mode = 'signIn') {
-    if (!window.Clerk) {
-      this.showToast('Authentication system not ready', 'error');
-      return;
+    let clerk = window.Clerk;
+
+    if (!clerk) {
+      try {
+        clerk = await this.ensureClerkReady();
+      } catch (error) {
+        console.error('Clerk bootstrap error:', error);
+        this.showToast('Authentication is temporarily unavailable', 'error');
+        return;
+      }
     }
 
-    if (this.state.isAuthenticated || window.Clerk.user) {
+    if (this.state.isAuthenticated || clerk.user) {
       this.updateUI();
       this.navigateToApp('newItem');
       return;
@@ -5605,13 +5790,13 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
     try {
       if (mode === 'signUp') {
-        await window.Clerk.openSignUp({
+        await clerk.openSignUp({
           appearance: appearance,
           afterSignUpUrl: window.location.origin,
           afterSignInUrl: window.location.origin,
         });
       } else {
-        await window.Clerk.openSignIn({
+        await clerk.openSignIn({
           appearance: appearance,
           afterSignUpUrl: window.location.origin,
           afterSignInUrl: window.location.origin,
@@ -6566,9 +6751,11 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       return;
     }
 
-    // Check if Quagga is loaded
-    if (typeof Quagga === 'undefined') {
-      this.showToast('Barcode scanner library not loaded. Please refresh the page.', 'error');
+    try {
+      await this.ensureQuagga();
+    } catch (error) {
+      console.error('Barcode scanner bootstrap error:', error);
+      this.showToast('Barcode scanner is temporarily unavailable.', 'error');
       return;
     }
 
@@ -6605,8 +6792,8 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     }
 
     // Stop Quagga scanner
-    if (typeof Quagga !== 'undefined' && Quagga.stop) {
-      Quagga.stop();
+    if (typeof window.Quagga !== 'undefined' && window.Quagga.stop) {
+      window.Quagga.stop();
     }
 
     // Clear result display
@@ -6617,15 +6804,17 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   },
 
   initBarcodeScanner() {
+    const QuaggaLib = window.Quagga;
+
     // Check if Quagga is loaded
-    if (typeof Quagga === 'undefined') {
+    if (!QuaggaLib) {
       console.error('QuaggaJS library not loaded');
       this.showToast('Barcode scanner not available', 'error');
       return;
     }
 
     // Initialize QuaggaJS
-    Quagga.init(
+    QuaggaLib.init(
       {
         inputStream: {
           name: 'Live',
@@ -6663,18 +6852,18 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
           return;
         }
         console.log('Barcode scanner initialization complete');
-        Quagga.start();
+        QuaggaLib.start();
       }
     );
 
     // Handle detected barcodes
-    Quagga.onDetected((data) => {
+    QuaggaLib.onDetected((data) => {
       if (data && data.codeResult && data.codeResult.code) {
         const barcode = data.codeResult.code;
         console.log('Barcode detected:', barcode);
 
         // Stop scanning
-        Quagga.stop();
+        QuaggaLib.stop();
 
         // Display result
         const resultDiv = document.getElementById('barcodeResult');
@@ -6691,9 +6880,9 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     });
 
     // Optional: Draw boxes around detected barcodes
-    Quagga.onProcessed((result) => {
-      const drawingCtx = Quagga.canvas.ctx.overlay;
-      const drawingCanvas = Quagga.canvas.dom.overlay;
+    QuaggaLib.onProcessed((result) => {
+      const drawingCtx = QuaggaLib.canvas.ctx.overlay;
+      const drawingCanvas = QuaggaLib.canvas.dom.overlay;
 
       if (result) {
         if (result.boxes) {
@@ -6708,7 +6897,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
               return box !== result.box;
             })
             .forEach((box) => {
-              Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, {
+              QuaggaLib.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, {
                 color: 'green',
                 lineWidth: 2,
               });
@@ -6716,14 +6905,14 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         }
 
         if (result.box) {
-          Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, {
+          QuaggaLib.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, {
             color: '#00F',
             lineWidth: 2,
           });
         }
 
         if (result.codeResult && result.codeResult.code) {
-          Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, {
+          QuaggaLib.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, {
             color: 'red',
             lineWidth: 3,
           });
@@ -7092,7 +7281,7 @@ function initLazyAnimations() {
   ];
 
   // Check if Lottie is available
-  if (typeof lottie === 'undefined') {
+  if (typeof window.lottie === 'undefined') {
     console.warn('Lottie library not loaded - animations disabled');
     return;
   }
@@ -7115,7 +7304,7 @@ function initLazyAnimations() {
           try {
             console.log(`Loading animation: ${animId}`);
 
-            lottie.loadAnimation({
+            window.lottie.loadAnimation({
               container: entry.target,
               renderer: 'svg',
               loop: true,
@@ -7125,6 +7314,7 @@ function initLazyAnimations() {
 
             // Mark as loaded
             entry.target.dataset.loaded = 'true';
+            entry.target.classList.add('animation-loaded');
           } catch (error) {
             console.error(`Failed to load animation: ${animId}`, error);
 
@@ -7163,9 +7353,11 @@ function initLazyAnimations() {
 
   // Pause animations when tab is not visible (save CPU/battery)
   document.addEventListener('visibilitychange', () => {
-    if (typeof lottie === 'undefined') return;
+    if (typeof window.lottie === 'undefined') return;
 
-    const allAnimations = lottie.getRegisteredAnimations ? lottie.getRegisteredAnimations() : [];
+    const allAnimations = window.lottie.getRegisteredAnimations
+      ? window.lottie.getRegisteredAnimations()
+      : [];
 
     allAnimations.forEach((animation) => {
       if (document.hidden) {
@@ -7179,56 +7371,6 @@ function initLazyAnimations() {
 
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  // Initialize logo animations
-  const logoAnim1 = document.getElementById('logo-animation-1');
-  const logoAnim2 = document.getElementById('logo-animation-2');
-
-  if (logoAnim1 && typeof lottie !== 'undefined') {
-    try {
-      lottie.loadAnimation({
-        container: logoAnim1,
-        renderer: 'svg',
-        loop: true,
-        autoplay: true,
-        path: '/brand/Quicklist Anim White Trimed.json',
-      });
-    } catch (error) {
-      console.error('Failed to load logo animation 1:', error);
-    }
-  }
-
-  if (logoAnim2 && typeof lottie !== 'undefined') {
-    try {
-      lottie.loadAnimation({
-        container: logoAnim2,
-        renderer: 'svg',
-        loop: true,
-        autoplay: true,
-        path: '/brand/Quicklist Anim White Trimed.json',
-      });
-    } catch (error) {
-      console.error('Failed to load logo animation 2:', error);
-    }
-  }
-
-  // Initialize hero animation (load immediately)
-  const heroAnimContainer = document.getElementById('hero-animation');
-  if (heroAnimContainer && typeof lottie !== 'undefined') {
-    try {
-      lottie.loadAnimation({
-        container: heroAnimContainer,
-        renderer: 'svg',
-        loop: true,
-        autoplay: true,
-        path: '/json_anim/online-marketplace-website-in-browser-window-2025-11-05-04-21-50-utc.json',
-      });
-    } catch (error) {
-      console.error('Failed to load hero animation:', error);
-    }
-  }
-
-  // Initialize lazy-loaded animations
-  initLazyAnimations();
-
+  app.scheduleMarketingAnimations();
   app.init();
 });
