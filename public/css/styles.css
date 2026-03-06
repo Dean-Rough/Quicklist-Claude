@@ -1,11 +1,47 @@
 /* ============================================
    QUICKLIST — BENTO GRID UI
-   Typography: Manrope + IBM Plex Mono
-   - H tags + Menu: Manrope Bold (700)
-   - Paragraphs: Manrope Reg (400)
-   - Buttons: Manrope Reg (400)
-   - Misc/Tags: IBM Plex Mono Reg (400)
+   Typography: Maison + Maison Mono (self-hosted WOFF2)
+   - H tags + Menu: Maison 700
+   - Paragraphs: Maison 400
+   - Buttons/Tags/Inputs: Maison Mono 400/700
    ============================================ */
+
+/* @font-face declarations */
+@font-face {
+  font-family: 'Maison';
+  src: url('/fonts/Maison-Bold-subset.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+00A3, U+20AC, U+2013-2014, U+2018-201F, U+2022, U+2026;
+}
+
+@font-face {
+  font-family: 'Maison';
+  src: url('/fonts/Maison-Regular-subset.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+00A3, U+20AC, U+2013-2014, U+2018-201F, U+2022, U+2026;
+}
+
+@font-face {
+  font-family: 'Maison Mono';
+  src: url('/fonts/MaisonMono-Bold-subset.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+00A3, U+20AC, U+2013-2014, U+2018-201F, U+2022, U+2026;
+}
+
+@font-face {
+  font-family: 'Maison Mono';
+  src: url('/fonts/MaisonMono-Regular-subset.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+00A3, U+20AC, U+2013-2014, U+2018-201F, U+2022, U+2026;
+}
 
 * {
   margin: 0;
@@ -92,8 +128,8 @@
   --text-color: var(--text-primary);
 
   /* Typography */
-  --font-body: 'Manrope', system-ui, -apple-system, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'Consolas', monospace;
+  --font-body: 'Maison', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Maison Mono', 'Consolas', monospace;
 }
 
 html,
