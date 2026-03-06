@@ -3492,7 +3492,7 @@ ${description}
             ctx.shadowOffsetY = 10;
             break;
         }
-        
+
         ctx.drawImage(img, x, y, width, height);
 
         canvas.toBlob(resolve, 'image/jpeg', 0.95);
@@ -5788,24 +5788,34 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
     const appearance = this.getClerkAppearance();
 
+    const authOptions = {
+      appearance: appearance,
+      afterSignUpUrl: window.location.origin,
+      afterSignInUrl: window.location.origin,
+    };
+
     try {
       if (mode === 'signUp') {
-        await clerk.openSignUp({
-          appearance: appearance,
-          afterSignUpUrl: window.location.origin,
-          afterSignInUrl: window.location.origin,
-        });
+        await clerk.openSignUp(authOptions);
       } else {
-        await clerk.openSignIn({
-          appearance: appearance,
-          afterSignUpUrl: window.location.origin,
-          afterSignInUrl: window.location.origin,
-        });
+        await clerk.openSignIn(authOptions);
       }
     } catch (error) {
       console.error('Clerk sign in error:', error);
+
+      // Fallback to hosted portal if UI components are missing in the browser bundle
+      if (error && error.message && error.message.includes('Ui components')) {
+        console.log('Falling back to hosted authentication portal...');
+        if (mode === 'signUp') {
+          clerk.redirectToSignUp(authOptions);
+        } else {
+          clerk.redirectToSignIn(authOptions);
+        }
+        return; // Don't show toast if we are redirecting
+      }
+
       if (!error.code || error.code !== 'cannot_render_single_session_enabled') {
-        this.showToast('Authentication error', 'error');
+        this.showToast('Authentication error: ' + (error.message || 'Please try again'), 'error');
       }
     }
   },
