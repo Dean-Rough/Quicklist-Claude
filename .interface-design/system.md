@@ -22,16 +22,16 @@ Dark bento-grid interface. Flat design — no drop shadows anywhere. Depth comes
 --teal:     #9ED6DF   Bento variant; success color
 --green:    #245E55   Bento variant (dark green)
 --red:      #C63F3E   Error / danger
---dark:     #0e261d   BG primary; text on light surfaces (dark forest, from step-1 anim)
+--dark:     #1e2033   BG primary; text on light surfaces (dark midnight indigo)
 --white:    #FFFFFF   Bento variant
 ```
 
 ### Backgrounds (dark layers)
 ```
---bg-primary:    #0e261d   Page background (dark forest)
---bg-secondary:  #182e24   Cards, bento-cell, sidebar
---bg-tertiary:   #213b2f   Form inputs, inactive states
---bg-hover:      #2c4e3f   Hover state for dark elements
+--bg-primary:    #1e2033   Page background (dark midnight indigo)
+--bg-secondary:  #272a43   Cards, bento-cell, sidebar
+--bg-tertiary:   #333656   Form inputs, inactive states
+--bg-hover:      #3e4269   Hover state for dark elements
 ```
 
 ### Semantic

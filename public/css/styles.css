@@ -58,14 +58,14 @@
   --teal: #9ED6DF;
   --green: #245E55;
   --red: #C63F3E;
-  --dark: #0e261d;
+  --dark: #1e2033;
   --white: #FFFFFF;
 
   /* === Semantic mappings === */
-  --bg-primary: #0e261d;
-  --bg-secondary: #182e24;
-  --bg-tertiary: #213b2f;
-  --bg-hover: #2c4e3f;
+  --bg-primary: #1e2033;
+  --bg-secondary: #272a43;
+  --bg-tertiary: #333656;
+  --bg-hover: #3e4269;
 
   /* Primary accent */
   --accent: #EAC119;
