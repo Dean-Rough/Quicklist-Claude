@@ -3414,8 +3414,56 @@ ${description}
 
   // Generate hero image with nanobanana or fallback
   async generateHeroImage(imageFile) {
-    // Note: Add NANOBANANA_API_KEY to .env if using nanobanana service
-    // For now, using fallback method
+    if (this.state.imageEnhancementEnabled) {
+      try {
+        this.showToast('✨ Enhancing with Nano Banana 2...', 'info');
+
+        // Convert file to base64
+        const reader = new FileReader();
+        const base64Promise = new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+        });
+        reader.readAsDataURL(imageFile);
+        const base64Image = await base64Promise;
+
+        const backgroundType = document.getElementById('studioBackground')?.value || 'neutral';
+        const lightingType = document.getElementById('studioLighting')?.value || 'soft';
+
+        const token = await this.getAuthToken();
+        const response = await fetch(`${this.apiUrl}/enhance-image`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            image: base64Image,
+            background: backgroundType,
+            lighting: lightingType
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Enhancement failed');
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.enhancedImage) {
+          // Convert base64 back to Blob for the form data
+          const res = await fetch(data.enhancedImage);
+          const blob = await res.blob();
+          this.showToast('Image enhanced successfully!', 'success');
+          return blob;
+        }
+      } catch (error) {
+        console.error('Nano Banana 2 Enhancement Error:', error);
+        this.showToast('Enhancement failed, using original image.', 'warning');
+      }
+    }
+
+    // Fallback method
     return await this.createHeroImageFallback(imageFile);
   },
 
@@ -5549,6 +5597,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     } else if (resolvedView === 'settings') {
       this.loadSubscriptionData();
       this.loadDashboardMetrics(); // Also load dashboard metrics
+      this.loadReferralData();
     } else if (resolvedView === 'profile') {
       this.loadProfileData();
     }
@@ -5606,6 +5655,9 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
       // Load user data
       await this.loadListingsFromDB();
+
+      // Submit referral code if one was captured before signup
+      this.submitReferralCode();
 
       // Show welcome toast only once per session
       if (!this.state.hasShownWelcomeToast) {
@@ -7221,6 +7273,86 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         }
       }, 250);
     });
+  },
+
+  // ─── Referral & Credits ──────────────────────────────────────────────────
+
+  async submitReferralCode() {
+    try {
+      const raw = localStorage.getItem('ql_ref');
+      if (!raw) return;
+      const { code, ts } = JSON.parse(raw);
+      // Expire after 30 days
+      if (Date.now() - ts > 30 * 24 * 60 * 60 * 1000) {
+        localStorage.removeItem('ql_ref');
+        return;
+      }
+      const response = await fetch(`${this.apiUrl}/referral/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.state.token}`,
+        },
+        body: JSON.stringify({ code }),
+      });
+      localStorage.removeItem('ql_ref');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          this.showToast(`Referral applied — you got ${data.creditsEarned} bonus listings!`, 'success');
+        }
+      }
+    } catch (e) {
+      // Silent fail — never block the user
+    }
+  },
+
+  async loadReferralData() {
+    try {
+      const response = await fetch(`${this.apiUrl}/referral/code`, {
+        headers: { Authorization: `Bearer ${this.state.token}` },
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (!data) return;
+
+      const urlEl = document.getElementById('referShareUrl');
+      const balanceEl = document.getElementById('referCreditBalance');
+      const countEl = document.getElementById('referCount');
+      const progressEl = document.getElementById('referProgressBar');
+      const milestoneLabel = document.getElementById('referMilestoneLabel');
+      const milestoneNote = document.getElementById('referMilestoneNote');
+
+      if (urlEl) urlEl.value = data.shareUrl || '';
+      if (balanceEl) balanceEl.textContent = data.creditBalance ?? 0;
+      if (countEl) countEl.textContent = data.successfulReferrals ?? 0;
+
+      const count = data.successfulReferrals || 0;
+      const target = data.milestoneTarget || 3;
+      const pct = Math.min(100, Math.round((count / target) * 100));
+      if (progressEl) progressEl.style.width = pct + '%';
+      if (milestoneLabel) milestoneLabel.textContent = `${count} / ${target} referrals`;
+      if (milestoneNote) milestoneNote.style.display = data.milestoneRewardIssued ? 'block' : 'none';
+    } catch (e) {
+      console.warn('Could not load referral data:', e.message);
+    }
+  },
+
+  async copyReferralLink() {
+    const urlEl = document.getElementById('referShareUrl');
+    const url = urlEl ? urlEl.value : '';
+    if (!url || url === 'Loading…') {
+      this.showToast('Your referral link is loading…', 'info');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      this.showToast('Referral link copied!', 'success');
+    } catch {
+      urlEl.select();
+      document.execCommand('copy');
+      this.showToast('Link copied!', 'success');
+    }
   },
 };
 

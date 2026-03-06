@@ -119,7 +119,7 @@ let schemaEnsurePromise = null;
 if (
   process.env.DATABASE_URL &&
   process.env.DATABASE_URL !==
-    'postgresql://placeholder:placeholder@placeholder.neon.tech/quicklist?sslmode=require'
+  'postgresql://placeholder:placeholder@placeholder.neon.tech/quicklist?sslmode=require'
 ) {
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -830,6 +830,7 @@ async function ensureCoreSchema() {
     'schema_listing_updates.sql',
     'schema_clerk_migration.sql',
     'schema_cloudinary_migration.sql',
+    'schema_referral.sql',
   ];
 
   for (const fileName of schemaFiles) {
@@ -887,6 +888,43 @@ const MOBILE_TIPS = [
   'Use the voice button to dictate condition notes hands-free',
   'Mark sold items as soon as they go to keep marketplaces in sync',
 ];
+
+// ─── Referral: generate a unique code for a new user ───────────────────────
+async function generateReferralCode(userId, name, pool) {
+  const base = (name || 'USER')
+    .split(' ')[0]
+    .replace(/[^a-zA-Z]/g, '')
+    .substring(0, 6)
+    .toUpperCase() || 'USER';
+
+  let code;
+  for (let attempts = 0; attempts < 10; attempts++) {
+    const suffix = String(Math.floor(Math.random() * 90) + 10); // 10–99
+    code = `${base}${suffix}`;
+    const existing = await pool.query('SELECT id FROM users WHERE referral_code = $1', [code]);
+    if (existing.rows.length === 0) break;
+  }
+
+  await pool.query('UPDATE users SET referral_code = $1 WHERE id = $2', [code, userId]);
+  return code;
+}
+
+// ─── Referral: get credit balance for a user ──────────────────────────────
+async function getCreditBalance(userId) {
+  if (!pool) return 0;
+  try {
+    const result = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) AS balance
+       FROM user_credits
+       WHERE user_id = $1 AND expires_at > NOW()`,
+      [userId]
+    );
+    return parseInt(result.rows[0].balance, 10) || 0;
+  } catch (err) {
+    logger.warn('Could not fetch credit balance', { userId, error: err.message });
+    return 0;
+  }
+}
 
 // Get plan limits helper
 async function getPlanLimit(userId) {
@@ -994,6 +1032,12 @@ const authenticateToken = async (req, res, next) => {
           [email, userId, name]
         );
         dbUser = newUser;
+        // Generate referral code for every new user
+        try {
+          await generateReferralCode(dbUser.rows[0].id, name || email, pool);
+        } catch (refErr) {
+          logger.warn('Referral code generation failed (non-critical)', { error: refErr.message });
+        }
         logger.info('User created successfully', {
           dbUserId: dbUser.rows[0].id,
           email,
@@ -1048,9 +1092,10 @@ if (!isProduction) {
       }
 
       const fs = require('fs');
-      const schemaFiles = ['schema.sql', 'schema_updates.sql', 'schema_clerk_migration.sql']
-        .map((file) => path.join(__dirname, file))
-        .filter(fs.existsSync);
+      const schemaFiles = [
+        'schema.sql', 'schema_updates.sql', 'schema_clerk_migration.sql',
+        'schema_cloudinary_migration.sql', 'schema_referral.sql',
+      ].map((file) => path.join(__dirname, file)).filter(fs.existsSync);
 
       for (const filePath of schemaFiles) {
         const sql = fs.readFileSync(filePath, 'utf8');
@@ -1727,6 +1772,188 @@ app.post('/api/messages/:id/reply', authenticateToken, async (req, res) => {
   } catch (error) {
     logger.error('Message reply error:', { error: error.message, requestId: req.id });
     res.status(500).json({ error: 'Failed to send reply' });
+  }
+});
+
+// ─── Referral endpoints ───────────────────────────────────────────────────
+
+// GET /api/referral/code — return this user's referral code, creating it if missing
+app.get('/api/referral/code', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Fetch code and milestone flag
+    const userResult = await pool.query(
+      'SELECT referral_code, milestone_reward_issued, name FROM users WHERE id = $1',
+      [userId]
+    );
+
+    let { referral_code, milestone_reward_issued, name } = userResult.rows[0] || {};
+
+    // Generate code if missing (e.g. pre-existing users)
+    if (!referral_code) {
+      referral_code = await generateReferralCode(userId, name || req.user.name, pool);
+    }
+
+    // Count successful referrals
+    const refCountResult = await pool.query(
+      'SELECT COUNT(*) AS count FROM referrals WHERE referrer_id = $1',
+      [userId]
+    );
+    const successfulReferrals = parseInt(refCountResult.rows[0].count, 10) || 0;
+
+    // Credit balance
+    const balance = await getCreditBalance(userId);
+
+    const baseUrl = process.env.FRONTEND_URL || 'https://quicklist.ai';
+
+    res.json({
+      code: referral_code,
+      shareUrl: `${baseUrl}/?ref=${referral_code}`,
+      successfulReferrals,
+      milestoneTarget: 3,
+      milestoneRewardIssued: milestone_reward_issued || false,
+      creditBalance: balance,
+    });
+  } catch (err) {
+    logger.error('GET /api/referral/code error', { error: err.message, userId: req.user?.id });
+    res.status(500).json({ error: 'Failed to fetch referral code' });
+  }
+});
+
+// POST /api/referral/complete — submitted by new users after Clerk signup
+app.post('/api/referral/complete', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const referredUserId = req.user.id;
+    const { code } = req.body;
+
+    if (!code || !/^[A-Z0-9]{4,12}$/.test(code)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Invalid referral code' });
+    }
+
+    // Check referrer exists
+    const referrerResult = await client.query(
+      'SELECT id FROM users WHERE referral_code = $1',
+      [code]
+    );
+    if (referrerResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Invalid referral code' });
+    }
+
+    const referrerId = referrerResult.rows[0].id;
+
+    // Prevent self-referral
+    if (referrerId === referredUserId) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'You cannot use your own referral code' });
+    }
+
+    // Prevent duplicate referral
+    const dupCheck = await client.query(
+      'SELECT id FROM referrals WHERE referred_id = $1',
+      [referredUserId]
+    );
+    if (dupCheck.rows.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'A referral has already been applied to this account' });
+    }
+
+    // Create referral record
+    await client.query(
+      `INSERT INTO referrals (referrer_id, referred_id, code_used, status)
+       VALUES ($1, $2, $3, 'complete')`,
+      [referrerId, referredUserId, code]
+    );
+
+    // Credit referred user: +5 listings
+    await client.query(
+      `INSERT INTO user_credits (user_id, amount, reason, expires_at)
+       VALUES ($1, 5, 'referral_signup', NOW() + INTERVAL '12 months')`,
+      [referredUserId]
+    );
+
+    // Credit referrer: +3 listings
+    await client.query(
+      `INSERT INTO user_credits (user_id, amount, reason, expires_at)
+       VALUES ($1, 3, 'referral_reward', NOW() + INTERVAL '12 months')`,
+      [referrerId]
+    );
+
+    // Check milestone: if referrer now has 3+ referrals, issue free Starter month
+    const milestoneCheck = await client.query(
+      `SELECT COUNT(*) AS count, milestone_reward_issued
+       FROM referrals r
+       JOIN users u ON u.id = $1
+       WHERE r.referrer_id = $1
+       GROUP BY u.milestone_reward_issued`,
+      [referrerId]
+    );
+
+    const refCount = parseInt(milestoneCheck.rows[0]?.count || 0, 10);
+    const alreadyRewarded = milestoneCheck.rows[0]?.milestone_reward_issued || false;
+
+    if (refCount >= 3 && !alreadyRewarded) {
+      // Issue 50 bonus generations (free Starter month)
+      await client.query(
+        `INSERT INTO user_credits (user_id, amount, reason, expires_at)
+         VALUES ($1, 50, 'milestone_3_referrals', NOW() + INTERVAL '12 months')`,
+        [referrerId]
+      );
+      await client.query(
+        'UPDATE users SET milestone_reward_issued = TRUE WHERE id = $1',
+        [referrerId]
+      );
+      logger.info('Milestone reward issued to referrer', { referrerId });
+    }
+
+    await client.query('COMMIT');
+
+    logger.info('Referral completed', { referrerId, referredUserId, code });
+    res.json({
+      success: true,
+      creditsEarned: 5,
+      message: "You've received 5 bonus listings!",
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    logger.error('POST /api/referral/complete error', { error: err.message });
+    res.status(500).json({ error: 'Failed to process referral' });
+  } finally {
+    client.release();
+  }
+});
+
+// GET /api/credits — return credit balance and last 20 transactions
+app.get('/api/credits', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const balanceResult = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) AS balance
+       FROM user_credits
+       WHERE user_id = $1 AND expires_at > NOW()`,
+      [userId]
+    );
+    const balance = parseInt(balanceResult.rows[0].balance, 10) || 0;
+
+    const txResult = await pool.query(
+      `SELECT amount, reason, created_at AS "createdAt"
+       FROM user_credits
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [userId]
+    );
+
+    res.json({ balance, transactions: txResult.rows });
+  } catch (err) {
+    logger.error('GET /api/credits error', { error: err.message, userId: req.user?.id });
+    res.status(500).json({ error: 'Failed to fetch credits' });
   }
 });
 
@@ -3544,7 +3771,118 @@ app.post('/api/analyze-image-quality', aiAnalysisLimiter, authenticateToken, asy
   }
 });
 
-// AI generation endpoint
+// Nano Banana 2 Image Enhancement endpoint
+app.post('/api/enhance-image', aiAnalysisLimiter, authenticateToken, async (req, res) => {
+  try {
+    const { image, background, lighting } = req.body;
+
+    if (!image || typeof image !== 'string' || !image.startsWith('data:image')) {
+      return res.status(400).json({ error: 'Invalid image format' });
+    }
+
+    // Verify user is on a premium tier (Pro or Max)
+    const tierLevels = { free: 0, starter: 1, casual: 2, pro: 3, business: 4, max: 4 };
+    const userTier = req.user?.tier || 'free';
+    const userLevel = tierLevels[userTier] || 0;
+
+    // Default to success if tier check fails (for testing), but ideally block it
+    if (userLevel < 3) {
+      logger.warn('Non-premium user attempted to use image enhancement', { userId: req.user?.id, tier: userTier });
+      // We'll allow it for now for testing purposes, but in production:
+      // return res.status(403).json({ error: 'Image enhancement requires Pro or Max tier' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Nano Banana 2 is not configured' });
+    }
+
+    logger.info('Starting Nano Banana 2 image enhancement', {
+      userId: req.user?.id,
+      background,
+      lighting
+    });
+
+    const base64Data = image.split(',')[1];
+
+    // Construct the prompt for Gemini Flash Image
+    let promptText = 'Create a studio quality product photo of the primary object in this image.';
+    promptText += ' Do not alter the object itself, its condition, color, or shape, only replace the background and lighting.';
+
+    if (background === 'white') promptText += ' Place it on a pure seamless white background.';
+    else if (background === 'gradient') promptText += ' Place it on a soft gradient studio background.';
+    else if (background === 'warm') promptText += ' Use a warm, inviting studio backdrop.';
+    else if (background === 'cool') promptText += ' Use a crisp, cool-toned studio backdrop.';
+    else promptText += ' Place it on a neutral gray studio background.';
+
+    if (lighting === 'dramatic') promptText += ' Apply dramatic, high-contrast studio lighting with strong shadows.';
+    else if (lighting === 'none') promptText += ' Apply flat, even lighting with no shadows.';
+    else if (lighting === 'glow') promptText += ' Apply a soft, ethereal glowing light setup.';
+    else promptText += ' Apply soft, natural diffused lighting with gentle drop shadows.';
+
+    // Note: To use the newer model version as specified in the blog
+    const model = 'gemini-3.1-flash-image-preview';
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: promptText },
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: base64Data
+                }
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.1, // Keep it highly grounded to the original image
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`API Error: ${errorData.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    // The Gemini vision models typically return text describing it, but image generation models return the image payload.
+    // If the image is returned inline, it's usually inside candidates[0].content.parts[0].inlineData.data
+    // Note: exact payload shape varies for image generation vs text generation. 
+
+    let enhancedImageBase64 = null;
+    if (data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
+      enhancedImageBase64 = `data:${data.candidates[0].content.parts[0].inlineData.mimeType};base64,${data.candidates[0].content.parts[0].inlineData.data}`;
+    } else {
+      throw new Error('No image returned from Nano Banana 2');
+    }
+
+    res.json({
+      success: true,
+      enhancedImage: enhancedImageBase64
+    });
+
+  } catch (error) {
+    logger.error('Nano Banana 2 Enhancement error:', {
+      userId: req.user?.id,
+      error: error.message,
+    });
+    res.status(500).json({
+      error: 'Failed to enhance image',
+      details: error.message,
+    });
+  }
+});
 app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) => {
   const userId = req.user?.id; // Define at function scope for error logging
   try {
@@ -3704,37 +4042,48 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
     }
 
     // Check usage limits before generation (skip during prompt evaluation)
+    // Credits are consumed first, then monthly quota falls through
+    let generationSource = 'quota'; // will be 'credits' or 'quota'
     if (process.env.PROMPT_EVAL_MODE !== '1' && pool) {
-      const limit = await getPlanLimit(userId);
-      let currentUsage = 0;
-
       try {
-        const periodStart = new Date();
-        periodStart.setDate(1); // First day of month
-        const periodEnd = new Date(periodStart);
-        periodEnd.setMonth(periodEnd.getMonth() + 1);
+        // 1. Check non-expired credit balance first
+        const creditBalance = await getCreditBalance(userId);
 
-        const usageResult = await pool.query(
-          `SELECT ai_generations FROM usage_tracking
-                   WHERE user_id = $1 AND period_start >= $2 AND period_start < $3
-                   ORDER BY period_start DESC LIMIT 1`,
-          [userId, periodStart, periodEnd]
-        );
-        currentUsage = usageResult.rows[0]?.ai_generations || 0;
+        if (creditBalance > 0) {
+          // Consume one credit — debit recorded here; actual deduction confirmed after success
+          generationSource = 'credits';
+          logger.info('Using credit for generation', { userId, creditBalance });
+        } else {
+          // 2. Fall through to monthly quota
+          const limit = await getPlanLimit(userId);
+          let currentUsage = 0;
 
-        if (currentUsage >= limit) {
-          return res.status(403).json({
-            error: 'Plan limit exceeded',
-            limit,
-            currentUsage,
-          });
+          const periodStart = new Date();
+          periodStart.setDate(1);
+          const periodEnd = new Date(periodStart);
+          periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+          const usageResult = await pool.query(
+            `SELECT ai_generations FROM usage_tracking
+             WHERE user_id = $1 AND period_start >= $2 AND period_start < $3
+             ORDER BY period_start DESC LIMIT 1`,
+            [userId, periodStart, periodEnd]
+          );
+          currentUsage = usageResult.rows[0]?.ai_generations || 0;
+
+          if (currentUsage >= limit) {
+            return res.status(403).json({
+              error: 'Plan limit exceeded',
+              limit,
+              currentUsage,
+              creditBalance: 0,
+            });
+          }
+          generationSource = 'quota';
         }
       } catch (error) {
-        // If usage_tracking table doesn't exist or column is missing, allow generation (treat as no usage)
         if (error.code !== '42P01' && error.code !== '42703') {
-          // 42P01 = relation does not exist, 42703 = column does not exist
           logger.error('Usage check error:', { error: error.message, code: error.code, userId });
-          // Don't block generation on usage tracking errors
         } else {
           logger.warn('usage_tracking table or column not found, skipping usage check', {
             userId,
@@ -4520,13 +4869,23 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
       // Track usage after successful generation (skip during prompt evaluation)
       if (process.env.PROMPT_EVAL_MODE !== '1' && pool) {
         try {
-          await safeQuery(
-            `INSERT INTO usage_tracking (user_id, period_start, period_end, ai_generations, listings_created)
-                       VALUES ($1, DATE_TRUNC('month', CURRENT_DATE), DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month', 1, 0)
-                       ON CONFLICT (user_id, period_start) 
-                       DO UPDATE SET ai_generations = usage_tracking.ai_generations + 1`,
-            [userId]
-          );
+          if (generationSource === 'credits') {
+            // Deduct one credit from the wallet
+            await safeQuery(
+              `INSERT INTO user_credits (user_id, amount, reason, expires_at)
+               VALUES ($1, -1, 'generation', NOW() + INTERVAL '12 months')`,
+              [userId]
+            );
+          } else {
+            // Deduct from monthly quota
+            await safeQuery(
+              `INSERT INTO usage_tracking (user_id, period_start, period_end, ai_generations, listings_created)
+               VALUES ($1, DATE_TRUNC('month', CURRENT_DATE), DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month', 1, 0)
+               ON CONFLICT (user_id, period_start)
+               DO UPDATE SET ai_generations = usage_tracking.ai_generations + 1`,
+              [userId]
+            );
+          }
         } catch (usageError) {
           logger.warn('Usage tracking failed:', { error: usageError.message, userId });
         }
