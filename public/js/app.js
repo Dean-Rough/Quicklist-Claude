@@ -1400,7 +1400,7 @@ const app = {
       // Convert file to base64
       const base64 = await this.fileToBase64(imageData.file);
 
-      const response = await fetch(`${this.apiUrl}/api/analyze-image-quality`, {
+      const response = await fetch(`${this.apiUrl}/analyze-image-quality`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1571,7 +1571,7 @@ const app = {
         this.state.uploadedImages.map((img) => this.fileToBase64(img.file))
       );
 
-      const response = await fetch(`${this.apiUrl}/api/analyze-damage`, {
+      const response = await fetch(`${this.apiUrl}/analyze-damage`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2008,6 +2008,13 @@ const app = {
 
       // Auto-save listing to database
       await this.saveListing();
+
+      // Post-generation referral nudge on 2nd generation
+      const genCount = parseInt(localStorage.getItem('ql_gen_count') || '0', 10) + 1;
+      localStorage.setItem('ql_gen_count', String(genCount));
+      if (genCount === 2) {
+        setTimeout(() => this.showReferralNudge(), 1500);
+      }
 
       // Show result state
       loadingState.classList.add('hidden');
@@ -2511,6 +2518,17 @@ const app = {
   async callGeminiAPI(base64Images, platform, hint, location = '') {
     const personality = this.getSelectedPersonality();
 
+    // Always get a fresh Clerk token before generation — JWTs are short-lived
+    if (window.Clerk?.session) {
+      try {
+        const freshToken = await window.Clerk.session.getToken();
+        if (freshToken) {
+          this.state.token = freshToken;
+          localStorage.setItem('quicklist-token', freshToken);
+        }
+      } catch (e) {}
+    }
+
     try {
       const response = await fetch(`${this.apiUrl}/generate`, {
         method: 'POST',
@@ -2736,7 +2754,7 @@ const app = {
     const suggestedPrice = document.getElementById('outputPrice')?.value || listing.price || '';
     const rrp = document.getElementById('outputRRP')?.value || listing.rrp || '';
 
-    if (pricingIntelligence || suggestedPrice) {
+    if ((pricingIntelligence || suggestedPrice) && pricingSection) {
       pricingSection.style.display = 'block';
 
       let html = '';
@@ -2839,16 +2857,14 @@ const app = {
       }
 
       pricingCard.innerHTML = html;
-    } else {
+    } else if (pricingSection) {
       pricingSection.style.display = 'none';
     }
 
     // Show Post to eBay button if platform is eBay
     const postBtn = document.getElementById('postToEbayBtn');
-    if (platform === 'ebay') {
-      postBtn.style.display = 'block';
-    } else {
-      postBtn.style.display = 'none';
+    if (postBtn) {
+      postBtn.style.display = platform === 'ebay' ? 'block' : 'none';
     }
 
     // Display stock image if found
@@ -5666,6 +5682,17 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       }
     });
 
+    // Keep token fresh when Clerk silently refreshes the session
+    window.addEventListener('clerkTokenRefreshed', async (event) => {
+      try {
+        const token = await event.detail.session.getToken();
+        if (token) {
+          this.state.token = token;
+          localStorage.setItem('quicklist-token', token);
+        }
+      } catch (e) {}
+    });
+
     // Listen for Clerk sign-out events
     window.addEventListener('clerkSignedOut', () => {
       console.log('Clerk sign-out detected');
@@ -5681,7 +5708,20 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   },
 
   async checkClerkAuth() {
-    if (!window.Clerk) return;
+    // Eagerly load Clerk so we can detect existing sessions
+    // (returning from redirect sign-in, page refresh while signed in, etc.)
+    if (!window.Clerk) {
+      try {
+        if (window.quicklistAuth?.ensureLoaded) {
+          await window.quicklistAuth.ensureLoaded();
+        } else {
+          return;
+        }
+      } catch (error) {
+        console.error('Clerk bootstrap error during auth check:', error);
+        return;
+      }
+    }
 
     try {
       const user = window.Clerk.user;
@@ -6139,8 +6179,18 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       if (usageBarEl) usageBarEl.style.width = `${data.usage.percentage}%`;
       if (usageLimitEl) usageLimitEl.textContent = `of ${data.usage.limit} listings used`;
 
-      // Update upsell footer for free users
-      this.updateUpsellFooter(data.subscription, data.usage);
+      // Fetch credit balance and update upsell footer for free users
+      let creditBalance = 0;
+      try {
+        const creditsResp = await fetch(`${this.apiUrl}/credits`, {
+          headers: { Authorization: `Bearer ${this.state.token}` },
+        });
+        if (creditsResp.ok) {
+          const creditsData = await creditsResp.json();
+          creditBalance = creditsData.balance || 0;
+        }
+      } catch (_) {}
+      this.updateUpsellFooter(data.subscription, data.usage, creditBalance);
     } catch (error) {
       console.error('Error loading subscription data:', error);
       this.showToast('Failed to load subscription data', 'error');
@@ -6148,7 +6198,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   },
 
   // Upsell Footer Management
-  updateUpsellFooter(subscription, usage) {
+  updateUpsellFooter(subscription, usage, creditBalance = 0) {
     const footer = document.getElementById('upsellFooter');
     if (!footer) return;
 
@@ -6166,9 +6216,19 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     const usedEl = document.getElementById('upsellUsed');
     const limitEl = document.getElementById('upsellLimit');
     const barFill = document.getElementById('upsellBarFill');
+    const creditsEl = document.getElementById('upsellCredits');
+    const creditCountEl = document.getElementById('upsellCreditCount');
 
     if (usedEl) usedEl.textContent = usage.listingsCreated || 0;
     if (limitEl) limitEl.textContent = usage.limit || 5;
+    if (creditsEl && creditCountEl) {
+      if (creditBalance > 0) {
+        creditCountEl.textContent = creditBalance;
+        creditsEl.style.display = 'inline';
+      } else {
+        creditsEl.style.display = 'none';
+      }
+    }
 
     const percentage = usage.percentage || 0;
     if (barFill) {
@@ -6549,17 +6609,26 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     }
 
     if (this.state.isAuthenticated) {
+      const appAlreadyVisible = appView.style.display === 'block';
+
       // User is signed in - show app, hide marketing
       marketingView.style.display = 'none';
       marketingHeader.classList.add('hidden');
       if (marketingFooter) marketingFooter.style.display = 'none';
 
+      // Hide referral invite banner once logged in
+      const refBanner = document.getElementById('refBanner');
+      if (refBanner) refBanner.style.display = 'none';
+
       appView.classList.remove('hidden');
       appView.style.display = 'block';
       appHeader.classList.remove('hidden');
 
-      // ALWAYS go to New Item page for authenticated users
-      this.navigateToApp('newItem');
+      // Only navigate to newItem on initial transition (first load or sign-in)
+      // Don't disrupt the user if they're already in the app
+      if (!appAlreadyVisible) {
+        this.navigateToApp('newItem');
+      }
 
       // Load app data
       this.loadDashboardMetrics();
@@ -6994,7 +7063,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         throw new Error('Not authenticated');
       }
 
-      const response = await fetch(`${this.apiUrl}/api/lookup-barcode`, {
+      const response = await fetch(`${this.apiUrl}/lookup-barcode`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -7327,6 +7396,9 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       if (balanceEl) balanceEl.textContent = data.creditBalance ?? 0;
       if (countEl) countEl.textContent = data.successfulReferrals ?? 0;
 
+      // Cache shareUrl in state so nudge can use it without a second API call
+      if (data.shareUrl) this.state.referralShareUrl = data.shareUrl;
+
       const count = data.successfulReferrals || 0;
       const target = data.milestoneTarget || 3;
       const pct = Math.min(100, Math.round((count / target) * 100));
@@ -7336,6 +7408,57 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     } catch (e) {
       console.warn('Could not load referral data:', e.message);
     }
+  },
+
+  showReferralNudge() {
+    if (localStorage.getItem('ql_nudge_dismissed')) return;
+    const shareUrl = this.state.referralShareUrl;
+    if (!shareUrl) return;
+
+    const existing = document.getElementById('referralNudge');
+    if (existing) return; // already showing
+
+    const nudge = document.createElement('div');
+    nudge.id = 'referralNudge';
+    nudge.style.cssText = [
+      'position:fixed',
+      'bottom:5rem',
+      'right:1rem',
+      'z-index:8500',
+      'background:var(--bg-secondary)',
+      'border:1px solid var(--border)',
+      'border-radius:0.75rem',
+      'padding:1rem 1.25rem',
+      'max-width:320px',
+      'box-shadow:0 8px 24px rgba(0,0,0,0.3)',
+      'animation:slideUp 0.3s ease',
+    ].join(';');
+    nudge.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem">
+        <p style="margin:0;font-size:0.875rem;color:var(--text-primary);line-height:1.5">
+          Enjoying QuickList? <strong>Share your link</strong> — your friends get 5 free listings and you earn credits.
+        </p>
+        <button onclick="document.getElementById('referralNudge').remove();localStorage.setItem('ql_nudge_dismissed','1')" aria-label="Dismiss" style="background:none;border:none;color:var(--text-muted);font-size:1.25rem;cursor:pointer;flex-shrink:0;line-height:1;margin-top:-2px">&times;</button>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem">
+        <button id="referNudgeShareBtn" class="btn btn-primary" style="flex:1;font-size:0.8125rem;padding:0.375rem 0.75rem">Copy link</button>
+        <button onclick="document.getElementById('referralNudge').remove();localStorage.setItem('ql_nudge_dismissed','1')" class="btn btn-secondary" style="font-size:0.8125rem;padding:0.375rem 0.75rem">Later</button>
+      </div>`;
+    document.body.appendChild(nudge);
+
+    document.getElementById('referNudgeShareBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        document.getElementById('referNudgeShareBtn').textContent = 'Copied!';
+        setTimeout(() => {
+          const n = document.getElementById('referralNudge');
+          if (n) n.remove();
+          localStorage.setItem('ql_nudge_dismissed', '1');
+        }, 1500);
+      } catch (_) {
+        this.showToast(`Your link: ${shareUrl}`, 'info');
+      }
+    });
   },
 
   async copyReferralLink() {

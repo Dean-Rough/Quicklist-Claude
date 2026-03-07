@@ -144,6 +144,19 @@
     }
   </script>
 
+  <!-- Referral code capture: stores ?ref=CODE in localStorage for 30 days -->
+  <script>
+    (function() {
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var ref = params.get('ref');
+        if (ref && /^[A-Z0-9]{4,12}$/.test(ref)) {
+          localStorage.setItem('ql_ref', JSON.stringify({ code: ref, ts: Date.now() }));
+        }
+      } catch(e) {}
+    })();
+  </script>
+
   <link rel="preload" href="/fonts/Maison-Regular-subset.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/Maison-Bold-subset.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/MaisonMono-Regular-subset.woff2" as="font" type="font/woff2" crossorigin />
@@ -158,6 +171,32 @@
 
   <!-- Screen Reader Announcements (Live Region) -->
   <div role="status" aria-live="polite" aria-atomic="true" class="sr-only" id="announcements"></div>
+
+  <!-- Referral invite banner (shown when arriving via ?ref=CODE) -->
+  <div id="refBanner" style="display:none;position:sticky;top:0;z-index:9000;background:var(--accent-indigo,#6366f1);color:#fff;padding:0.625rem 1rem;text-align:center;font-size:0.9375rem;line-height:1.4">
+    🎉 You've been invited — <strong>sign up to get 5 free bonus listings!</strong>
+    <button onclick="typeof app!=='undefined'&&app.showSignUp?app.showSignUp():document.getElementById('signUpBtn')?.click()" style="margin-left:0.75rem;background:#fff;color:var(--accent-indigo,#6366f1);border:none;border-radius:0.375rem;padding:0.25rem 0.75rem;font-size:0.875rem;font-weight:600;cursor:pointer">Sign up free</button>
+    <button onclick="document.getElementById('refBanner').style.display='none'" aria-label="Dismiss" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:transparent;border:none;color:#fff;font-size:1.25rem;cursor:pointer;line-height:1;opacity:0.8">&times;</button>
+  </div>
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('ql_ref');
+        if (stored) {
+          var data = JSON.parse(stored);
+          // Only show if within 30 days and not yet signed in
+          if (data && data.ts && Date.now() - data.ts < 30 * 24 * 60 * 60 * 1000) {
+            // Show after DOM is ready; hide if user turns out to be logged in
+            document.addEventListener('DOMContentLoaded', function () {
+              if (!document.getElementById('appView') || document.getElementById('appView').classList.contains('hidden')) {
+                document.getElementById('refBanner').style.display = 'block';
+              }
+            });
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   <!-- Offline Indicator -->
   <div id="offlineIndicator" class="offline-indicator">
@@ -1673,30 +1712,72 @@
     <!-- Settings / Dashboard View -->
     <div id="settingsView" class="hidden">
       <div class="container section">
-        <h1 class="section-title">Dashboard & Settings</h1>
+        <h1 class="section-title">Dashboard &amp; Settings</h1>
 
+        <!-- Account Settings -->
+        <div class="card" style="max-width: 800px; margin: 0 auto 2rem">
+          <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem">Preferences</h2>
+          <div class="toggle-group">
+            <div>
+              <strong>Auto-Download ZIP</strong>
+              <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem">
+                Automatically download ZIP after generation
+              </p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settingAutoDownload" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Refer & Earn Card -->
+        <div class="card" style="max-width: 800px; margin: 0 auto 2rem" id="referEarnCard">
+      <h2 style="margin-bottom: 0.5rem; font-size: 1.25rem">Refer &amp; Earn</h2>
+      <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem">
+        Share your link — your friend gets <strong>5 free listings</strong>, you get <strong>3 credits</strong>. Refer 3 people and unlock a free month.
+      </p>
+
+      <!-- Credit balance -->
+      <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-tertiary); border-radius: 0.5rem">
+        <div style="flex: 1">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem">Your Credits</div>
+          <div id="referCreditBalance" style="font-size: 1.75rem; font-weight: 700; color: var(--accent-indigo)">—</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.125rem">free listings available</div>
+        </div>
+        <div style="flex: 1; text-align: right">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem">Referrals Made</div>
+          <div id="referCount" style="font-size: 1.75rem; font-weight: 700; color: var(--accent-indigo)">—</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.125rem">of 3 for free month</div>
+        </div>
+      </div>
+
+      <!-- Milestone progress bar -->
+      <div style="margin-bottom: 1.5rem">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem">
+          <span style="font-size: 0.8125rem; color: var(--text-muted)">Milestone progress</span>
+          <span id="referMilestoneLabel" style="font-size: 0.8125rem; color: var(--text-muted)">0 / 3 referrals</span>
+        </div>
+        <div style="height: 6px; background: var(--bg-tertiary); border-radius: 9999px; overflow: hidden">
+          <div id="referProgressBar" style="height: 100%; width: 0%; background: var(--accent-indigo); border-radius: 9999px; transition: width 0.4s ease"></div>
+        </div>
+        <p id="referMilestoneNote" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; display: none">
+          🎉 You've earned a free month of Starter! Keep referring to stack more credits.
+        </p>
+      </div>
+
+      <!-- Share link -->
+      <div style="display: flex; gap: 0.5rem; align-items: stretch">
+        <input id="referShareUrl" type="text" readonly
+          style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.625rem 0.875rem; font-size: 0.875rem; color: var(--text-primary); font-family: var(--font-mono); min-width: 0"
+          value="Loading…" />
+        <button onclick="app.copyReferralLink()" class="btn btn-primary" style="white-space: nowrap; flex-shrink: 0">
+          Copy link
         </button>
       </div>
-    </div>
-    </div>
-
-    <!-- Account Settings -->
-    <div class="card" style="max-width: 800px; margin: 0 auto 2rem">
-      <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem">Preferences</h2>
-      <div class="toggle-group">
-        <div>
-          <strong>Auto-Download ZIP</strong>
-          <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem">
-            Automatically download ZIP after generation
-          </p>
         </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="settingAutoDownload" />
-          <span class="toggle-slider"></span>
-        </label>
+
       </div>
-    </div>
-    </div>
     </div>
 
     <!-- Profile View -->
@@ -2247,12 +2328,19 @@
       const bindClerkEvents = () => {
         if (!window.clerk || window.__quicklistClerkEventsBound) return;
         if (typeof window.clerk.addListener === 'function') {
+          let wasSignedIn = !!(window.clerk.user && window.clerk.session);
           window.clerk.addListener(({ user, session }) => {
-            if (user && session) {
+            const isSignedIn = !!(user && session);
+            if (isSignedIn && !wasSignedIn) {
+              // Actual sign-in transition
               window.dispatchEvent(new CustomEvent('clerkSignedIn', { detail: { user, session } }));
-            } else {
+            } else if (!isSignedIn && wasSignedIn) {
               window.dispatchEvent(new CustomEvent('clerkSignedOut'));
+            } else if (isSignedIn && wasSignedIn) {
+              // Still signed in — Clerk refreshed the session token, propagate it
+              window.dispatchEvent(new CustomEvent('clerkTokenRefreshed', { detail: { session } }));
             }
+            wasSignedIn = isSignedIn;
           });
           window.__quicklistClerkEventsBound = true;
         }
