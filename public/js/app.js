@@ -34,6 +34,7 @@ const app = {
     filteredSavedListings: [],
     loadingSavedItems: false,
     selectedItemForDelete: null,
+    selectedListingIds: new Set(),
     selectedConfirmationItem: null,
     multipleItemsDetected: [],
     user: null,
@@ -5252,6 +5253,105 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     this.filterSavedItems();
   },
 
+  // Update the select-all checkbox and delete button state
+  updateSelectBar(listingsToRender) {
+    const selectAll = document.getElementById('selectAllCheckbox');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    const countEl = document.getElementById('selectedCount');
+    const labelEl = document.getElementById('selectAllLabel');
+    if (!selectAll || !deleteBtn || !countEl) return;
+
+    const n = this.state.selectedListingIds.size;
+    const total = listingsToRender?.length ?? 0;
+
+    countEl.textContent = n;
+    if (n > 0) {
+      deleteBtn.classList.remove('hidden');
+    } else {
+      deleteBtn.classList.add('hidden');
+    }
+
+    selectAll.checked = total > 0 && n >= total;
+    selectAll.indeterminate = n > 0 && n < total;
+    if (labelEl) labelEl.textContent = n >= total && total > 0 ? 'Deselect all' : 'Select all';
+  },
+
+  toggleSelectItem(id, checked) {
+    if (checked) {
+      this.state.selectedListingIds.add(id);
+    } else {
+      this.state.selectedListingIds.delete(id);
+    }
+    // Update card outline without full re-render
+    const card = document.querySelector(`.swipeable-card[data-listing-id="${id}"]`);
+    if (card) {
+      card.style.outline = checked ? '2px solid var(--accent-indigo)' : '';
+      card.style.borderRadius = checked ? 'var(--radius-bento)' : '';
+    }
+    const listingsToRender = this.state.filteredSavedListings.length > 0 ||
+      document.getElementById('savedItemsSearch')?.value ||
+      document.getElementById('savedItemsPlatformFilter')?.value
+      ? this.state.filteredSavedListings
+      : this.state.savedListings;
+    this.updateSelectBar(listingsToRender);
+  },
+
+  toggleSelectAll(checked) {
+    const listingsToRender = this.state.filteredSavedListings.length > 0 ||
+      document.getElementById('savedItemsSearch')?.value ||
+      document.getElementById('savedItemsPlatformFilter')?.value
+      ? this.state.filteredSavedListings
+      : this.state.savedListings;
+
+    listingsToRender.forEach((l) => {
+      if (checked) {
+        this.state.selectedListingIds.add(l.id);
+      } else {
+        this.state.selectedListingIds.delete(l.id);
+      }
+    });
+
+    // Update all card outlines and checkboxes without re-render
+    document.querySelectorAll('.swipeable-card[data-listing-id]').forEach((card) => {
+      card.style.outline = checked ? '2px solid var(--accent-indigo)' : '';
+      card.style.borderRadius = checked ? 'var(--radius-bento)' : '';
+      const cb = card.querySelector('input[type="checkbox"]');
+      if (cb) cb.checked = checked;
+    });
+
+    this.updateSelectBar(listingsToRender);
+  },
+
+  async deleteSelectedListings() {
+    const ids = [...this.state.selectedListingIds];
+    if (ids.length === 0) return;
+
+    if (!confirm(`Delete ${ids.length} listing${ids.length > 1 ? 's' : ''}? This cannot be undone.`)) return;
+
+    let failed = 0;
+    await Promise.all(ids.map(async (id) => {
+      try {
+        const res = await fetch(`${this.apiUrl}/listings/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${this.state.token}` },
+        });
+        if (!res.ok && res.status !== 404) failed++;
+      } catch (_) {
+        failed++;
+      }
+    }));
+
+    this.state.selectedListingIds.clear();
+    await this.loadListingsFromDB();
+    this.renderSavedItems();
+
+    if (failed > 0) {
+      this.showToast(`Deleted ${ids.length - failed} items. ${failed} failed.`, 'error');
+    } else {
+      this.showToast(`Deleted ${ids.length} listing${ids.length > 1 ? 's' : ''}`);
+    }
+  },
+
   // Render saved items
   renderSavedItems() {
     const grid = document.getElementById('savedItemsGrid');
@@ -5306,8 +5406,13 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     empty.classList.add('hidden');
     if (noResults) noResults.classList.add('hidden');
 
+    // Show select bar
+    const selectBar = document.getElementById('savedItemsSelectBar');
+    if (selectBar) selectBar.classList.remove('hidden');
+
     grid.innerHTML = listingsToRender
       .map((listing) => {
+        const isSelected = this.state.selectedListingIds.has(listing.id);
         const primaryImage = listing.images?.[0]?.url || listing.images?.[0]?.data || '';
         const imgEl = primaryImage
           ? `<img src="${primaryImage}" alt="${listing.title || 'Listing'}" class="swipeable-card-image" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -5321,10 +5426,13 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
           : 'Draft';
         const statusLabel = listing.status === 'sold' ? ' • Sold' : '';
         return `
-                        <div class="swipeable-card" data-listing-id="${listing.id}">
+                        <div class="swipeable-card" data-listing-id="${listing.id}" style="${isSelected ? 'outline:2px solid var(--accent-indigo);border-radius:var(--radius-bento);' : ''}">
                             <div class="swipeable-card-actions swipeable-card-action-left">✏️ Edit</div>
                             <div class="swipeable-card-actions swipeable-card-action-right">✓ Sold</div>
                             <div class="swipeable-card-content">
+                                <label style="display:flex;align-items:center;padding-right:4px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation()">
+                                    <input type="checkbox" data-listing-id="${listing.id}" ${isSelected ? 'checked' : ''} onchange="app.toggleSelectItem(${listing.id}, this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--accent-indigo);">
+                                </label>
                                 ${imgEl}${imgPlaceholder}
                                 <div class="swipeable-card-info">
                                     <div class="swipeable-card-title">${listing.title || 'Untitled'}</div>
@@ -5341,6 +5449,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       })
       .join('');
 
+    this.updateSelectBar(listingsToRender);
     this.initSwipeableCards();
   },
 
@@ -5705,6 +5814,13 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       this.loadReferralData();
     } else if (resolvedView === 'profile') {
       this.loadProfileData();
+    }
+
+    // Clear multi-select state when leaving saved items
+    if (this.state.currentAppView === 'savedItems' && resolvedView !== 'savedItems') {
+      this.state.selectedListingIds.clear();
+      const selectBar = document.getElementById('savedItemsSelectBar');
+      if (selectBar) selectBar.classList.add('hidden');
     }
 
     this.highlightBottomTab(resolvedView);
