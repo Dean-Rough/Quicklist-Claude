@@ -708,7 +708,7 @@ const app = {
           images: (listing.images || []).map((img) => ({
             id: img.id,
             data: img.data,
-            url: img.data,
+            url: img.image_url || img.thumbnail_url || img.data,
             isBlurry: img.isBlurry,
             status: 'ready',
           })),
@@ -1332,6 +1332,88 @@ const app = {
       this.showToast('Voice input not supported on this device', 'error');
       stop();
     }
+  },
+
+  startVoiceInput(fieldId) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      this.showToast('Voice input is not supported in your browser.', 'error');
+      this.stopVoiceInput();
+      return;
+    }
+
+    if (this._recognition) {
+      this.stopVoiceInput();
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-GB';
+
+    this._recognition = recognition;
+    const inputField = document.getElementById(fieldId);
+
+    if (!inputField) {
+      this.stopVoiceInput();
+      return;
+    }
+
+    let finalTranscript = inputField.value ? inputField.value + ' ' : '';
+    const initialTranscriptLength = finalTranscript.length;
+
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      let currentFinal = '';
+
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          currentFinal += event.results[i][0].transcript + ' ';
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+
+      finalTranscript += currentFinal;
+      // Prevent duplicating text if the field was already populated, but add the new text
+      inputField.value = finalTranscript + interimTranscript;
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error !== 'no-speech') {
+        this.showToast(`Microphone error: ${event.error}`, 'error');
+      }
+      this.stopVoiceInput();
+    };
+
+    recognition.onend = () => {
+      this.stopVoiceInput();
+    };
+
+    try {
+      recognition.start();
+      this.showToast('Listening... Speak now.', 'info');
+    } catch (err) {
+      console.error('Failed to start recognition:', err);
+      this.stopVoiceInput();
+    }
+  },
+
+  stopVoiceInput() {
+    if (this._recognition) {
+      try {
+        this._recognition.stop();
+      } catch (e) {
+        // ignore
+      }
+      this._recognition = null;
+    }
+
+    document.querySelectorAll('.voice-input-button.listening').forEach((btn) => {
+      btn.classList.remove('listening');
+      btn.setAttribute('aria-pressed', 'false');
+    });
   },
 
   async useCurrentLocation() {
@@ -2526,7 +2608,7 @@ const app = {
           this.state.token = freshToken;
           localStorage.setItem('quicklist-token', freshToken);
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     try {
@@ -5227,6 +5309,10 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     grid.innerHTML = listingsToRender
       .map((listing) => {
         const primaryImage = listing.images?.[0]?.url || listing.images?.[0]?.data || '';
+        const imgEl = primaryImage
+          ? `<img src="${primaryImage}" alt="${listing.title || 'Listing'}" class="swipeable-card-image" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          : '';
+        const imgPlaceholder = `<div class="swipeable-card-image" style="${primaryImage ? 'display:none;' : ''}align-items:center;justify-content:center;background:var(--bg-tertiary);border-radius:8px;font-size:28px;">📦</div>`;
         const createdDate = listing.created_at
           ? new Date(listing.created_at).toLocaleDateString(undefined, {
             month: 'short',
@@ -5239,13 +5325,16 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
                             <div class="swipeable-card-actions swipeable-card-action-left">✏️ Edit</div>
                             <div class="swipeable-card-actions swipeable-card-action-right">✓ Sold</div>
                             <div class="swipeable-card-content">
-                                <img src="${primaryImage}" alt="${listing.title || 'Listing'}" class="swipeable-card-image">
+                                ${imgEl}${imgPlaceholder}
                                 <div class="swipeable-card-info">
                                     <div class="swipeable-card-title">${listing.title || 'Untitled'}</div>
                                     <div class="swipeable-card-meta">${(listing.platform || 'Draft').toUpperCase()} · ${createdDate}${statusLabel}</div>
                                     <div style="font-weight: 600; margin-top: 4px;">${listing.price || '—'}</div>
                                 </div>
-                                <button class="btn btn-secondary btn-small" type="button" onclick="app.loadListing(${listing.id})">Open</button>
+                                <div style="display:flex;gap:8px;flex-shrink:0;">
+                                    <button class="btn btn-secondary btn-small" type="button" onclick="app.loadListing(${listing.id})">Open</button>
+                                    <button class="btn btn-secondary btn-small" type="button" onclick="app.deleteListing(${listing.id})" aria-label="Delete listing" style="padding:6px 10px;color:var(--error,#e53e3e);">🗑</button>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -5620,6 +5709,8 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
     this.highlightBottomTab(resolvedView);
     window.scrollTo(0, 0);
+    const appEl = document.getElementById('appView');
+    if (appEl) appEl.scrollTop = 0;
   },
 
   // Authentication
@@ -5690,7 +5781,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
           this.state.token = token;
           localStorage.setItem('quicklist-token', token);
         }
-      } catch (e) {}
+      } catch (e) { }
     });
 
     // Listen for Clerk sign-out events
@@ -6189,7 +6280,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
           const creditsData = await creditsResp.json();
           creditBalance = creditsData.balance || 0;
         }
-      } catch (_) {}
+      } catch (_) { }
       this.updateUpsellFooter(data.subscription, data.usage, creditBalance);
     } catch (error) {
       console.error('Error loading subscription data:', error);
