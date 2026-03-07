@@ -823,7 +823,7 @@
       <!-- Input sheet -->
       <div id="inputSheet">
         <div class="sheet-header">
-          <span class="sheet-title"></span>
+          <span class="sheet-title">New Listing</span>
           <button class="sheet-close-btn" type="button" onclick="app.closeInputSheet(true)" aria-label="Close">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -916,7 +916,7 @@
                     </span>
                   </label>
                   <div class="input-with-icon">
-                    <input type="text" class="form-input" id="itemHint" placeholder="Air Max 90 Triple Black" />
+                    <input type="text" class="form-input" id="itemHint" placeholder="e.g., 'Nike Air Max 90', 'iPhone 12 Pro', 'Vintage Levi's 501'" />
                     <button class="voice-input-button" type="button" aria-pressed="false"
                       onclick="app.toggleVoiceInput('itemHint', this)">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -934,7 +934,7 @@
                   <label class="form-label" for="conditionInfo">Further Info <small>(Optional)</small></label>
                   <div class="input-with-icon">
                     <input type="text" class="form-input" id="conditionInfo"
-                      placeholder="Missing box, good condition" />
+                      placeholder="E.g., missing box, small hole, brand new, no cable" />
                     <button class="voice-input-button" type="button" aria-pressed="false"
                       onclick="app.toggleVoiceInput('conditionInfo', this)">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -947,6 +947,19 @@
                     </button>
                   </div>
                 </div>
+
+            <div class="form-group">
+              <label class="form-label">Label Scanner <small>(Optional)</small></label>
+              <button class="btn btn-secondary" type="button" onclick="app.showLabelScanner()" style="width: 100%">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"
+                  style="display: inline-block; vertical-align: middle; margin-right: 8px">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                Scan Label to Extract Product Info
+              </button>
+            </div>
 
                 <!-- Target Platform Selector -->
                 <div class="form-group" style="margin-bottom: 1rem">
