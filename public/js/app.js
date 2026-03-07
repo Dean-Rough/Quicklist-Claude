@@ -5253,40 +5253,61 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     this.filterSavedItems();
   },
 
-  // Update the select-all checkbox and delete button state
+  // Flat SVG icon helper — no emojis
+  _icon(name, size = 16) {
+    const s = size;
+    const icons = {
+      checkbox: `<svg width="${s}" height="${s}" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;flex-shrink:0"><rect x="1" y="1" width="16" height="16" rx="3"/></svg>`,
+      'checkbox-checked': `<svg width="${s}" height="${s}" viewBox="0 0 18 18" fill="none" style="display:block;flex-shrink:0"><rect width="18" height="18" rx="4" fill="var(--accent-indigo)"/><path d="M4 9.5l3.2 3.2L14 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      'checkbox-indeterminate': `<svg width="${s}" height="${s}" viewBox="0 0 18 18" fill="none" style="display:block;flex-shrink:0"><rect width="18" height="18" rx="4" fill="var(--accent-indigo)"/><path d="M4.5 9h9" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`,
+      trash: `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`,
+      package: `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`,
+      edit: `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+      check: `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><polyline points="20 6 9 17 4 12"/></svg>`,
+    };
+    return icons[name] ?? '';
+  },
+
+  // Update the select-all button and delete button state
   updateSelectBar(listingsToRender) {
-    const selectAll = document.getElementById('selectAllCheckbox');
+    const iconEl = document.getElementById('selectAllIcon');
     const deleteBtn = document.getElementById('deleteSelectedBtn');
     const countEl = document.getElementById('selectedCount');
     const labelEl = document.getElementById('selectAllLabel');
-    if (!selectAll || !deleteBtn || !countEl) return;
+    if (!iconEl || !deleteBtn || !countEl) return;
 
     const n = this.state.selectedListingIds.size;
     const total = listingsToRender?.length ?? 0;
+    const allSelected = total > 0 && n >= total;
+    const someSelected = n > 0 && n < total;
 
     countEl.textContent = n;
-    if (n > 0) {
-      deleteBtn.classList.remove('hidden');
-    } else {
-      deleteBtn.classList.add('hidden');
-    }
+    deleteBtn.classList.toggle('hidden', n === 0);
 
-    selectAll.checked = total > 0 && n >= total;
-    selectAll.indeterminate = n > 0 && n < total;
-    if (labelEl) labelEl.textContent = n >= total && total > 0 ? 'Deselect all' : 'Select all';
+    if (allSelected) {
+      iconEl.innerHTML = this._icon('checkbox-checked', 18);
+    } else if (someSelected) {
+      iconEl.innerHTML = this._icon('checkbox-indeterminate', 18);
+    } else {
+      iconEl.innerHTML = this._icon('checkbox', 18);
+    }
+    if (labelEl) labelEl.textContent = allSelected ? 'Deselect all' : 'Select all';
   },
 
-  toggleSelectItem(id, checked) {
-    if (checked) {
+  toggleSelectItem(id) {
+    const nowSelected = !this.state.selectedListingIds.has(id);
+    if (nowSelected) {
       this.state.selectedListingIds.add(id);
     } else {
       this.state.selectedListingIds.delete(id);
     }
-    // Update card outline without full re-render
+    // Update card outline and checkbox icon without full re-render
     const card = document.querySelector(`.swipeable-card[data-listing-id="${id}"]`);
     if (card) {
-      card.style.outline = checked ? '2px solid var(--accent-indigo)' : '';
-      card.style.borderRadius = checked ? 'var(--radius-bento)' : '';
+      card.style.outline = nowSelected ? '2px solid var(--accent-indigo)' : '';
+      card.style.borderRadius = nowSelected ? 'var(--radius-bento)' : '';
+      const btn = card.querySelector('.saved-item-cb');
+      if (btn) btn.innerHTML = nowSelected ? this._icon('checkbox-checked', 18) : this._icon('checkbox', 18);
     }
     const listingsToRender = this.state.filteredSavedListings.length > 0 ||
       document.getElementById('savedItemsSearch')?.value ||
@@ -5296,27 +5317,30 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     this.updateSelectBar(listingsToRender);
   },
 
-  toggleSelectAll(checked) {
+  toggleSelectAll() {
     const listingsToRender = this.state.filteredSavedListings.length > 0 ||
       document.getElementById('savedItemsSearch')?.value ||
       document.getElementById('savedItemsPlatformFilter')?.value
       ? this.state.filteredSavedListings
       : this.state.savedListings;
 
+    const allSelected = listingsToRender.every((l) => this.state.selectedListingIds.has(l.id));
+    const shouldSelect = !allSelected;
+
     listingsToRender.forEach((l) => {
-      if (checked) {
+      if (shouldSelect) {
         this.state.selectedListingIds.add(l.id);
       } else {
         this.state.selectedListingIds.delete(l.id);
       }
     });
 
-    // Update all card outlines and checkboxes without re-render
+    // Update all card outlines and checkbox icons without re-render
     document.querySelectorAll('.swipeable-card[data-listing-id]').forEach((card) => {
-      card.style.outline = checked ? '2px solid var(--accent-indigo)' : '';
-      card.style.borderRadius = checked ? 'var(--radius-bento)' : '';
-      const cb = card.querySelector('input[type="checkbox"]');
-      if (cb) cb.checked = checked;
+      card.style.outline = shouldSelect ? '2px solid var(--accent-indigo)' : '';
+      card.style.borderRadius = shouldSelect ? 'var(--radius-bento)' : '';
+      const btn = card.querySelector('.saved-item-cb');
+      if (btn) btn.innerHTML = shouldSelect ? this._icon('checkbox-checked', 18) : this._icon('checkbox', 18);
     });
 
     this.updateSelectBar(listingsToRender);
@@ -5417,7 +5441,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         const imgEl = primaryImage
           ? `<img src="${primaryImage}" alt="${listing.title || 'Listing'}" class="swipeable-card-image" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
           : '';
-        const imgPlaceholder = `<div class="swipeable-card-image" style="${primaryImage ? 'display:none;' : ''}align-items:center;justify-content:center;background:var(--bg-tertiary);border-radius:8px;font-size:28px;">📦</div>`;
+        const imgPlaceholder = `<div class="swipeable-card-image" style="${primaryImage ? 'display:none;' : 'display:flex;'}align-items:center;justify-content:center;background:var(--bg-tertiary);border-radius:8px;color:var(--text-muted);">${this._icon('package', 32)}</div>`;
         const createdDate = listing.created_at
           ? new Date(listing.created_at).toLocaleDateString(undefined, {
             month: 'short',
@@ -5427,12 +5451,10 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         const statusLabel = listing.status === 'sold' ? ' • Sold' : '';
         return `
                         <div class="swipeable-card" data-listing-id="${listing.id}" style="${isSelected ? 'outline:2px solid var(--accent-indigo);border-radius:var(--radius-bento);' : ''}">
-                            <div class="swipeable-card-actions swipeable-card-action-left">✏️ Edit</div>
-                            <div class="swipeable-card-actions swipeable-card-action-right">✓ Sold</div>
+                            <div class="swipeable-card-actions swipeable-card-action-left" style="flex-direction:column;gap:4px;">${this._icon('edit', 16)}<span style="font-size:11px;">Edit</span></div>
+                            <div class="swipeable-card-actions swipeable-card-action-right" style="flex-direction:column;gap:4px;">${this._icon('check', 16)}<span style="font-size:11px;">Sold</span></div>
                             <div class="swipeable-card-content">
-                                <label style="display:flex;align-items:center;padding-right:4px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation()">
-                                    <input type="checkbox" data-listing-id="${listing.id}" ${isSelected ? 'checked' : ''} onchange="app.toggleSelectItem(${listing.id}, this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--accent-indigo);">
-                                </label>
+                                <button type="button" class="saved-item-cb" onclick="app.toggleSelectItem(${listing.id})" aria-label="Select listing" style="background:none;border:none;cursor:pointer;padding:0 4px 0 0;display:flex;align-items:center;flex-shrink:0;color:var(--text-muted);">${isSelected ? this._icon('checkbox-checked', 18) : this._icon('checkbox', 18)}</button>
                                 ${imgEl}${imgPlaceholder}
                                 <div class="swipeable-card-info">
                                     <div class="swipeable-card-title">${listing.title || 'Untitled'}</div>
@@ -5441,7 +5463,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
                                 </div>
                                 <div style="display:flex;gap:8px;flex-shrink:0;">
                                     <button class="btn btn-secondary btn-small" type="button" onclick="app.loadListing(${listing.id})">Open</button>
-                                    <button class="btn btn-secondary btn-small" type="button" onclick="app.deleteListing(${listing.id})" aria-label="Delete listing" style="padding:6px 10px;color:var(--error,#e53e3e);">🗑</button>
+                                    <button class="btn btn-secondary btn-small" type="button" onclick="app.deleteListing(${listing.id})" aria-label="Delete listing" style="padding:6px 10px;color:var(--error,#e53e3e);display:flex;align-items:center;">${this._icon('trash', 15)}</button>
                                 </div>
                             </div>
                         </div>
