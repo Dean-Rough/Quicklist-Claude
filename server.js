@@ -73,12 +73,12 @@ const requiredEnvVars = [
   'DATABASE_URL',
   'GEMINI_API_KEY',
   'CLERK_SECRET_KEY',
-  'CLERK_PUBLISHABLE_KEY',
+  'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
 ];
 const missing = requiredEnvVars.filter((v) => !process.env[v]);
 if (missing.length > 0) {
   logger.error('Missing required environment variables:', missing.join(', '));
-  logger.error('Required: DATABASE_URL, GEMINI_API_KEY, CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY');
+  logger.error('Required: DATABASE_URL, GEMINI_API_KEY, CLERK_SECRET_KEY, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY');
   // Don't exit in serverless - log error and continue
   if (!process.env.VERCEL) {
     process.exit(1);
@@ -136,9 +136,6 @@ if (
     pool.query('SELECT NOW()', (err, res) => {
       if (err) {
         logger.error('Database connection error:', err);
-        if (process.env.PROMPT_EVAL_MODE !== '1') {
-          process.exit(1);
-        }
       } else {
         logger.info('Database connected successfully');
       }
@@ -1457,6 +1454,48 @@ app.get('/api/stripe/publishable-key', (_req, res) => {
 });
 
 // Get user subscription status with usage
+// Mock upgrade endpoint for local testing
+app.post('/api/user/mock-upgrade', authenticateToken, async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Not available in production' });
+  }
+
+  const { planType } = req.body;
+  const validPlanTypes = ['free', 'casual', 'pro', 'max'];
+
+  if (!validPlanTypes.includes(planType)) {
+    return res.status(400).json({ error: 'Invalid plan type' });
+  }
+
+  try {
+    const userId = req.user.id;
+
+    // Check if subscription exists
+    const subCheck = await pool.query(
+      'SELECT id FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+      [userId]
+    );
+
+    if (subCheck.rows.length > 0) {
+      await pool.query(
+        'UPDATE subscriptions SET plan_type = $1 WHERE user_id = $2',
+        [planType, userId]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO subscriptions (user_id, status, plan_type, current_period_start, current_period_end)
+         VALUES ($1, 'active', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '1 month')`,
+        [userId, planType]
+      );
+    }
+
+    res.json({ success: true, message: `Upgraded to ${planType}` });
+  } catch (error) {
+    logger.error('Error mocking upgrade:', error);
+    res.status(500).json({ error: 'Failed to mock upgrade' });
+  }
+});
+
 app.get('/api/subscription/status', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;

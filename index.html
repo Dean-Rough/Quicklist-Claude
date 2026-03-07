@@ -274,8 +274,8 @@
   <!-- App Header -->
   <header id="appHeader" class="header hidden">
     <div class="header-content">
-      <button class="hamburger-btn" onclick="app.toggleMobileMenu()" aria-label="Toggle mobile menu"
-        aria-expanded="false" aria-controls="appMobileMenu">
+      <button class="hamburger-btn" onclick="app.toggleMobileMenu()" aria-label="Toggle navigation"
+        aria-expanded="false">
         <svg class="icon icon-menu" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
           stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -287,15 +287,6 @@
             aria-hidden="true" />
         </div>
       </div>
-      <nav class="nav-links">
-        <a class="nav-link" onclick="app.navigateToApp('newItem')" aria-label="Create new listing">New Item</a>
-        <a class="nav-link" onclick="app.navigateToApp('savedItems')" aria-label="View saved listings">Saved Items</a>
-        <a class="nav-link" onclick="app.navigateToApp('settings')" aria-label="Open settings">Settings</a>
-        <button class="btn btn-secondary" onclick="app.signOut()" style="margin-left: auto"
-          aria-label="Sign out of QuickList">
-          Sign Out
-        </button>
-      </nav>
     </div>
   </header>
 
@@ -1986,7 +1977,11 @@
                     justify-content: center;
                     color: white;
                   ">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                  <line x1="12" y1="18" x2="12.01" y2="18" />
+                </svg>
               </div>
               <div>
                 <div style="font-weight: 600; margin-bottom: 0.25rem">
