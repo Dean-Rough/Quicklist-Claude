@@ -1061,7 +1061,7 @@ body.loading::after {
   background: transparent !important;
 }
 
-.step-image > div {
+.step-image>div {
   background: transparent !important;
 }
 
@@ -1161,11 +1161,26 @@ body.loading::after {
   margin-bottom: 1.5rem;
 }
 
+.form-group small {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.form-label small {
+  display: inline;
+  margin-top: 0;
+  margin-left: 0.25rem;
+  font-weight: 400;
+}
+
 .form-label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
+  font-size: 0.95rem;
 }
 
 .form-input {
@@ -1175,8 +1190,8 @@ body.loading::after {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 0.95rem;
+  font-family: inherit;
+  font-size: 1rem;
 }
 
 .form-input:focus {
@@ -1300,6 +1315,7 @@ select.form-input::-ms-expand {
   0% {
     transform: translateX(0);
   }
+
   100% {
     transform: translateX(-50%);
   }
@@ -1440,33 +1456,33 @@ select.form-input::-ms-expand {
   .footer {
     padding: 3rem 0 1.5rem;
   }
-  
+
   .footer-content {
     grid-template-columns: 1fr;
     gap: 2rem;
     text-align: center;
   }
-  
+
   .footer-brand {
     max-width: none;
     margin: 0 auto;
   }
-  
+
   .footer-nav {
     justify-content: center;
     gap: 3rem;
   }
-  
+
   .footer-nav-group {
     text-align: left;
   }
-  
+
   .footer-bottom {
     flex-direction: column;
     text-align: center;
     gap: 1.5rem;
   }
-  
+
   .footer-platforms {
     flex-wrap: wrap;
     justify-content: center;
@@ -1479,7 +1495,7 @@ select.form-input::-ms-expand {
     gap: 2rem;
     align-items: center;
   }
-  
+
   .footer-nav-group {
     text-align: center;
   }
@@ -2256,7 +2272,7 @@ select.form-input::-ms-expand {
   position: relative;
   background: var(--bg-secondary);
   border-radius: var(--radius-bento);
-  overflow: visible;
+  overflow: hidden;
   touch-action: pan-y;
   user-select: none;
 }
@@ -3956,11 +3972,13 @@ body {
 
 /* Fix for iOS input zoom */
 @supports (-webkit-touch-callout: none) {
+
   input[type="text"],
   input[type="email"],
   input[type="password"],
   textarea,
   select {
-    font-size: 16px !important; /* Prevents iOS zoom on focus */
+    font-size: 16px !important;
+    /* Prevents iOS zoom on focus */
   }
 }
