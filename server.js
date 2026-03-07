@@ -4916,9 +4916,11 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
     }
   } catch (error) {
     logger.error('Generate listing error:', { error: error.message, requestId: req.id, userId });
-    console.error('GENERATE ERROR:', error.message, error.stack?.split('\n')[1]);
-    res.status(500).json({
-      error: 'Failed to generate listing',
+    const is429 = error.message?.includes('429') || error.message?.toLowerCase().includes('quota');
+    res.status(is429 ? 429 : 500).json({
+      error: is429
+        ? 'AI service is busy — please wait 30 seconds and try again.'
+        : 'Failed to generate listing',
       details: error.message,
     });
   }
