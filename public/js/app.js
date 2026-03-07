@@ -2144,6 +2144,8 @@ const app = {
       // Show result state
       loadingState.classList.add('hidden');
       resultState.classList.remove('hidden');
+      const fab = document.getElementById('newListingFab');
+      if (fab) fab.classList.add('hidden');
       this.setWizardPhase('review');
       if (cancelBtn) {
         cancelBtn.style.display = 'none';
@@ -2296,6 +2298,8 @@ const app = {
     this.updateDamageSummary();
     this.renderReviewImages();
     this.setWizardPhase('photos');
+    const fab = document.getElementById('newListingFab');
+    if (fab) fab.classList.remove('hidden');
   },
 
   openInputSheet() {
@@ -5190,6 +5194,8 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
     // Display the listing
     this.displayListing(listing);
+    const fab = document.getElementById('newListingFab');
+    if (fab) fab.classList.add('hidden');
 
     // Show result state
     document.getElementById('initialState').classList.add('hidden');
