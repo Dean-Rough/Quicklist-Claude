@@ -6359,6 +6359,9 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       this.state.messages = [];
       this.state.dashboardMetrics = null;
 
+      // Ensure slide nav is closed to clear any scroll locks
+      this.closeSlideNav();
+
       this.updateUI();
       this.updateAuthButtons();
       this.updateMobileMenu(); // Update mobile menu after sign out

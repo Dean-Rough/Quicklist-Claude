@@ -1011,8 +1011,77 @@
 
   <!-- App Views -->
   <main id="appView" class="hidden">
+
+    <!-- Dashboard View (Authenticated Landing) -->
+    <div id="dashboardView">
+      <div class="container section" style="padding-top: 2rem;">
+        <h1 class="section-title" style="margin-bottom: 2rem; text-align: left;">Welcome back, <span
+            id="dashboardUserName" style="color: var(--accent-indigo);">there</span>!</h1>
+
+        <div class="dashboard-grid">
+          <!-- New Item Button -->
+          <button class="dashboard-action-btn card" onclick="app.navigateToApp('newItem')">
+            <div class="dashboard-icon-wrapper" style="background: var(--accent-indigo); color: white;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </div>
+            <h2 style="margin: 1rem 0 0.5rem; font-size: 1.5rem;">New Item</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Scan barcodes or snap photos to generate listings.
+            </p>
+          </button>
+
+          <!-- Saved Items Button -->
+          <button class="dashboard-action-btn card" onclick="app.navigateToApp('savedItems')">
+            <div class="dashboard-icon-wrapper" style="background: var(--cl-primary); color: white;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <h2 style="margin: 1rem 0 0.5rem; font-size: 1.5rem;">Saved Items</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">View and manage your previous listing generations.
+            </p>
+          </button>
+
+          <!-- Settings Button -->
+          <button class="dashboard-action-btn card" onclick="app.navigateToApp('settings')">
+            <div class="dashboard-icon-wrapper" style="background: var(--bg-tertiary); color: var(--text-primary);">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
+                </path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </div>
+            <h2 style="margin: 1rem 0 0.5rem; font-size: 1.5rem;">Settings</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Manage your profile, referrals, and app
+              preferences.</p>
+          </button>
+
+          <!-- Help Button -->
+          <button class="dashboard-action-btn card" onclick="window.location.href='mailto:support@quicklist.it.com'">
+            <div class="dashboard-icon-wrapper" style="background: var(--color-success); color: white;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </div>
+            <h2 style="margin: 1rem 0 0.5rem; font-size: 1.5rem;">Help & Support</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Get assistance with quicklist or report an issue.
+            </p>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- New Item View -->
-    <div id="newItemView">
+    <div id="newItemView" class="hidden">
 
       <!-- Sheet backdrop -->
       <div id="sheetBackdrop" onclick="app.closeInputSheet(true)"></div>
@@ -3164,6 +3233,81 @@
     @media (max-width: 480px) {
       body.has-upsell-footer {
         padding-bottom: 120px;
+      }
+    }
+
+    /* Dashboard Grid - 4 Large Buttons */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 480px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+    }
+
+    .dashboard-action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 2rem 1.5rem;
+      border: none;
+      background: var(--card-bg);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .dashboard-action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    .dashboard-action-btn:active {
+      transform: scale(0.98);
+    }
+
+    .dashboard-icon-wrapper {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.5rem;
+    }
+
+    @media (max-width: 480px) {
+      .dashboard-action-btn {
+        padding: 1.5rem 1rem;
+        flex-direction: row;
+        text-align: left;
+        gap: 1rem;
+      }
+
+      .dashboard-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        margin-bottom: 0;
+        flex-shrink: 0;
+      }
+
+      .dashboard-action-btn h2 {
+        margin: 0 0 0.25rem 0 !important;
+        font-size: 1.25rem !important;
+      }
+
+      .dashboard-action-btn p {
+        font-size: 0.875rem !important;
       }
     }
   </style>

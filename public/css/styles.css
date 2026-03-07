@@ -144,11 +144,8 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.5;
-  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* iOS scroll fix */
-  -webkit-overflow-scrolling: touch;
   position: relative;
   min-height: 100vh;
 }
@@ -4050,14 +4047,11 @@ div[class*="cl-"][class*="footer"] a[href*="clerk"] {
 /* Prevent iOS horizontal bounce without breaking vertical scroll */
 html {
   overflow-x: hidden;
-  overscroll-behavior-x: none;
 }
 
 body {
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: none;
+  position: relative;
+  min-height: 100vh;
 }
 
 /* Allow touch scrolling on all scrollable containers */
