@@ -1506,7 +1506,7 @@ const app = {
       : '';
     if (analysis.damageFound && analysis.damages?.length) {
       summary.innerHTML = `
-                        ${condition ? condition + ' · ' : ''}⚠️ ${analysis.damages.length} issue${analysis.damages.length === 1 ? '' : 's'} detected.
+                        ${condition ? condition + ' · ' : ''}${analysis.damages.length} issue${analysis.damages.length === 1 ? '' : 's'} detected.
                         <br>
                         <small style="color: var(--text-muted);">Tap Analyze again after re-taking close-ups.</small>
                     `;
@@ -1566,7 +1566,7 @@ const app = {
     modal.innerHTML = `
                     <div class="modal-content" style="max-width: 600px;">
                         <div class="modal-header">
-                            <h3>⚠️ Image Quality Issues Detected</h3>
+                            <h3>Image Quality Issues Detected</h3>
                             <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
                         </div>
                         <div class="modal-body">
@@ -1856,14 +1856,13 @@ const app = {
   // Format damage type for display
   formatDamageType(type) {
     const typeMap = {
-      stain: '🔴 Stain',
-      tear: '⚠️ Tear/Hole',
-      scratch: '〰️ Scratch',
-      discoloration: '🎨 Discoloration',
-      missing_part:
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--error)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>Missing Part',
-      structural: '🔧 Structural Damage',
-      wear: '👕 Normal Wear',
+      stain: 'Stain',
+      tear: 'Tear/Hole',
+      scratch: 'Scratch',
+      discoloration: 'Discoloration',
+      missing_part: 'Missing Part',
+      structural: 'Structural Damage',
+      wear: 'Normal Wear',
     };
     return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ');
   },
@@ -2528,12 +2527,12 @@ const app = {
       if (userLevel >= requiredLevel) {
         option.disabled = false;
         // Remove lock emoji from text if user has access
-        option.textContent = option.textContent.replace(/^🔒\s*/, '');
+        option.textContent = option.textContent.replace(/^\[Pro\]\s*/, '');
       } else {
         option.disabled = true;
-        // Add lock emoji if not already there
-        if (!option.textContent.startsWith('🔒')) {
-          option.textContent = '🔒 ' + option.textContent;
+        // Add Pro marker if not already there
+        if (!option.textContent.startsWith('[Pro]')) {
+          option.textContent = '[Pro] ' + option.textContent;
         }
       }
     });
@@ -2951,7 +2950,7 @@ const app = {
         const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
         html += `
           <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; background: var(--bg-tertiary, var(--bg-secondary)); padding: 0.75rem; border-radius: 8px;">
-            <p style="margin: 0 0 0.5rem 0;">💡 <strong>Pricing tips for ${platformName}:</strong></p>
+            <p style="margin: 0 0 0.5rem 0;"><strong>Pricing tips for ${platformName}:</strong></p>
             <ul style="margin: 0; padding-left: 1.25rem;">
               <li>Check similar items on ${platformName} before listing</li>
               <li>Factor in platform fees (typically 10-15%)</li>
@@ -3552,7 +3551,7 @@ ${description}
   async generateHeroImage(imageFile) {
     if (this.state.imageEnhancementEnabled) {
       try {
-        this.showToast('✨ Enhancing with Nano Banana 2...', 'info');
+        this.showToast('Enhancing with Nano Banana 2...', 'info');
 
         // Convert file to base64
         const reader = new FileReader();
@@ -6213,6 +6212,8 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       const tl = gsap.timeline();
       nav._tl = tl;
 
+      tl.set(nav, { visibility: 'visible' });
+
       tl.to(nav, {
         x: 0,
         duration: 0.45,
@@ -6227,7 +6228,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         ease: 'power2.out',
       }, '-=0.2');
     } else {
-      // Fallback without GSAP
+      nav.style.visibility = 'visible';
       nav.style.transform = 'translateX(0)';
       links.forEach(link => {
         link.style.opacity = '1';
@@ -6271,6 +6272,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       const tl = gsap.timeline({
         onComplete: () => {
           overlay.classList.remove('active');
+          nav.style.visibility = 'hidden';
         }
       });
       nav._tl = tl;
@@ -6290,6 +6292,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       }, '-=0.1');
     } else {
       nav.style.transform = 'translateX(100%)';
+      nav.style.visibility = 'hidden';
       links.forEach(link => {
         link.style.opacity = '0';
         link.style.transform = 'translateX(30px)';
@@ -7412,7 +7415,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       badge.className = 'barcode-badge';
       badge.style.cssText =
         'background: var(--indigo-500); color: white; padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem; text-align: center;';
-      badge.textContent = `📷 Scanned from barcode: ${productData.barcode}`;
+      badge.textContent = `Scanned from barcode: ${productData.barcode}`;
       listingContainer.insertBefore(badge, listingContainer.firstChild);
     }
   },
