@@ -6306,9 +6306,21 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     this.closeSlideNav();
   },
 
-  // updateMobileMenu is no longer needed — slide-out nav is static HTML
+  // Toggle slide-out nav links based on auth state
   updateMobileMenu() {
-    // No-op: nav links are now in the static slide-out panel
+    const marketingLinks = document.getElementById('navLinksMarketing');
+    const appLinks = document.getElementById('navLinksApp');
+    if (!marketingLinks || !appLinks) return;
+
+    // Default to marketing links unless positively authenticated
+    const isAuthenticated = this.isAuthenticated === true;
+    if (isAuthenticated) {
+      marketingLinks.style.display = 'none';
+      appLinks.style.display = 'flex';
+    } else {
+      marketingLinks.style.display = 'flex';
+      appLinks.style.display = 'none';
+    }
   },
 
   async signOut() {

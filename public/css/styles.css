@@ -975,7 +975,7 @@ body.loading::after {
 
 @media (max-width: 480px) {
   .hero-content {
-    padding: 2rem 1rem;
+    padding: 2rem var(--page-gutter);
   }
 
   .hero h1 {
@@ -984,6 +984,11 @@ body.loading::after {
 
   .hero p {
     font-size: 1rem;
+  }
+
+  .hero-cta-group .btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
   }
 
   .hero-image-container {
@@ -4035,25 +4040,19 @@ div[class*="cl-"][class*="footer"] a[href*="clerk"] {
    Fix for iOS Safari scroll issues
    ============================================ */
 
-/* Ensure main content areas are scrollable */
-#appView,
-#marketingView,
-main {
-  -webkit-overflow-scrolling: touch;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-}
+/* Ensure main content areas don't trap scroll on iOS */
 
-/* Prevent iOS bounce issues */
+/* Prevent iOS horizontal bounce without breaking vertical scroll */
 html {
-  overflow: hidden;
-  height: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 body {
-  overflow-y: scroll;
-  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
 }
 
 /* Allow touch scrolling on all scrollable containers */

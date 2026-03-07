@@ -155,6 +155,10 @@ ALLOW_TEST_AUTH=1                      # Dev-only auth bypass
 LOG_LEVEL=info                         # debug, info, warn, error
 ```
 
+## Working Style
+
+**Quality over speed.** Take the time to do things properly — read the full context before making changes, understand the existing patterns, and produce polished output. Do not rush to ship something half-finished. A slower, more considered approach is always preferred over a fast but sloppy one.
+
 ## File Editing Guidelines
 
 ### server.js
