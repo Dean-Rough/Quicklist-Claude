@@ -49,7 +49,7 @@
   <meta property="twitter:image" content="https://quicklist.it.com/hero-image.jpg" />
 
   <!-- Additional SEO -->
-  <meta name="theme-color" content="#FF7A5C" />
+  <meta name="theme-color" content="#EAC119" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="QuickList" />
@@ -163,6 +163,7 @@
   <link rel="preload" href="/fonts/MaisonMono-Bold-subset.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/hero-image.jpg" as="image" fetchpriority="high" />
   <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
 </head>
 
 <body>
@@ -290,14 +291,6 @@
         <a class="nav-link" onclick="app.navigateToApp('newItem')" aria-label="Create new listing">New Item</a>
         <a class="nav-link" onclick="app.navigateToApp('savedItems')" aria-label="View saved listings">Saved Items</a>
         <a class="nav-link" onclick="app.navigateToApp('settings')" aria-label="Open settings">Settings</a>
-        <!-- Local Testing Subscription Tier Toggle -->
-        <select id="mockTierSelect" class="form-input" style="padding: 0.25rem; font-size: 0.85rem; height: auto;"
-          onchange="app.mockUpgrade(this.value)">
-          <option value="free">Test: Free</option>
-          <option value="casual">Test: Casual</option>
-          <option value="pro">Test: Pro</option>
-          <option value="max">Test: Max</option>
-        </select>
         <button class="btn btn-secondary" onclick="app.signOut()" style="margin-left: auto"
           aria-label="Sign out of QuickList">
           Sign Out
@@ -306,20 +299,77 @@
     </div>
   </header>
 
-  <!-- Mobile Menu Overlay -->
-  <div id="mobileMenuOverlay" class="mobile-menu-overlay" onclick="app.closeMobileMenu()"></div>
-  <nav id="mobileMenu" class="mobile-menu">
-    <div class="mobile-menu-header">
-      <button class="mobile-menu-close" onclick="app.closeMobileMenu()" aria-label="Close mobile menu">
-        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-          stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+  <!-- Slide-Out Navigation Panel -->
+  <div id="navOverlay" class="nav-overlay"></div>
+  <nav id="slideNav" class="slide-nav">
+    <div class="slide-nav-header">
+      <div class="logo" onclick="app.navigateToApp('newItem'); app.closeSlideNav()" style="cursor: pointer">
+        <img src="/brand/QL4-Static.svg" alt="QuickList AI" width="120" height="27" decoding="async" />
+      </div>
+      <button class="slide-nav-close" onclick="app.closeSlideNav()" aria-label="Close navigation">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
-      <h3>Menu</h3>
     </div>
-    <div id="mobileMenuContent" class="mobile-menu-content">
-      <!-- Menu items will be dynamically populated based on auth state -->
+    <div class="slide-nav-links">
+      <a class="slide-nav-link" onclick="app.navigateToApp('newItem'); app.closeSlideNav()">
+        <span class="slide-nav-link-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </span>
+        <span class="slide-nav-link-text">New Item</span>
+      </a>
+      <a class="slide-nav-link" onclick="app.navigateToApp('savedItems'); app.closeSlideNav()">
+        <span class="slide-nav-link-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
+        </span>
+        <span class="slide-nav-link-text">Saved Items</span>
+      </a>
+      <a class="slide-nav-link" onclick="app.navigateToApp('dashboard'); app.closeSlideNav()">
+        <span class="slide-nav-link-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+          </svg>
+        </span>
+        <span class="slide-nav-link-text">Dashboard</span>
+      </a>
+      <a class="slide-nav-link" onclick="app.navigateToApp('settings'); app.closeSlideNav()">
+        <span class="slide-nav-link-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </span>
+        <span class="slide-nav-link-text">Settings</span>
+      </a>
+    </div>
+    <div class="slide-nav-footer">
+      <div class="slide-nav-divider"></div>
+      <a class="slide-nav-link slide-nav-signout" onclick="app.signOut(); app.closeSlideNav()">
+        <span class="slide-nav-link-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </span>
+        <span class="slide-nav-link-text">Sign Out</span>
+      </a>
     </div>
   </nav>
 
@@ -916,7 +966,8 @@
                     </span>
                   </label>
                   <div class="input-with-icon">
-                    <input type="text" class="form-input" id="itemHint" placeholder="e.g., 'Nike Air Max 90', 'iPhone 12 Pro', 'Vintage Levi's 501'" />
+                    <input type="text" class="form-input" id="itemHint"
+                      placeholder="e.g., 'Nike Air Max 90', 'iPhone 12 Pro', 'Vintage Levi's 501'" />
                     <button class="voice-input-button" type="button" aria-pressed="false"
                       onclick="app.toggleVoiceInput('itemHint', this)">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -948,18 +999,19 @@
                   </div>
                 </div>
 
-            <div class="form-group">
-              <label class="form-label">Label Scanner <small>(Optional)</small></label>
-              <button class="btn btn-secondary" type="button" onclick="app.showLabelScanner()" style="width: 100%">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round"
-                  style="display: inline-block; vertical-align: middle; margin-right: 8px">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                  <circle cx="12" cy="13" r="4"></circle>
-                </svg>
-                Scan Label to Extract Product Info
-              </button>
-            </div>
+                <div class="form-group">
+                  <label class="form-label">Label Scanner <small>(Optional)</small></label>
+                  <button class="btn btn-secondary" type="button" onclick="app.showLabelScanner()" style="width: 100%">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"
+                      style="display: inline-block; vertical-align: middle; margin-right: 8px">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                      </path>
+                      <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                    Scan Label to Extract Product Info
+                  </button>
+                </div>
 
                 <!-- Target Platform Selector -->
                 <div class="form-group" style="margin-bottom: 1rem">
@@ -975,8 +1027,6 @@
                     <option value="vinted">Vinted</option>
                     <option value="ebay">eBay</option>
                     <option value="gumtree">Gumtree</option>
-                    <option value="depop">Depop</option>
-                    <option value="facebook">Facebook Marketplace</option>
                   </select>
 
                 </div>
@@ -1045,77 +1095,22 @@
                   stroke-linejoin="round" />
               </svg>
             </div>
-            <h3>Your generated listing will appear here</h3>
-            <p>Upload an image and click "Generate" to get started</p>
+            <h3>Your listing will appear here</h3>
+            <p>Tap the + button to start your first listing</p>
           </div>
 
-          <div id="loadingState" class="hidden">
-            <h2 class="mb-3">Generating your listing...</h2>
-            <div id="progressSteps" role="status" aria-live="polite" aria-label="Generation progress"
-              style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1rem">
-              <div class="progress-step" data-step="1"
-                style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5">
-                <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex"><svg
-                    viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg></span>
-                <span class="progress-text" style="color: var(--text-primary)">Analyzing images...</span>
-              </div>
-              <div class="progress-step" data-step="2"
-                style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5">
-                <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex"><svg
-                    viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg></span>
-                <span class="progress-text" style="color: var(--text-primary)">Identifying product...</span>
-              </div>
-              <div class="progress-step" data-step="3"
-                style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5">
-                <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex"><svg
-                    viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg></span>
-                <span class="progress-text" style="color: var(--text-primary)">Researching prices...</span>
-              </div>
-              <div class="progress-step" data-step="4"
-                style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5">
-                <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex"><svg
-                    viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg></span>
-                <span class="progress-text" style="color: var(--text-primary)">Generating description...</span>
-              </div>
-              <div class="progress-step" data-step="5"
-                style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5">
-                <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex"><svg
-                    viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg></span>
-                <span class="progress-text" style="color: var(--text-primary)">Finalizing listing...</span>
-              </div>
-            </div>
-            <div style="margin-top: 2rem; display: flex; justify-content: center">
-              <button id="cancelGenerationBtn" class="btn btn-secondary" onclick="app.cancelGeneration()"
-                style="display: none">
-                Cancel Generation
-              </button>
-            </div>
-            <div class="skeleton skeleton-text" style="width: 60%; margin-top: 1rem"></div>
-            <div class="skeleton skeleton-text" style="width: 80%"></div>
-            <div class="skeleton skeleton-text" style="width: 70%"></div>
-          </div>
+          <div id="loadingState" class="hidden"></div>
 
           <div id="resultState" class="hidden">
             <div class="output-header">
               <h2>Generated Listing</h2>
               <div class="output-actions" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap">
                 <button class="btn btn-secondary btn-small regenerate-btn" type="button" onclick="app.openInputSheet()">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
                   Re-generate
                 </button>
                 <span id="autoSaveIndicator" style="
@@ -1144,8 +1139,6 @@
                     <option value="vinted">Vinted</option>
                     <option value="ebay">eBay</option>
                     <option value="gumtree">Gumtree</option>
-                    <option value="depop">Depop</option>
-                    <option value="facebook">Facebook Marketplace</option>
                   </select>
                 </div>
                 <div style="flex: 2; min-width: 240px; color: var(--text-muted); font-size: 0.9rem">
@@ -2002,7 +1995,7 @@
               </div>
               <div>
                 <div style="font-weight: 600; margin-bottom: 0.25rem">
-                  Vinted, Depop, Facebook
+                  Vinted, eBay, Gumtree
                 </div>
                 <div style="font-size: 0.875rem; color: var(--text-muted)">
                   Smart Clipboard - No connection needed
@@ -2062,7 +2055,7 @@
         </nav>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2025 QuickList AI. All rights reserved.</p>
+        <p>&copy; 2026 QuickList AI. All rights reserved.</p>
         <div class="footer-platforms">
           <span>Works with</span>
           <span class="platform-badge">Vinted</span>
@@ -2162,10 +2155,6 @@
             <a href="https://www.ebay.co.uk/sl/sell" target="_blank" rel="noopener" class="btn btn-secondary"
               style="font-size: 0.85rem; padding: 0.5rem 1rem;">
               eBay
-            </a>
-            <a href="https://www.depop.com/products/create/" target="_blank" rel="noopener" class="btn btn-secondary"
-              style="font-size: 0.85rem; padding: 0.5rem 1rem;">
-              Depop
             </a>
             <a href="https://www.gumtree.com/postad" target="_blank" rel="noopener" class="btn btn-secondary"
               style="font-size: 0.85rem; padding: 0.5rem 1rem;">
@@ -3034,14 +3023,14 @@
   </style>
 
   <!-- Toast Notification -->
-  <div class="toast" id="toast" role="alert" aria-live="polite">
+  <div class="toast" id="toast" role="alert" aria-live="polite" aria-hidden="true">
     <div class="toast-icon" id="toastIcon">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         style="display: inline-block; vertical-align: middle">
         <polyline points="20 6 9 17 4 12"></polyline>
       </svg>
     </div>
-    <div class="toast-message" id="toastMessage">Success!</div>
+    <div class="toast-message" id="toastMessage"></div>
   </div>
 </body>
 

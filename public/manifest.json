@@ -1,11 +1,11 @@
 {
   "name": "QuickList AI - Multi-Platform Listing Generator",
   "short_name": "QuickList",
-  "description": "AI-powered listing generator for eBay, Vinted, Depop, and Facebook Marketplace. Upload photos, get professional listings for all platforms in seconds.",
+  "description": "AI-powered listing generator for eBay, Vinted, and Gumtree. Upload photos, get professional listings in seconds.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f7f2ea",
-  "theme_color": "#0f766e",
+  "theme_color": "#EAC119",
   "orientation": "portrait-primary",
   "scope": "/",
   "id": "quicklist-ai-pwa",
