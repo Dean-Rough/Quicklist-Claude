@@ -159,6 +159,8 @@ LOG_LEVEL=info                         # debug, info, warn, error
 
 **Quality over speed.** Take the time to do things properly — read the full context before making changes, understand the existing patterns, and produce polished output. Do not rush to ship something half-finished. A slower, more considered approach is always preferred over a fast but sloppy one.
 
+**Strict scope discipline.** Only touch files and code explicitly listed in the task. If a task says "modify `<head>`", do not touch the `<body>`. If a task says "add a section", do not restructure existing sections. Never "improve" or "enhance" code that was not part of the brief — unsolicited changes to working code are bugs waiting to happen. When in doubt, do less.
+
 ## File Editing Guidelines
 
 ### server.js

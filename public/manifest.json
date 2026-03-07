@@ -1,16 +1,34 @@
 {
   "name": "QuickList AI - Multi-Platform Listing Generator",
   "short_name": "QuickList",
-  "description": "AI-powered listing generator for eBay, Vinted, and Gumtree. Upload photos, get professional listings in seconds.",
+  "description": "AI-powered listing generator for eBay, Vinted, Depop, and Facebook Marketplace. Upload photos, get professional listings for all platforms in seconds.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f7f2ea",
-  "theme_color": "#EAC119",
+  "theme_color": "#0f766e",
   "orientation": "portrait-primary",
   "scope": "/",
   "id": "quicklist-ai-pwa",
   "categories": ["productivity", "business", "utilities", "shopping"],
   "icons": [
+    {
+      "src": "/icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
     {
       "src": "/icons/icon-144.png",
       "sizes": "144x144",
@@ -18,10 +36,58 @@
       "purpose": "maskable any"
     },
     {
-      "src": "/icons/icon-144.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "src": "/icons/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/mobile-home.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Home Screen"
+    },
+    {
+      "src": "/screenshots/mobile-scan.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Scan Items"
+    },
+    {
+      "src": "/screenshots/mobile-listing.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "AI-Generated Listings"
+    },
+    {
+      "src": "/screenshots/desktop-dashboard.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard View"
     }
   ],
   "shortcuts": [
@@ -29,13 +95,40 @@
       "name": "New Listing",
       "short_name": "New",
       "description": "Create a new listing",
-      "url": "/?action=new"
+      "url": "/?action=new",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "My Listings",
       "short_name": "Listings",
       "description": "View your listings",
-      "url": "/?view=listings"
+      "url": "/?view=listings",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Connect eBay",
+      "short_name": "eBay",
+      "description": "Connect your eBay account",
+      "url": "/auth/ebay/authorize",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ],
   "prefer_related_applications": false,

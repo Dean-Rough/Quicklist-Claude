@@ -569,6 +569,11 @@ p {
   height: 24px;
 }
 
+/* Ensure hamburger is always visible in app header since we removed inline links */
+#appHeader .hamburger-btn {
+  display: block;
+}
+
 /* Slide-Out Navigation Panel */
 .nav-overlay {
   position: fixed;

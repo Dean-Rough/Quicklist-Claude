@@ -420,18 +420,27 @@
   <!-- App Header -->
   <header id="appHeader" class="header hidden">
     <div class="header-content">
-      <button class="hamburger-btn" onclick="app.toggleMobileMenu()" aria-label="Toggle navigation"
-        aria-expanded="false">
-        <svg class="icon icon-menu" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-          stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-        </svg>
-      </button>
       <div class="logo" onclick="app.navigateToApp('newItem')" style="cursor: pointer">
         <div id="logo-animation-2" class="logo-animation-shell" style="height: 40px; width: 120px">
           <img class="logo-fallback" src="/brand/QL4-Static.svg" alt="" width="242" height="54" decoding="async"
             aria-hidden="true" />
         </div>
+      </div>
+
+      <!-- Spacer to push hamburger to the right -->
+      <div style="flex-grow: 1"></div>
+
+      <div class="header-actions" style="display: flex; align-items: center; gap: 1rem">
+        <!-- Clerk Profile Mount Point -->
+        <div id="user-button-mount"></div>
+
+        <button class="hamburger-btn" onclick="app.toggleMobileMenu()" aria-label="Toggle navigation"
+          aria-expanded="false" style="display: block;">
+          <svg class="icon icon-menu" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
       </div>
     </div>
   </header>

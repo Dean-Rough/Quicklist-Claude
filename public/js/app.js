@@ -5936,6 +5936,15 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       this.updateAuthButtons();
       this.updateMobileMenu();
 
+      // Mount Clerk UserButton if available
+      const userBtnMount = document.getElementById('user-button-mount');
+      if (userBtnMount && window.Clerk) {
+        window.Clerk.mountUserButton(userBtnMount, {
+          appearance: this.getClerkAppearance(),
+          afterSignOutUrl: '/',
+        });
+      }
+
       // Load user data
       await this.loadListingsFromDB();
 
@@ -6012,6 +6021,15 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
           localStorage.setItem('quicklist-token', token);
 
           console.log('User authenticated:', this.state.user.email);
+
+          // Mount Clerk UserButton
+          const userBtnMount = document.getElementById('user-button-mount');
+          if (userBtnMount && window.Clerk) {
+            window.Clerk.mountUserButton(userBtnMount, {
+              appearance: this.getClerkAppearance(),
+              afterSignOutUrl: '/',
+            });
+          }
 
           await this.loadListingsFromDB();
         }
