@@ -599,6 +599,45 @@ const app = {
     // Setup pull-to-refresh
     this.setupPullToRefresh();
 
+    // Mock upgrade method for testing
+    this.mockUpgrade = async function (planType) {
+      if (!this.state.isAuthenticated) {
+        this.showToast('Please sign in first', 'error');
+        return;
+      }
+
+      try {
+        this.showLoader();
+        const response = await fetch('/api/user/mock-upgrade', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.state.token}`,
+          },
+          body: JSON.stringify({ planType }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          this.showToast(`Upgraded to ${planType} plan!`, 'success');
+          // Refresh status on frontend
+          await this.checkClerkAuth();
+          if (!this.state.isAuthenticated) {
+            await this.checkAuth();
+          }
+          this.updatePersonalityDropdown();
+        } else {
+          this.showToast(data.error || 'Upgrade failed', 'error');
+        }
+      } catch (error) {
+        console.error('Upgrade error:', error);
+        this.showToast('Failed to change plan', 'error');
+      } finally {
+        this.hideLoader();
+      }
+    };
+
     // Setup Clerk event listeners BEFORE waiting for auth
     this.setupClerkListeners();
 
@@ -2011,6 +2050,9 @@ const app = {
     const resultState = document.getElementById('resultState');
     const cancelBtn = document.getElementById('cancelGenerationBtn');
 
+    // Close input sheet
+    this.closeInputSheet();
+
     // Show loading state
     initialState.classList.add('hidden');
     resultState.classList.add('hidden');
@@ -2028,8 +2070,8 @@ const app = {
     this.state.generationCancelled = false;
     this.state.generationAbortController = new AbortController();
 
-    // Animate progress steps with realistic timing
-    this.animateProgressSteps();
+    // Start comedy loading cycler
+    this.startComedyCycler();
 
     try {
       // Get ALL uploaded images
@@ -2245,46 +2287,43 @@ const app = {
       this.state.progressTimeouts.forEach((timeout) => clearTimeout(timeout));
       this.state.progressTimeouts = [];
     }
+    this.clearComedyCycler();
 
     // Reset loading state HTML
-    loadingState.innerHTML = `
-                    <h2 class="mb-3">Generating your listing...</h2>
-                    <div id="progressSteps" style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1rem;">
-                        <div class="progress-step" data-step="1" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
-                            <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-                            <span class="progress-text" style="color: var(--text-primary);">Analyzing images...</span>
-                        </div>
-                        <div class="progress-step" data-step="2" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
-                            <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-                            <span class="progress-text" style="color: var(--text-primary);">Identifying product...</span>
-                        </div>
-                        <div class="progress-step" data-step="3" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
-                            <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-                            <span class="progress-text" style="color: var(--text-primary);">Researching prices...</span>
-                        </div>
-                        <div class="progress-step" data-step="4" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
-                            <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-                            <span class="progress-text" style="color: var(--text-primary);">Generating description...</span>
-                        </div>
-                        <div class="progress-step" data-step="5" style="display: flex; align-items: center; gap: 0.75rem; opacity: 0.5;">
-                            <span class="progress-icon" style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-                            <span class="progress-text" style="color: var(--text-primary);">Finalizing listing...</span>
-                        </div>
-                    </div>
-                    <div style="margin-top: 2rem; display: flex; justify-content: center;">
-                        <button id="cancelGenerationBtn" class="btn btn-secondary" onclick="app.cancelGeneration()" style="display: none;">
-                            Cancel Generation
-                        </button>
-                    </div>
-                    <div class="skeleton skeleton-text" style="width: 60%; margin-top: 1rem;"></div>
-                    <div class="skeleton skeleton-text" style="width: 80%;"></div>
-                    <div class="skeleton skeleton-text" style="width: 70%;"></div>
-                `;
+    loadingState.innerHTML = '';
 
     this.state.damageAnalysis = null;
     this.updateDamageSummary();
     this.renderReviewImages();
     this.setWizardPhase('photos');
+  },
+
+  openInputSheet() {
+    const sheet = document.getElementById('inputSheet');
+    const backdrop = document.getElementById('sheetBackdrop');
+    const fab = document.getElementById('newListingFab');
+    if (!sheet) return;
+    sheet.classList.add('open');
+    backdrop.classList.add('open');
+    if (fab) fab.classList.add('hidden');
+    document.body.style.overflow = 'hidden';
+  },
+
+  closeInputSheet(confirmIfImages = false) {
+    if (confirmIfImages && this.state.uploadedImages?.length > 0) {
+      if (!confirm('Discard uploaded images and close?')) return;
+      this.state.uploadedImages = [];
+      this.renderImageGrid();
+      this.updateGenerateButton();
+    }
+    const sheet = document.getElementById('inputSheet');
+    const backdrop = document.getElementById('sheetBackdrop');
+    const fab = document.getElementById('newListingFab');
+    if (!sheet) return;
+    sheet.classList.remove('open');
+    backdrop.classList.remove('open');
+    if (fab) fab.classList.remove('hidden');
+    document.body.style.overflow = '';
   },
 
   // Save draft to localStorage
@@ -2670,41 +2709,62 @@ const app = {
     });
   },
 
-  // Animate progress steps with realistic timing
-  animateProgressSteps() {
-    const steps = document.querySelectorAll('.progress-step');
-    if (steps.length === 0) return;
+  startComedyCycler() {
+    const messages = [
+      "Squinting at your photos...",
+      "Checking what it's going for on eBay...",
+      "Running the numbers...",
+      "Polishing the description...",
+      "Wiping the marks off...",
+      "Arguing with the pricing algorithm...",
+      "Adding a sprinkle of charm...",
+      "Nearly there, just buffing it up...",
+    ];
 
-    // Clear any existing timeouts
-    if (this.state.progressTimeouts) {
-      this.state.progressTimeouts.forEach((timeout) => clearTimeout(timeout));
+    const loadingState = document.getElementById('loadingState');
+    if (!loadingState) return;
+
+    loadingState.innerHTML = `
+      <div class="comedy-loading">
+        <div class="comedy-loading-text"><span id="comedyMsg">${messages[0]}</span></div>
+        <div class="comedy-progress-bar"><div class="comedy-progress-bar-fill"></div></div>
+        <button id="cancelGenerationBtn" class="btn btn-secondary" onclick="app.cancelGeneration()" style="display:none;margin-top:1rem;">
+          Cancel
+        </button>
+      </div>
+    `;
+
+    let idx = 0;
+    const el = document.getElementById('comedyMsg');
+
+    const cancelTimer = setTimeout(() => {
+      const btn = document.getElementById('cancelGenerationBtn');
+      if (btn) btn.style.display = 'inline-flex';
+    }, 4000);
+
+    this.state._comedyCancelTimer = cancelTimer;
+    this.state._comedyInterval = setInterval(() => {
+      if (!el || this.state.generationCancelled) return;
+      el.classList.add('fade-out');
+      setTimeout(() => {
+        idx = (idx + 1) % messages.length;
+        if (el) {
+          el.textContent = messages[idx];
+          el.classList.remove('fade-out');
+        }
+      }, 400);
+    }, 2500);
+  },
+
+  clearComedyCycler() {
+    if (this.state._comedyInterval) {
+      clearInterval(this.state._comedyInterval);
+      this.state._comedyInterval = null;
     }
-    this.state.progressTimeouts = [];
-
-    // Realistic timing: steps get progressively slower as they represent longer operations
-    const timings = [500, 1500, 2500, 4000, 5500]; // Total ~14 seconds
-
-    steps.forEach((step, index) => {
-      // Reset step to initial state
-      step.style.opacity = '0.5';
-      step.querySelector('.progress-icon').innerHTML =
-        '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-
-      // Animate step activation
-      const timeout = setTimeout(
-        () => {
-          if (!this.state.generationCancelled) {
-            step.style.opacity = '1';
-            step.style.transition = 'opacity 0.3s ease-in-out';
-            step.querySelector('.progress-icon').innerHTML =
-              '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="var(--success)" stroke-width="2" fill="var(--success)"/><path d="M9 12L11 14L15 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-          }
-        },
-        timings[index] || index * 1000
-      );
-
-      this.state.progressTimeouts.push(timeout);
-    });
+    if (this.state._comedyCancelTimer) {
+      clearTimeout(this.state._comedyCancelTimer);
+      this.state._comedyCancelTimer = null;
+    }
   },
 
   // Update character counts
