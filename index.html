@@ -290,6 +290,14 @@
         <a class="nav-link" onclick="app.navigateToApp('newItem')" aria-label="Create new listing">New Item</a>
         <a class="nav-link" onclick="app.navigateToApp('savedItems')" aria-label="View saved listings">Saved Items</a>
         <a class="nav-link" onclick="app.navigateToApp('settings')" aria-label="Open settings">Settings</a>
+        <!-- Local Testing Subscription Tier Toggle -->
+        <select id="mockTierSelect" class="form-input" style="padding: 0.25rem; font-size: 0.85rem; height: auto;"
+          onchange="app.mockUpgrade(this.value)">
+          <option value="free">Test: Free</option>
+          <option value="casual">Test: Casual</option>
+          <option value="pro">Test: Pro</option>
+          <option value="max">Test: Max</option>
+        </select>
         <button class="btn btn-secondary" onclick="app.signOut()" style="margin-left: auto"
           aria-label="Sign out of QuickList">
           Sign Out
@@ -817,206 +825,205 @@
         <div class="sheet-header">
           <span class="sheet-title">New Listing</span>
           <button class="sheet-close-btn" type="button" onclick="app.closeInputSheet(true)" aria-label="Close">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
         <div class="sheet-body">
           <!-- Top Section: Upload Photos & Listing Details Side-by-Side -->
           <div class="input-panels-container">
-        <!-- Top Panel: Upload Photos -->
-        <div class="input-panel">
-          <div class="bento-cell">
-            <h2 class="mb-3">Upload Photos</h2>
-            <div class="image-uploader" id="imageUploader">
-              <div class="image-uploader-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V8C1 7.46957 1.21071 6.96086 1.58579 6.58579C1.96086 6.21071 2.46957 6 3 6H7L9 3H15L17 6H21C21.5304 6 22.0391 6.21071 22.4142 6.58579C22.7893 6.96086 23 7.46957 23 8V19Z"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                </svg>
-              </div>
-              <p><strong>Click to upload or use camera</strong></p>
-              <p style="color: var(--text-muted); font-size: 0.875rem">
-                Supports multiple images
-              </p>
-            </div>
-            <input type="file" id="imageInput" accept="image/*" multiple style="display: none" />
-
-            <!-- Image Enhancement Toggle -->
-            <div class="form-group" style="margin-top: 1rem">
-              <label class="form-label" style="display: flex; align-items: center; justify-content: space-between">
-                <span>
-                  Image Enhancement
-                  <small style="color: var(--text-muted); font-weight: normal; margin-left: 0.5rem">
-                    (Pro & Max only)
-                  </small>
-                </span>
-                <label class="switch" style="margin: 0">
-                  <input type="checkbox" id="imageEnhancement" onchange="app.toggleImageEnhancement(this.checked)"
-                    disabled />
-                  <span class="slider"></span>
-                </label>
-              </label>
-              <small style="
-                    color: var(--text-muted);
-                    font-size: 0.85rem;
-                    display: block;
-                    margin-top: 0.5rem;
-                  ">
-                <span id="enhancementDescription">
-                  AI-powered image improvements, auto-tagging, OCR, and quality analysis
-                </span>
-              </small>
-            </div>
-
-            <!-- Studio Photo Controls (Pro & Max only) -->
-            <div class="form-group" id="studioControls" style="margin-top: 1rem; display: none;">
-              <label class="form-label">
-                Studio Photo Background
-                <small style="color: var(--text-muted)">(Pro & Max only)</small>
-              </label>
-              <select class="form-input" id="studioBackground" disabled>
-                <option value="neutral">Neutral Gray</option>
-                <option value="white">Pure White</option>
-                <option value="gradient">Gradient Fade</option>
-                <option value="warm">Warm Tone</option>
-                <option value="cool">Cool Tone</option>
-              </select>
-              <small style="
-                    color: var(--text-muted);
-                    font-size: 0.85rem;
-                    display: block;
-                    margin-top: 0.5rem;
-                  ">
-                Choose background style for hero image generation
-              </small>
-
-              <label class="form-label" style="margin-top: 1rem;">
-                Lighting Style
-              </label>
-              <select class="form-input" id="studioLighting" disabled>
-                <option value="soft">Soft Shadow</option>
-                <option value="dramatic">Dramatic Shadow</option>
-                <option value="none">No Shadow</option>
-                <option value="glow">Soft Glow</option>
-              </select>
-              <small style="
-                    color: var(--text-muted);
-                    font-size: 0.85rem;
-                    display: block;
-                    margin-top: 0.5rem;
-                  ">
-                Adjust shadow and lighting effects
-              </small>
-            </div>
-
-            <div class="image-grid" id="imageGrid"></div>
-          </div>
-        </div>
-
-        <!-- Bottom Panel: Listing Details -->
-        <div class="input-panel">
-          <div class="bento-cell">
-            <h2 class="mb-3">Listing Details</h2>
-            <div class="form-group">
-              <label class="form-label" for="itemHint">Item Name or Model
-                <small>(Optional)</small>
-                <span class="info-tooltip-wrapper">
-                  <i class="info-icon">i</i>
-                  <span class="info-tooltip-content">Any info to help the AI identify your product</span>
-                </span>
-              </label>
-              <div class="input-with-icon">
-                <input type="text" class="form-input" id="itemHint" placeholder="Air Max 90 Triple Black" />
-                <button class="voice-input-button" type="button" aria-pressed="false"
-                  onclick="app.toggleVoiceInput('itemHint', this)">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                    <line x1="12" y1="19" x2="12" y2="23"></line>
-                    <line x1="8" y1="23" x2="16" y2="23"></line>
-                  </svg>
-                </button>
-              </div>
-
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="conditionInfo">Further Info <small>(Optional)</small></label>
-              <div class="input-with-icon">
-                <input type="text" class="form-input" id="conditionInfo" placeholder="Missing box, good condition" />
-                <button class="voice-input-button" type="button" aria-pressed="false"
-                  onclick="app.toggleVoiceInput('conditionInfo', this)">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                    <line x1="12" y1="19" x2="12" y2="23"></line>
-                    <line x1="8" y1="23" x2="16" y2="23"></line>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- Target Platform Selector -->
-            <div class="form-group" style="margin-bottom: 1rem">
-              <label class="form-label" for="platformSelectInput">
-                <span>Target Platform</span>
-                <span class="info-tooltip-wrapper">
-                  <i class="info-icon">i</i>
-                  <span class="info-tooltip-content">AI will optimize title length and keywords for your chosen
-                    platform</span>
-                </span>
-              </label>
-              <select class="form-input" id="platformSelectInput" style="width: 100%">
-                <option value="vinted">Vinted</option>
-                <option value="ebay">eBay</option>
-                <option value="gumtree">Gumtree</option>
-                <option value="depop">Depop</option>
-                <option value="facebook">Facebook Marketplace</option>
-              </select>
-
-            </div>
-            <!-- Listing Personality Dropdown -->
-            <div class="form-group" style="margin-bottom: 1rem">
-              <label class="form-label" style="display: flex; align-items: center; justify-content: space-between">
-                <div>
-                  <span>Listing Style</span>
-                  <span class="info-tooltip-wrapper">
-                    <i class="info-icon">i</i>
-                    <span class="info-tooltip-content" id="personalityDescription">Choose the tone and style for your
-                      listing description</span>
-                  </span>
+            <!-- Top Panel: Upload Photos -->
+            <div class="input-panel">
+              <div class="bento-cell">
+                <h2 class="mb-3">Upload Photos</h2>
+                <div class="image-uploader" id="imageUploader">
+                  <div class="image-uploader-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V8C1 7.46957 1.21071 6.96086 1.58579 6.58579C1.96086 6.21071 2.46957 6 3 6H7L9 3H15L17 6H21C21.5304 6 22.0391 6.21071 22.4142 6.58579C22.7893 6.96086 23 7.46957 23 8V19Z"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <p><strong>Click to upload or use camera</strong></p>
+                  <p style="color: var(--text-muted); font-size: 0.875rem">
+                    Supports multiple images
+                  </p>
                 </div>
-              </label>
-              <select class="form-input" id="personalitySelect" style="width: 100%">
-                <option value="standard" data-tier="free">Standard</option>
-                <option value="expert" data-tier="free">Expert (Professional)</option>
-                <option value="punchy" data-tier="pro" disabled>🔒 Punchy Seller (Pro)</option>
-                <option value="luxe" data-tier="pro" disabled>🔒 Luxe Boutique (Pro)</option>
-                <option value="streetwear" data-tier="pro" disabled>
-                  🔒 Streetwear/Hype (Pro)
-                </option>
-                <option value="delboy" data-tier="pro" disabled>
-                  🔒 Cheeky Market Trader (Pro)
-                </option>
-              </select>
+                <input type="file" id="imageInput" accept="image/*" multiple style="display: none" />
 
+
+
+                <!-- Studio Photo Controls (Pro & Max only) -->
+                <div class="form-group" id="studioControls" style="margin-top: 1rem; display: none;">
+                  <label class="form-label">
+                    Studio Photo Background
+                    <small style="color: var(--text-muted)">(Pro & Max only)</small>
+                  </label>
+                  <select class="form-input" id="studioBackground" disabled>
+                    <option value="neutral">Neutral Gray</option>
+                    <option value="white">Pure White</option>
+                    <option value="gradient">Gradient Fade</option>
+                    <option value="warm">Warm Tone</option>
+                    <option value="cool">Cool Tone</option>
+                  </select>
+                  <small style="
+                    color: var(--text-muted);
+                    font-size: 0.85rem;
+                    display: block;
+                    margin-top: 0.5rem;
+                  ">
+                    Choose background style for hero image generation
+                  </small>
+
+                  <label class="form-label" style="margin-top: 1rem;">
+                    Lighting Style
+                  </label>
+                  <select class="form-input" id="studioLighting" disabled>
+                    <option value="soft">Soft Shadow</option>
+                    <option value="dramatic">Dramatic Shadow</option>
+                    <option value="none">No Shadow</option>
+                    <option value="glow">Soft Glow</option>
+                  </select>
+                  <small style="
+                    color: var(--text-muted);
+                    font-size: 0.85rem;
+                    display: block;
+                    margin-top: 0.5rem;
+                  ">
+                    Adjust shadow and lighting effects
+                  </small>
+                </div>
+
+                <div class="image-grid" id="imageGrid"></div>
+              </div>
             </div>
-            <button class="btn btn-primary" id="generateBtn" style="width: 100%" disabled>
-              Generate Listing
-            </button>
-          </div>
-        </div>
+
+            <!-- Bottom Panel: Listing Details -->
+            <div class="input-panel">
+              <div class="bento-cell">
+                <h2 class="mb-3">Listing Details</h2>
+                <div class="form-group">
+                  <label class="form-label" for="itemHint">Item Name or Model
+                    <small>(Optional)</small>
+                    <span class="info-tooltip-wrapper">
+                      <i class="info-icon">i</i>
+                      <span class="info-tooltip-content">Any info to help the AI identify your product</span>
+                    </span>
+                  </label>
+                  <div class="input-with-icon">
+                    <input type="text" class="form-input" id="itemHint" placeholder="e.g., 'Nike Air Max 90', 'iPhone 12 Pro', 'Vintage Levi's 501'" />
+                    <button class="voice-input-button" type="button" aria-pressed="false"
+                      onclick="app.toggleVoiceInput('itemHint', this)">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                      </svg>
+                    </button>
+                  </div>
+
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="conditionInfo">Further Info <small>(Optional)</small></label>
+                  <div class="input-with-icon">
+                    <input type="text" class="form-input" id="conditionInfo"
+                      placeholder="E.g., missing box, small hole, brand new, no cable" />
+                    <button class="voice-input-button" type="button" aria-pressed="false"
+                      onclick="app.toggleVoiceInput('conditionInfo', this)">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Label Scanner <small>(Optional)</small></label>
+                  <button class="btn btn-secondary" type="button" onclick="app.showLabelScanner()" style="width: 100%">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"
+                      style="display: inline-block; vertical-align: middle; margin-right: 8px">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                      <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                    Scan Label to Extract Product Info
+                  </button>
+                </div>
+
+                <!-- Target Platform Selector -->
+                <div class="form-group" style="margin-bottom: 1rem">
+                  <label class="form-label" for="platformSelectInput">
+                    <span>Target Platform</span>
+                    <span class="info-tooltip-wrapper">
+                      <i class="info-icon">i</i>
+                      <span class="info-tooltip-content">AI will optimize title length and keywords for your chosen
+                        platform</span>
+                    </span>
+                  </label>
+                  <select class="form-input" id="platformSelectInput" style="width: 100%">
+                    <option value="vinted">Vinted</option>
+                    <option value="ebay">eBay</option>
+                    <option value="gumtree">Gumtree</option>
+                    <option value="depop">Depop</option>
+                    <option value="facebook">Facebook Marketplace</option>
+                  </select>
+
+                </div>
+                <!-- Listing Personality Dropdown -->
+                <div class="form-group" style="margin-bottom: 1rem">
+                  <label class="form-label" style="display: flex; align-items: center; justify-content: space-between">
+                    <div>
+                      <span>Listing Style</span>
+                      <span class="info-tooltip-wrapper">
+                        <i class="info-icon">i</i>
+                        <span class="info-tooltip-content" id="personalityDescription">Choose the tone and style for
+                          your
+                          listing description</span>
+                      </span>
+                    </div>
+                  </label>
+                  <select class="form-input" id="personalitySelect" style="width: 100%">
+                    <option value="standard" data-tier="free">Standard</option>
+                    <option value="expert" data-tier="free">Expert (Professional)</option>
+                    <option value="punchy" data-tier="pro" disabled>🔒 Punchy Seller (Pro)</option>
+                    <option value="luxe" data-tier="pro" disabled>🔒 Luxe Boutique (Pro)</option>
+                    <option value="streetwear" data-tier="pro" disabled>
+                      🔒 Streetwear/Hype (Pro)
+                    </option>
+                    <option value="delboy" data-tier="pro" disabled>
+                      🔒 Cheeky Market Trader (Pro)
+                    </option>
+                  </select>
+
+                </div>
+                <button class="btn btn-primary" id="generateBtn" style="width: 100%" disabled>
+                  Generate Listing
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- FAB button (outside sheet) -->
-      <button id="newListingFab" class="new-listing-fab" type="button" onclick="app.openInputSheet()" aria-label="New listing">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <button id="newListingFab" class="new-listing-fab" type="button" onclick="app.openInputSheet()"
+        aria-label="New listing">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
       </button>
 
       <!-- Bottom Section: Generated Listing (Full Width) -->
