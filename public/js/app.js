@@ -2556,7 +2556,8 @@ const app = {
         }
 
         const error = await response.json().catch(() => ({}));
-        const errorMessage = error.error || `API request failed (${response.status})`;
+        console.error('Generate API error details:', error);
+        const errorMessage = error.details || error.error || `API request failed (${response.status})`;
         throw new Error(errorMessage);
       }
 

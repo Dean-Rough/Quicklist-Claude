@@ -4916,6 +4916,7 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
     }
   } catch (error) {
     logger.error('Generate listing error:', { error: error.message, requestId: req.id, userId });
+    console.error('GENERATE ERROR:', error.message, error.stack?.split('\n')[1]);
     res.status(500).json({
       error: 'Failed to generate listing',
       details: error.message,
