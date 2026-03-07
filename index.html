@@ -808,9 +808,22 @@
   <main id="appView" class="hidden">
     <!-- New Item View -->
     <div id="newItemView">
-      <!-- Top Section: Upload Photos & Listing Details Side-by-Side -->
-      <div class="input-panels-container">
-        <!-- Left Panel: Upload Photos -->
+
+      <!-- Sheet backdrop -->
+      <div id="sheetBackdrop" onclick="app.closeInputSheet(true)"></div>
+
+      <!-- Input sheet -->
+      <div id="inputSheet">
+        <div class="sheet-header">
+          <span class="sheet-title">New Listing</span>
+          <button class="sheet-close-btn" type="button" onclick="app.closeInputSheet(true)" aria-label="Close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <!-- Top Section: Upload Photos & Listing Details Side-by-Side -->
+          <div class="input-panels-container">
+        <!-- Top Panel: Upload Photos -->
         <div class="input-panel">
           <div class="bento-cell">
             <h2 class="mb-3">Upload Photos</h2>
@@ -903,16 +916,20 @@
           </div>
         </div>
 
-        <!-- Right Panel: Listing Details -->
+        <!-- Bottom Panel: Listing Details -->
         <div class="input-panel">
           <div class="bento-cell">
             <h2 class="mb-3">Listing Details</h2>
             <div class="form-group">
               <label class="form-label" for="itemHint">Item Name or Model
-                <small>(Optional)</small></label>
+                <small>(Optional)</small>
+                <span class="info-tooltip-wrapper">
+                  <i class="info-icon">i</i>
+                  <span class="info-tooltip-content">Any info to help the AI identify your product</span>
+                </span>
+              </label>
               <div class="input-with-icon">
-                <input type="text" class="form-input" id="itemHint"
-                  placeholder="e.g., 'Nike Air Max 90', 'iPhone 12 Pro', 'Vintage Levi's 501'" />
+                <input type="text" class="form-input" id="itemHint" placeholder="Air Max 90 Triple Black" />
                 <button class="voice-input-button" type="button" aria-pressed="false"
                   onclick="app.toggleVoiceInput('itemHint', this)">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -924,13 +941,12 @@
                   </svg>
                 </button>
               </div>
-              <small>Any info to help the AI identify your product</small>
+
             </div>
             <div class="form-group">
               <label class="form-label" for="conditionInfo">Further Info <small>(Optional)</small></label>
               <div class="input-with-icon">
-                <input type="text" class="form-input" id="conditionInfo"
-                  placeholder="E.g., missing box, small hole, brand new, no cable" />
+                <input type="text" class="form-input" id="conditionInfo" placeholder="Missing box, good condition" />
                 <button class="voice-input-button" type="button" aria-pressed="false"
                   onclick="app.toggleVoiceInput('conditionInfo', this)">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -943,22 +959,16 @@
                 </button>
               </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Label Scanner <small>(Optional)</small></label>
-              <button class="btn btn-secondary" type="button" onclick="app.showLabelScanner()" style="width: 100%">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round"
-                  style="display: inline-block; vertical-align: middle; margin-right: 8px">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                  <circle cx="12" cy="13" r="4"></circle>
-                </svg>
-                Scan Label to Extract Product Info
-              </button>
-            </div>
+
             <!-- Target Platform Selector -->
             <div class="form-group" style="margin-bottom: 1rem">
               <label class="form-label" for="platformSelectInput">
                 <span>Target Platform</span>
+                <span class="info-tooltip-wrapper">
+                  <i class="info-icon">i</i>
+                  <span class="info-tooltip-content">AI will optimize title length and keywords for your chosen
+                    platform</span>
+                </span>
               </label>
               <select class="form-input" id="platformSelectInput" style="width: 100%">
                 <option value="vinted">Vinted</option>
@@ -967,14 +977,19 @@
                 <option value="depop">Depop</option>
                 <option value="facebook">Facebook Marketplace</option>
               </select>
-              <small>
-                AI will optimize title length and keywords for your chosen platform
-              </small>
+
             </div>
             <!-- Listing Personality Dropdown -->
             <div class="form-group" style="margin-bottom: 1rem">
               <label class="form-label" style="display: flex; align-items: center; justify-content: space-between">
-                <span>Listing Style</span>
+                <div>
+                  <span>Listing Style</span>
+                  <span class="info-tooltip-wrapper">
+                    <i class="info-icon">i</i>
+                    <span class="info-tooltip-content" id="personalityDescription">Choose the tone and style for your
+                      listing description</span>
+                  </span>
+                </div>
               </label>
               <select class="form-input" id="personalitySelect" style="width: 100%">
                 <option value="standard" data-tier="free">Standard</option>
@@ -988,16 +1003,21 @@
                   🔒 Cheeky Market Trader (Pro)
                 </option>
               </select>
-              <small>
-                <span id="personalityDescription">Choose the tone and style for your listing description</span>
-              </small>
+
             </div>
             <button class="btn btn-primary" id="generateBtn" style="width: 100%" disabled>
               Generate Listing
             </button>
           </div>
         </div>
+          </div>
+        </div>
       </div>
+
+      <!-- FAB button (outside sheet) -->
+      <button id="newListingFab" class="new-listing-fab" type="button" onclick="app.openInputSheet()" aria-label="New listing">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
 
       <!-- Bottom Section: Generated Listing (Full Width) -->
       <div class="generated-listing-container">
@@ -1653,13 +1673,22 @@
         </div>
 
         <!-- Multi-select toolbar -->
-        <div id="savedItemsSelectBar" class="hidden" style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;padding:0.75rem 1rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-bento);flex-wrap:wrap;">
-          <button id="selectAllCheckbox" type="button" onclick="app.toggleSelectAll()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:0;font-size:14px;font-weight:500;color:inherit;">
+        <div id="savedItemsSelectBar" class="hidden"
+          style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;padding:0.75rem 1rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-bento);flex-wrap:wrap;">
+          <button id="selectAllCheckbox" type="button" onclick="app.toggleSelectAll()"
+            style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:0;font-size:14px;font-weight:500;color:inherit;">
             <span id="selectAllIcon"></span>
             <span id="selectAllLabel">Select all</span>
           </button>
-          <button id="deleteSelectedBtn" class="btn btn-small hidden" onclick="app.deleteSelectedListings()" style="display:flex;align-items:center;gap:6px;background:var(--error,#e53e3e);border-color:var(--error,#e53e3e);color:#fff;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+          <button id="deleteSelectedBtn" class="btn btn-small hidden" onclick="app.deleteSelectedListings()"
+            style="display:flex;align-items:center;gap:6px;background:var(--error,#e53e3e);border-color:var(--error,#e53e3e);color:#fff;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+            </svg>
             Delete <span id="selectedCount">0</span> selected
           </button>
         </div>
