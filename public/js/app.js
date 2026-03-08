@@ -2780,6 +2780,67 @@ const app = {
   },
 
   // Convert file to base64
+  /**
+   * Compress an image file before upload
+   * @param {File} file - Image file to compress
+   * @param {number} maxWidth - Maximum width in pixels (default: 1920)
+   * @param {number} quality - JPEG quality 0-1 (default: 0.85)
+   * @returns {Promise<Blob>} Compressed image blob
+   */
+  async compressImage(file, maxWidth = 1920, quality = 0.85) {
+    return new Promise((resolve, reject) => {
+      // Skip compression for very small images
+      if (file.size < 100 * 1024) { // < 100KB
+        resolve(file);
+        return;
+      }
+
+      const img = new Image();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      img.onload = () => {
+        let { width, height } = img;
+
+        // Calculate new dimensions maintaining aspect ratio
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw image to canvas with high quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to blob
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              // Only use compressed version if it's actually smaller
+              resolve(blob.size < file.size ? blob : file);
+            } else {
+              resolve(file);
+            }
+            // Clean up
+            URL.revokeObjectURL(img.src);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+
+      img.onerror = () => {
+        reject(new Error('Failed to load image for compression'));
+      };
+
+      img.src = URL.createObjectURL(file);
+    });
+  },
+
   fileToBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -7923,6 +7984,13 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   // ==================== PHOTO DUMP FEATURE ====================
 
   initPhotoDump() {
+    // Clean up any existing object URLs to prevent memory leaks
+    if (this.state.photoDumpImages?.length) {
+      this.state.photoDumpImages.forEach(img => {
+        if (img.preview) URL.revokeObjectURL(img.preview);
+      });
+    }
+
     // Reset state
     this.state.photoDumpImages = [];
     this.state.photoDumpGroups = null;
@@ -7941,19 +8009,74 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     document.getElementById('photoDumpListings').innerHTML = '';
   },
 
-  handlePhotoDumpUpload(files) {
+  async handlePhotoDumpUpload(files) {
     if (!files || files.length === 0) return;
 
-    // Convert FileList to array and add to state
-    const newImages = Array.from(files).map((file, idx) => ({
-      id: `pd-${Date.now()}-${idx}`,
-      file: file,
-      preview: URL.createObjectURL(file),
-      status: 'ready'
-    }));
+    const startTime = Date.now();
+    const originalTotalSize = Array.from(files).reduce((sum, f) => sum + f.size, 0);
 
-    this.state.photoDumpImages = [...this.state.photoDumpImages, ...newImages];
-    this.renderPhotoDumpPreview();
+    // Show processing toast
+    this.showToast(`Compressing ${files.length} images...`, 'info');
+
+    try {
+      // Compress images in parallel
+      const compressedFiles = await Promise.all(
+        Array.from(files).map(async (file, idx) => {
+          try {
+            const compressed = await this.compressImage(file, 1920, 0.85);
+            const compressedFile = compressed instanceof Blob && compressed !== file
+              ? new File([compressed], file.name, { type: 'image/jpeg' })
+              : file;
+
+            return {
+              id: `pd-${Date.now()}-${idx}`,
+              file: compressedFile,
+              preview: URL.createObjectURL(compressedFile),
+              status: 'ready',
+              size: compressedFile.size,
+              originalSize: file.size,
+              type: compressedFile.type
+            };
+          } catch (err) {
+            console.error('Compression failed for image:', file.name, err);
+            // Fall back to original file
+            return {
+              id: `pd-${Date.now()}-${idx}`,
+              file: file,
+              preview: URL.createObjectURL(file),
+              status: 'ready',
+              size: file.size,
+              originalSize: file.size,
+              type: file.type
+            };
+          }
+        })
+      );
+
+      this.state.photoDumpImages = [...this.state.photoDumpImages, ...compressedFiles];
+      this.renderPhotoDumpPreview();
+
+      // Calculate compression stats
+      const compressedTotalSize = compressedFiles.reduce((sum, img) => sum + img.size, 0);
+      const compressionRatio = ((1 - compressedTotalSize / originalTotalSize) * 100).toFixed(0);
+      const timeTaken = ((Date.now() - startTime) / 1000).toFixed(1);
+
+      // Show success message with stats
+      const compressedMB = (compressedTotalSize / 1024 / 1024).toFixed(1);
+      if (compressionRatio > 5) {
+        this.showToast(`Compressed to ${compressedMB}MB (saved ${compressionRatio}%) in ${timeTaken}s`, 'success');
+      } else {
+        this.showToast(`${files.length} images ready (${compressedMB}MB)`, 'success');
+      }
+
+      // Warn if still large
+      if (compressedTotalSize > 50 * 1024 * 1024) {
+        this.showToast(`Large upload: ${compressedMB}MB. Processing may take longer.`, 'warning');
+      }
+    } catch (error) {
+      console.error('Error processing images:', error);
+      this.showToast('Failed to process some images', 'error');
+    }
   },
 
   renderPhotoDumpPreview() {
@@ -7979,6 +8102,12 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   },
 
   removePhotoDumpImage(id) {
+    // Revoke object URL to prevent memory leak
+    const imageToRemove = this.state.photoDumpImages.find(img => img.id === id);
+    if (imageToRemove?.preview) {
+      URL.revokeObjectURL(imageToRemove.preview);
+    }
+
     this.state.photoDumpImages = this.state.photoDumpImages.filter(img => img.id !== id);
     this.renderPhotoDumpPreview();
 
@@ -7988,6 +8117,13 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   },
 
   clearPhotoDump() {
+    // Revoke all object URLs to prevent memory leaks
+    this.state.photoDumpImages.forEach(img => {
+      if (img.preview) {
+        URL.revokeObjectURL(img.preview);
+      }
+    });
+
     this.state.photoDumpImages = [];
     document.getElementById('photoDumpPreview').classList.add('hidden');
     document.getElementById('photoDumpGrid').innerHTML = '';
@@ -8068,32 +8204,34 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     const groups = this.state.photoDumpGroups;
 
     if (!groups || groups.length === 0) {
-      container.innerHTML = '<p>No items detected. Try uploading clearer photos.</p>';
+      container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">No items detected. Try uploading clearer photos.</p>';
       return;
     }
 
     document.getElementById('photoDumpGroupCount').textContent = groups.length;
 
     container.innerHTML = groups.map((group, idx) => `
-      <div class="card" style="margin-bottom: 1.5rem; padding: 1.5rem;" id="pd-group-${idx}">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h3 style="margin: 0;">Item ${idx + 1}</h3>
-          <span style="color: var(--text-muted); font-size: 0.875rem;">${group.photoIndices.length} photos</span>
+      <div class="photo-dump-group" id="pd-group-${idx}">
+        <div class="photo-dump-group-header">
+          <h3 class="photo-dump-group-title">Item ${idx + 1}</h3>
+          <span style="color: var(--text-muted); font-size: 0.875rem; font-weight: 500;">${group.photoIndices.length} photo${group.photoIndices.length !== 1 ? 's' : ''}</span>
         </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 0.5rem;">
+
+        <div class="photo-dump-group-photos">
           ${group.photoIndices.map(photoIdx => `
-            <div style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--bg-secondary);">
-              <img src="${this.state.photoDumpImages[photoIdx]?.preview || ''}" 
-                   style="width: 100%; height: 100%; object-fit: cover;" 
-                   alt="Photo ${photoIdx + 1}" />
+            <div class="photo-dump-group-photo">
+              <img src="${this.state.photoDumpImages[photoIdx]?.preview || ''}"
+                   alt="Photo ${photoIdx + 1}"
+                   loading="lazy" />
             </div>
           `).join('')}
         </div>
-        
-        <p style="color: var(--text-muted); margin: 1rem 0 0 0; font-size: 0.9rem;">
-          ${group.description || 'Item detected from photos'}
-        </p>
+
+        ${group.description ? `
+          <p style="color: var(--text-muted); margin: 1rem 0 0 0; font-size: 0.9rem; line-height: 1.5;">
+            ${group.description}
+          </p>
+        ` : ''}
       </div>
     `).join('');
   },
