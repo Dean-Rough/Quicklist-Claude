@@ -1156,19 +1156,13 @@ const app = {
           );
         }
 
-        // Real blur detection using Laplacian variance
+        // Real blur detection using Laplacian variance (local, no API call)
         this.detectBlur(imageData.file)
           .then((isBlurry) => {
             imageData.status = 'ready';
             imageData.isBlurry = isBlurry;
             this.renderImageGrid();
             this.updateGenerateButton();
-
-            // Check image quality and condition with AI (cached for faster generation)
-            this.checkImageQuality(imageData).catch((err) => {
-              console.error('Quality check error:', err);
-              // Don't block on quality check failure
-            });
           })
           .catch(() => {
             // If detection fails, assume not blurry
@@ -1205,7 +1199,11 @@ const app = {
                         <img src="${img.url}" alt="Uploaded">
                         <button class="image-thumbnail-delete" onclick="event.stopPropagation(); app.deleteImage('${img.id}')" aria-label="Delete image">×</button>
                         ${img.isMain
-            ? '<div class="main-image-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Main</div>'
+            ? `<div class="main-image-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Main</div>
+               ${!img.studioEnhanced ? `<button class="studio-edit-btn" onclick="event.stopPropagation(); app.studioEditImage('${img.id}')" title="Transform to studio photo (uses 1 credit)">
+                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                 Studio Edit
+               </button>` : '<div class="studio-enhanced-badge">✨ Studio</div>'}`
             : '<div class="set-main-badge">Set as Main</div>'
           }
                         ${img.status === 'checking'
@@ -1213,19 +1211,6 @@ const app = {
             : img.isBlurry
               ? '<div class="image-thumbnail-status warning"><span style="width: 20px; height: 20px; display: inline-flex;"><svg viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Blur Detected</div>'
               : ''
-          }
-                        ${img.qualityScore !== undefined
-            ? `
-                            <div style="position: absolute; bottom: 5px; right: 5px; background: ${img.qualityScore >= 80
-              ? 'var(--success-color)'
-              : img.qualityScore >= 60
-                ? 'var(--warning-color)'
-                : 'var(--error-color)'
-            }; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600;">
-                                ${img.qualityScore}
-                            </div>
-                        `
-            : ''
           }
                     </div>
                 `
@@ -1254,6 +1239,91 @@ const app = {
     this.state.uploadedImages = this.state.uploadedImages.filter((img) => img.id !== id);
     this.renderImageGrid();
     this.updateGenerateButton();
+  },
+
+  // Studio Edit - Transform main image to studio photo using NanoBanana2
+  async studioEditImage(id) {
+    const img = this.state.uploadedImages.find((img) => img.id === id);
+    if (!img) return;
+
+    // Check if user has credits available
+    const hasCredits = await this.checkAvailableCredits();
+    if (!hasCredits) {
+      this.showToast('No credits available. Upgrade to Pro for more studio edits.', 'warning');
+      return;
+    }
+
+    // Show confirmation
+    if (!confirm('Transform this image to a studio photo? This uses 1 credit.')) {
+      return;
+    }
+
+    // Show loading state
+    img.status = 'enhancing';
+    this.renderImageGrid();
+
+    try {
+      const base64 = await this.fileToBase64(img.file);
+      
+      const response = await fetch(`${this.apiUrl}/enhance-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.state.token}`,
+        },
+        body: JSON.stringify({ 
+          image: base64,
+          background: 'white',
+          lighting: 'soft'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Studio enhancement failed');
+      }
+
+      const data = await response.json();
+
+      if (data.enhancedImage) {
+        // Update the image with enhanced version
+        img.originalUrl = img.url; // Keep original
+        img.url = data.enhancedImage;
+        img.studioEnhanced = true;
+        img.status = 'ready';
+        
+        this.showToast('✨ Studio photo created!', 'success');
+        this.renderImageGrid();
+      } else {
+        throw new Error('No enhanced image returned');
+      }
+    } catch (error) {
+      console.error('Studio edit error:', error);
+      img.status = 'ready';
+      this.renderImageGrid();
+      this.showToast('Studio edit failed. Please try again.', 'error');
+    }
+  },
+
+  // Check if user has available credits for studio edit
+  async checkAvailableCredits() {
+    try {
+      const response = await fetch(`${this.apiUrl}/usage`, {
+        headers: {
+          Authorization: `Bearer ${this.state.token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const used = data.listingsCreated || 0;
+        const limit = data.limit || 5;
+        return used < limit;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking credits:', error);
+      return false;
+    }
   },
 
   // Clean up all object URLs (call when resetting state)

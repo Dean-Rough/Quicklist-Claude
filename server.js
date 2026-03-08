@@ -3928,6 +3928,27 @@ app.post('/api/enhance-image', aiAnalysisLimiter, authenticateToken, async (req,
       throw new Error('No image returned from Nano Banana 2');
     }
 
+    // Track usage - studio edit counts as 1 credit
+    if (pool) {
+      try {
+        const now = new Date();
+        const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        
+        await pool.query(
+          `INSERT INTO usage_tracking (user_id, period_start, period_end, listings_created)
+           VALUES ($1, $2, $3, 1)
+           ON CONFLICT (user_id, period_start) 
+           DO UPDATE SET listings_created = usage_tracking.listings_created + 1`,
+          [req.user.id, periodStart, periodEnd]
+        );
+        logger.info('Studio edit usage tracked', { userId: req.user.id });
+      } catch (usageError) {
+        logger.error('Failed to track studio edit usage:', usageError);
+        // Don't fail the request if usage tracking fails
+      }
+    }
+
     res.json({
       success: true,
       enhancedImage: enhancedImageBase64
