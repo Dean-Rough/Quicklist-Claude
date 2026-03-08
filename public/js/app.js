@@ -5968,8 +5968,10 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       const bottomNav = document.getElementById('bottomNav');
       if (bottomNav) bottomNav.style.display = 'flex';
     } else if (view === 'newItem') {
-      // Reset to initial state when entering new item view
+      // Reset and open input sheet directly when entering new item view
       this.showInitialState();
+      // Open the input sheet so user sees the form immediately
+      setTimeout(() => this.openInputSheet(), 50);
     } else if (view === 'savedItems') {
       this.renderSavedItems();
     } else if (view === 'settings') {
