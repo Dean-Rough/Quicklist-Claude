@@ -5871,29 +5871,34 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         tab.setAttribute('aria-selected', 'false');
       }
     });
+
+    // Show/hide bottom nav based on view
+    const bottomNav = document.getElementById('bottomNav');
+    if (bottomNav) {
+      bottomNav.style.display = 'flex';
+    }
   },
 
   switchAppView(view) {
-    // Map 'dashboard' to 'settings' since dashboard content is in settingsView
-    const resolvedView = view === 'dashboard' ? 'settings' : view;
-
-    const views = ['newItem', 'savedItems', 'settings', 'profile'];
+    const views = ['dashboard', 'newItem', 'savedItems', 'settings', 'profile'];
     views.forEach((v) => {
       const el = document.getElementById(`${v}View`);
       if (el) {
-        el.classList.toggle('hidden', v !== resolvedView);
+        el.classList.toggle('hidden', v !== view);
       }
     });
 
     this.state.currentAppView = resolvedView;
 
-    if (resolvedView === 'savedItems') {
+    if (view === 'dashboard') {
+      this.loadDashboardMetrics();
+    } else if (view === 'savedItems') {
       this.renderSavedItems();
-    } else if (resolvedView === 'settings') {
+    } else if (view === 'settings') {
       this.loadSubscriptionData();
-      this.loadDashboardMetrics(); // Also load dashboard metrics
+      this.loadDashboardMetrics();
       this.loadReferralData();
-    } else if (resolvedView === 'profile') {
+    } else if (view === 'profile') {
       this.loadProfileData();
     }
 
@@ -5916,7 +5921,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     if (this.state.isAuthenticated || (window.Clerk && window.Clerk.user)) {
       // User is already signed in - take them to the app
       this.updateUI(); // Show the app view
-      this.navigateToApp('newItem');
+      this.navigateToApp('dashboard');
       return;
     }
     this.signInWithClerk(mode);
@@ -5929,7 +5934,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       return;
     }
     this.updateUI();
-    this.navigateToApp('settings'); // Dashboard content is in settingsView
+    this.navigateToApp('dashboard');
   },
 
   // Check Clerk authentication
@@ -6960,10 +6965,10 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       appView.style.display = 'block';
       appHeader.classList.remove('hidden');
 
-      // Only navigate to newItem on initial transition (first load or sign-in)
+      // Navigate to dashboard on initial transition (first load or sign-in)
       // Don't disrupt the user if they're already in the app
       if (!appAlreadyVisible) {
-        this.navigateToApp('newItem');
+        this.navigateToApp('dashboard');
       }
 
       // Load app data
