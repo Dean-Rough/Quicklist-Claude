@@ -1203,7 +1203,7 @@ const app = {
                ${!img.studioEnhanced ? `<button class="studio-edit-btn" onclick="event.stopPropagation(); app.studioEditImage('${img.id}')" title="Transform to studio photo (uses 1 credit)">
                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                  Studio Edit
-               </button>` : '<div class="studio-enhanced-badge">✨ Studio</div>'}`
+               </button>` : '<div class="studio-enhanced-badge">Studio</div>'}`
             : '<div class="set-main-badge">Set as Main</div>'
           }
                         ${img.status === 'checking'
@@ -1291,7 +1291,7 @@ const app = {
         img.studioEnhanced = true;
         img.status = 'ready';
         
-        this.showToast('✨ Studio photo created!', 'success');
+        this.showToast('Studio photo created!', 'success');
         this.renderImageGrid();
       } else {
         throw new Error('No enhanced image returned');
@@ -5964,6 +5964,9 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       this.loadDashboardMetrics();
     } else if (view === 'photoDump') {
       this.initPhotoDump();
+    } else if (view === 'newItem') {
+      // Reset to initial state when entering new item view
+      this.showInitialState();
     } else if (view === 'savedItems') {
       this.renderSavedItems();
     } else if (view === 'settings') {
