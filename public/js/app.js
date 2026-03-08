@@ -5888,7 +5888,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       }
     });
 
-    this.state.currentAppView = resolvedView;
+    this.state.currentAppView = view;
 
     if (view === 'dashboard') {
       this.loadDashboardMetrics();
@@ -5903,13 +5903,13 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     }
 
     // Clear multi-select state when leaving saved items
-    if (this.state.currentAppView === 'savedItems' && resolvedView !== 'savedItems') {
+    if (this.state.currentAppView === 'savedItems' && view !== 'savedItems') {
       this.state.selectedListingIds.clear();
       const selectBar = document.getElementById('savedItemsSelectBar');
       if (selectBar) selectBar.classList.add('hidden');
     }
 
-    this.highlightBottomTab(resolvedView);
+    this.highlightBottomTab(view);
     window.scrollTo(0, 0);
     const appEl = document.getElementById('appView');
     if (appEl) appEl.scrollTop = 0;
