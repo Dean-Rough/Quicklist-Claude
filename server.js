@@ -5001,6 +5001,239 @@ Return ONLY valid JSON. No markdown code blocks, no explanatory text.
   }
 });
 
+// Helper function to call Gemini API with prompt and images
+async function callGeminiWithPrompt(promptText, imageParts, apiKey = null) {
+  const key = apiKey || process.env.GEMINI_API_KEY;
+  if (!key) {
+    throw new Error('Gemini API key not configured');
+  }
+
+  const model = process.env.GEMINI_LISTING_MODEL || 'gemini-2.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+
+  const parts = [{ text: promptText }, ...imageParts];
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{ parts }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 2048,
+        },
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error('No response from AI model');
+    }
+
+    const text = data.candidates[0].content.parts
+      .filter(p => p.text)
+      .map(p => p.text)
+      .join('');
+
+    return text;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+// Photo Dump Analysis endpoint - analyzes multiple photos and groups them by item
+app.post('/api/photo-dump/analyze', generateLimiter, authenticateToken, async (req, res) => {
+  const userId = req.user?.id;
+  
+  try {
+    const { images, platform = 'ebay' } = req.body;
+
+    if (!images || !Array.isArray(images) || images.length < 3) {
+      return res.status(400).json({ error: 'At least 3 photos required' });
+    }
+
+    if (images.length > 30) {
+      return res.status(400).json({ error: 'Maximum 30 photos allowed' });
+    }
+
+    logger.info('Photo dump analysis started', { userId, imageCount: images.length });
+
+    // Step 1: Analyze all images to identify unique items
+    const groupingPrompt = `You are analyzing a batch of photos to identify how many unique items are present.
+
+**YOUR TASK:**
+Look at ALL the images provided and determine:
+1. How many unique items are shown
+2. Which photos belong to which item (group them)
+
+**IMPORTANT:**
+- Photos of the same item from different angles should be grouped together
+- Look for visual similarities: same item, same color, same brand, same type
+- If you see 3 different jackets and 2 pairs of shoes, that's 5 unique items
+
+**RESPONSE FORMAT (JSON only):**
+{
+  "itemCount": 5,
+  "groups": [
+    {
+      "itemIndex": 0,
+      "photoIndices": [0, 1, 2],
+      "description": "Black Nike Tech Fleece jacket",
+      "confidence": "high"
+    },
+    {
+      "itemIndex": 1,
+      "photoIndices": [3, 4],
+      "description": "White Adidas trainers",
+      "confidence": "high"
+    }
+  ]
+}
+
+**CONFIDENCE LEVELS:**
+- "high": Clear visual match, same item visible
+- "medium": Likely same item but angle/lighting different
+- "low": Unclear if same item or different
+
+Return ONLY valid JSON, no other text.`;
+
+    // Prepare images for AI
+    const imageParts = images.map((img, idx) => ({
+      inlineData: {
+        data: img.split(',')[1] || img,
+        mimeType: 'image/jpeg'
+      }
+    }));
+
+    // Call AI to group photos
+    const groupingResult = await callGeminiWithPrompt(groupingPrompt, imageParts);
+    
+    let groups;
+    try {
+      const jsonMatch = groupingResult.match(/\{[\s\S]*\}/);
+      groups = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+    } catch (e) {
+      logger.error('Failed to parse grouping result', { error: e.message, result: groupingResult });
+      // Fallback: treat each photo as separate item
+      groups = {
+        itemCount: Math.min(images.length, 10),
+        groups: images.slice(0, 10).map((_, idx) => ({
+          itemIndex: idx,
+          photoIndices: [idx],
+          description: `Item ${idx + 1}`,
+          confidence: 'low'
+        }))
+      };
+    }
+
+    // Step 2: Generate listings for each group
+    const items = [];
+    
+    for (const group of groups.groups.slice(0, 8)) { // Max 8 items
+      const groupImages = group.photoIndices.map(idx => images[idx]).filter(Boolean);
+      
+      if (groupImages.length === 0) continue;
+
+      // Generate listing for this group
+      const listingPrompt = `You are an expert e-commerce listing specialist. Create a complete listing for this item based on the photos provided.
+
+**CONTEXT:**
+This is item ${group.itemIndex + 1} of ${groups.itemCount} in a photo batch.
+
+**REQUIRED OUTPUT FORMAT (JSON):**
+{
+  "title": "Clear, searchable title (80 chars max for eBay)",
+  "brand": "Exact brand name",
+  "category": "Full category path",
+  "description": "Detailed description in seller voice",
+  "condition": "New/Like New/Excellent/Good/Fair/Poor",
+  "price": "Suggested price in format £XX.XX",
+  "rrp": "Original retail price if known, else 'Unknown'",
+  "keywords": ["keyword1", "keyword2", "keyword3"],
+  "platform": "${platform}"
+}
+
+**WRITING STYLE:**
+- Sell the item honestly from the user's perspective
+- Be enthusiastic but don't lie or exaggerate
+- Mention specific details visible in photos
+- Include key selling points
+
+Return ONLY valid JSON.`;
+
+      const listingImageParts = groupImages.map(img => ({
+        inlineData: {
+          data: img.split(',')[1] || img,
+          mimeType: 'image/jpeg'
+        }
+      }));
+
+      try {
+        const listingResult = await callGeminiWithPrompt(listingPrompt, listingImageParts);
+        const jsonMatch = listingResult.match(/\{[\s\S]*\}/);
+        const listing = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+
+        if (listing) {
+          items.push({
+            ...listing,
+            thumbnail: groupImages[0],
+            photoCount: groupImages.length,
+            confidence: group.confidence
+          });
+        }
+      } catch (e) {
+        logger.error('Failed to generate listing for group', { 
+          userId, 
+          groupIndex: group.itemIndex,
+          error: e.message 
+        });
+      }
+    }
+
+    logger.info('Photo dump analysis complete', { 
+      userId, 
+      inputCount: images.length,
+      detectedItems: groups.itemCount,
+      generatedListings: items.length 
+    });
+
+    res.json({
+      success: true,
+      totalPhotos: images.length,
+      detectedItems: groups.itemCount,
+      items: items
+    });
+
+  } catch (error) {
+    logger.error('Photo dump analysis failed', { 
+      userId, 
+      error: error.message,
+      stack: error.stack 
+    });
+    
+    res.status(500).json({
+      error: 'Failed to analyze photos',
+      details: error.message
+    });
+  }
+});
+
 // Barcode lookup endpoint
 app.post('/api/lookup-barcode', barcodeLimiter, authenticateToken, async (req, res) => {
   try {

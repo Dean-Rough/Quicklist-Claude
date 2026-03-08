@@ -5880,7 +5880,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   },
 
   switchAppView(view) {
-    const views = ['dashboard', 'newItem', 'savedItems', 'settings', 'profile'];
+    const views = ['dashboard', 'photoDump', 'newItem', 'savedItems', 'settings', 'profile'];
     views.forEach((v) => {
       const el = document.getElementById(`${v}View`);
       if (el) {
@@ -5892,6 +5892,8 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
     if (view === 'dashboard') {
       this.loadDashboardMetrics();
+    } else if (view === 'photoDump') {
+      this.initPhotoDump();
     } else if (view === 'savedItems') {
       this.renderSavedItems();
     } else if (view === 'settings') {
@@ -5907,6 +5909,12 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       this.state.selectedListingIds.clear();
       const selectBar = document.getElementById('savedItemsSelectBar');
       if (selectBar) selectBar.classList.add('hidden');
+    }
+
+    // Hide bottom nav for photo dump (it has its own nav)
+    const bottomNav = document.getElementById('bottomNav');
+    if (bottomNav) {
+      bottomNav.style.display = view === 'photoDump' ? 'none' : 'flex';
     }
 
     this.highlightBottomTab(view);
@@ -7818,6 +7826,244 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       this.showToast('Link copied!', 'success');
     }
   },
+
+  // ==================== PHOTO DUMP FEATURE ====================
+  
+  initPhotoDump() {
+    // Reset state
+    this.state.photoDumpImages = [];
+    this.state.photoDumpResults = null;
+    
+    // Show upload step, hide others
+    document.getElementById('photoDumpUploadStep').classList.remove('hidden');
+    document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
+    document.getElementById('photoDumpReviewStep').classList.add('hidden');
+    document.getElementById('photoDumpPreview').classList.add('hidden');
+    
+    // Clear grid
+    document.getElementById('photoDumpGrid').innerHTML = '';
+    document.getElementById('photoDumpListings').innerHTML = '';
+  },
+
+  handlePhotoDumpUpload(files) {
+    if (!files || files.length === 0) return;
+    
+    // Convert FileList to array and add to state
+    const newImages = Array.from(files).map((file, idx) => ({
+      id: `pd-${Date.now()}-${idx}`,
+      file: file,
+      preview: URL.createObjectURL(file),
+      status: 'ready'
+    }));
+    
+    this.state.photoDumpImages = [...this.state.photoDumpImages, ...newImages];
+    this.renderPhotoDumpPreview();
+  },
+
+  renderPhotoDumpPreview() {
+    const grid = document.getElementById('photoDumpGrid');
+    const preview = document.getElementById('photoDumpPreview');
+    const count = document.getElementById('photoDumpCount');
+    
+    count.textContent = this.state.photoDumpImages.length;
+    preview.classList.remove('hidden');
+    
+    grid.innerHTML = this.state.photoDumpImages.map((img, idx) => `
+      <div class="uploaded-image-item" data-id="${img.id}">
+        <img src="${img.preview}" alt="Photo ${idx + 1}" />
+        <button class="uploaded-image-remove" onclick="app.removePhotoDumpImage('${img.id}')" aria-label="Remove">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <span class="uploaded-image-index">${idx + 1}</span>
+      </div>
+    `).join('');
+  },
+
+  removePhotoDumpImage(id) {
+    this.state.photoDumpImages = this.state.photoDumpImages.filter(img => img.id !== id);
+    this.renderPhotoDumpPreview();
+    
+    if (this.state.photoDumpImages.length === 0) {
+      document.getElementById('photoDumpPreview').classList.add('hidden');
+    }
+  },
+
+  clearPhotoDump() {
+    this.state.photoDumpImages = [];
+    document.getElementById('photoDumpPreview').classList.add('hidden');
+    document.getElementById('photoDumpGrid').innerHTML = '';
+  },
+
+  async startPhotoDumpAnalysis() {
+    if (this.state.photoDumpImages.length < 3) {
+      this.showToast('Please upload at least 3 photos', 'warning');
+      return;
+    }
+
+    // Show analysis step
+    document.getElementById('photoDumpUploadStep').classList.add('hidden');
+    document.getElementById('photoDumpAnalysisStep').classList.remove('hidden');
+    
+    const statusEl = document.getElementById('photoDumpStatus');
+    const substatusEl = document.getElementById('photoDumpSubstatus');
+    const progressEl = document.getElementById('photoDumpProgress');
+    
+    const messages = [
+      "Scanning all your photos...",
+      "Identifying different items...",
+      "Grouping photos by item...",
+      "Analyzing each item's details...",
+      "Checking market prices...",
+      "Generating listings...",
+      "Almost done..."
+    ];
+    
+    let msgIdx = 0;
+    const msgInterval = setInterval(() => {
+      msgIdx = (msgIdx + 1) % messages.length;
+      if (statusEl) statusEl.textContent = messages[msgIdx];
+    }, 2500);
+
+    try {
+      // Convert all images to base64
+      const base64Images = await Promise.all(
+        this.state.photoDumpImages.map(img => this.fileToBase64(img.file))
+      );
+
+      // Call API to analyze and group
+      const response = await fetch('/api/photo-dump/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.state.token}`
+        },
+        body: JSON.stringify({
+          images: base64Images,
+          platform: this.getPlatform()
+        })
+      });
+
+      clearInterval(msgInterval);
+
+      if (!response.ok) {
+        throw new Error('Analysis failed');
+      }
+
+      const results = await response.json();
+      this.state.photoDumpResults = results;
+      
+      // Show review step
+      document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
+      document.getElementById('photoDumpReviewStep').classList.remove('hidden');
+      
+      this.renderPhotoDumpResults();
+      
+    } catch (error) {
+      clearInterval(msgInterval);
+      console.error('Photo dump analysis error:', error);
+      this.showToast('Analysis failed. Please try again.', 'error');
+      
+      // Go back to upload step
+      document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
+      document.getElementById('photoDumpUploadStep').classList.remove('hidden');
+    }
+  },
+
+  renderPhotoDumpResults() {
+    const container = document.getElementById('photoDumpListings');
+    const results = this.state.photoDumpResults;
+    
+    if (!results || !results.items || results.items.length === 0) {
+      container.innerHTML = '<p>No items detected. Try uploading clearer photos.</p>';
+      return;
+    }
+    
+    container.innerHTML = results.items.map((item, idx) => `
+      <div class="card" style="margin-bottom: 1.5rem; padding: 1.5rem;" id="pd-item-${idx}">
+        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+          <div style="flex-shrink: 0;">
+            <img src="${item.thumbnail}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px;" />
+          </div>
+          <div style="flex: 1;">
+            <h3 style="margin: 0 0 0.5rem 0;">${item.title}</h3>
+            <p style="color: var(--text-muted); margin: 0 0 0.5rem 0;">${item.brand} • ${item.condition}</p>
+            <p style="font-weight: 600; color: var(--accent-indigo); margin: 0;">${item.price}</p>
+          </div>
+        </div>
+        
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+          <p style="margin: 0; font-size: 0.9rem; line-height: 1.5;">${item.description.substring(0, 200)}...</p>
+        </div>
+        
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+          <button class="btn btn-secondary" onclick="app.editPhotoDumpItem(${idx})">Edit</button>
+          <button class="btn btn-primary" onclick="app.savePhotoDumpItem(${idx})">Save</button>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  editPhotoDumpItem(idx) {
+    const item = this.state.photoDumpResults.items[idx];
+    // Populate edit modal with item data
+    // For now, just show a toast
+    this.showToast('Edit feature coming soon', 'info');
+  },
+
+  async savePhotoDumpItem(idx) {
+    const item = this.state.photoDumpResults.items[idx];
+    
+    try {
+      const response = await fetch('/api/listings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.state.token}`
+        },
+        body: JSON.stringify(item)
+      });
+
+      if (response.ok) {
+        this.showToast(`"${item.title}" saved!`, 'success');
+        document.getElementById(`pd-item-${idx}`).style.opacity = '0.5';
+      } else {
+        throw new Error('Save failed');
+      }
+    } catch (error) {
+      this.showToast('Failed to save item', 'error');
+    }
+  },
+
+  async saveAllPhotoDumpListings() {
+    const items = this.state.photoDumpResults?.items || [];
+    if (items.length === 0) return;
+    
+    let saved = 0;
+    for (let i = 0; i < items.length; i++) {
+      try {
+        await this.savePhotoDumpItem(i);
+        saved++;
+      } catch (e) {
+        console.error(`Failed to save item ${i}:`, e);
+      }
+    }
+    
+    this.showToast(`${saved} of ${items.length} items saved!`, 'success');
+    
+    // Navigate to saved items after a delay
+    setTimeout(() => {
+      this.navigateToApp('savedItems');
+    }, 1500);
+  },
+
+  startNewPhotoDump() {
+    this.initPhotoDump();
+  },
+
+  // ==================== END PHOTO DUMP ====================
 };
 
 // Expose app to global scope for inline event handlers
