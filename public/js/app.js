@@ -5964,6 +5964,9 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       this.loadDashboardMetrics();
     } else if (view === 'photoDump') {
       this.initPhotoDump();
+      // Show bottom nav for photo dump
+      const bottomNav = document.getElementById('bottomNav');
+      if (bottomNav) bottomNav.style.display = 'flex';
     } else if (view === 'newItem') {
       // Reset to initial state when entering new item view
       this.showInitialState();
@@ -5984,10 +5987,10 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       if (selectBar) selectBar.classList.add('hidden');
     }
 
-    // Hide bottom nav for photo dump (it has its own nav)
+    // Show bottom nav for all views
     const bottomNav = document.getElementById('bottomNav');
     if (bottomNav) {
-      bottomNav.style.display = view === 'photoDump' ? 'none' : 'flex';
+      bottomNav.style.display = 'flex';
     }
 
     this.highlightBottomTab(view);
@@ -7905,16 +7908,19 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   initPhotoDump() {
     // Reset state
     this.state.photoDumpImages = [];
+    this.state.photoDumpGroups = null;
     this.state.photoDumpResults = null;
     
     // Show upload step, hide others
     document.getElementById('photoDumpUploadStep').classList.remove('hidden');
     document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
+    document.getElementById('photoDumpGroupsStep').classList.add('hidden');
     document.getElementById('photoDumpReviewStep').classList.add('hidden');
     document.getElementById('photoDumpPreview').classList.add('hidden');
     
-    // Clear grid
+    // Clear grids
     document.getElementById('photoDumpGrid').innerHTML = '';
+    document.getElementById('photoDumpGroups').innerHTML = '';
     document.getElementById('photoDumpListings').innerHTML = '';
   },
 
@@ -7981,16 +7987,11 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     document.getElementById('photoDumpAnalysisStep').classList.remove('hidden');
     
     const statusEl = document.getElementById('photoDumpStatus');
-    const substatusEl = document.getElementById('photoDumpSubstatus');
-    const progressEl = document.getElementById('photoDumpProgress');
     
     const messages = [
       "Scanning all your photos...",
       "Identifying different items...",
       "Grouping photos by item...",
-      "Analyzing each item's details...",
-      "Checking market prices...",
-      "Generating listings...",
       "Almost done..."
     ];
     
@@ -7998,7 +7999,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     const msgInterval = setInterval(() => {
       msgIdx = (msgIdx + 1) % messages.length;
       if (statusEl) statusEl.textContent = messages[msgIdx];
-    }, 2500);
+    }, 2000);
 
     try {
       // Convert all images to base64
@@ -8006,38 +8007,37 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         this.state.photoDumpImages.map(img => this.fileToBase64(img.file))
       );
 
-      // Call API to analyze and group
-      const response = await fetch('/api/photo-dump/analyze', {
+      // Step 1: Just group photos (no listing generation yet)
+      const response = await fetch('/api/photo-dump/group', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.state.token}`
         },
         body: JSON.stringify({
-          images: base64Images,
-          platform: this.getPlatform()
+          images: base64Images
         })
       });
 
       clearInterval(msgInterval);
 
       if (!response.ok) {
-        throw new Error('Analysis failed');
+        throw new Error('Grouping failed');
       }
 
       const results = await response.json();
-      this.state.photoDumpResults = results;
+      this.state.photoDumpGroups = results.groups;
       
-      // Show review step
+      // Show groups step (not listings yet)
       document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
-      document.getElementById('photoDumpReviewStep').classList.remove('hidden');
+      document.getElementById('photoDumpGroupsStep').classList.remove('hidden');
       
-      this.renderPhotoDumpResults();
+      this.renderPhotoDumpGroups();
       
     } catch (error) {
       clearInterval(msgInterval);
-      console.error('Photo dump analysis error:', error);
-      this.showToast('Analysis failed. Please try again.', 'error');
+      console.error('Photo dump grouping error:', error);
+      this.showToast('Grouping failed. Please try again.', 'error');
       
       // Go back to upload step
       document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
@@ -8045,12 +8045,108 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     }
   },
 
+  // Render photo groups (thumbnails only, no listings yet)
+  renderPhotoDumpGroups() {
+    const container = document.getElementById('photoDumpGroups');
+    const groups = this.state.photoDumpGroups;
+    
+    if (!groups || groups.length === 0) {
+      container.innerHTML = '<p>No items detected. Try uploading clearer photos.</p>';
+      return;
+    }
+    
+    document.getElementById('photoDumpGroupCount').textContent = groups.length;
+    
+    container.innerHTML = groups.map((group, idx) => `
+      <div class="card" style="margin-bottom: 1.5rem; padding: 1.5rem;" id="pd-group-${idx}">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3 style="margin: 0;">Item ${idx + 1}</h3>
+          <span style="color: var(--text-muted); font-size: 0.875rem;">${group.photoIndices.length} photos</span>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 0.5rem;">
+          ${group.photoIndices.map(photoIdx => `
+            <div style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--bg-secondary);">
+              <img src="${this.state.photoDumpImages[photoIdx]?.preview || ''}" 
+                   style="width: 100%; height: 100%; object-fit: cover;" 
+                   alt="Photo ${photoIdx + 1}" />
+            </div>
+          `).join('')}
+        </div>
+        
+        <p style="color: var(--text-muted); margin: 1rem 0 0 0; font-size: 0.9rem;">
+          ${group.description || 'Item detected from photos'}
+        </p>
+      </div>
+    `).join('');
+  },
+
+  // Go back to upload from groups
+  backToPhotoDumpUpload() {
+    document.getElementById('photoDumpGroupsStep').classList.add('hidden');
+    document.getElementById('photoDumpUploadStep').classList.remove('hidden');
+  },
+
+  // Generate listings from groups (Step 2)
+  async generatePhotoDumpListings() {
+    document.getElementById('photoDumpGroupsStep').classList.add('hidden');
+    document.getElementById('photoDumpAnalysisStep').classList.remove('hidden');
+    
+    const statusEl = document.getElementById('photoDumpStatus');
+    statusEl.textContent = 'Generating listings...';
+    
+    try {
+      // Convert images for each group
+      const groupImages = await Promise.all(
+        this.state.photoDumpGroups.map(async group => {
+          const images = await Promise.all(
+            group.photoIndices.map(idx => this.fileToBase64(this.state.photoDumpImages[idx].file))
+          );
+          return { images };
+        })
+      );
+
+      // Generate listings for all groups
+      const response = await fetch('/api/photo-dump/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.state.token}`
+        },
+        body: JSON.stringify({
+          groups: groupImages,
+          platform: this.getPlatform()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Generation failed');
+      }
+
+      const results = await response.json();
+      this.state.photoDumpResults = results;
+      
+      // Show listings
+      document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
+      document.getElementById('photoDumpReviewStep').classList.remove('hidden');
+      
+      this.renderPhotoDumpResults();
+      
+    } catch (error) {
+      console.error('Photo dump generation error:', error);
+      this.showToast('Generation failed. Please try again.', 'error');
+      document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
+      document.getElementById('photoDumpGroupsStep').classList.remove('hidden');
+    }
+  },
+
+  // Render generated listings
   renderPhotoDumpResults() {
     const container = document.getElementById('photoDumpListings');
     const results = this.state.photoDumpResults;
     
     if (!results || !results.items || results.items.length === 0) {
-      container.innerHTML = '<p>No items detected. Try uploading clearer photos.</p>';
+      container.innerHTML = '<p>No listings generated. Try again.</p>';
       return;
     }
     

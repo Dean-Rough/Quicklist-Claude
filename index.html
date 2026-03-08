@@ -1904,7 +1904,27 @@
           </div>
         </div>
 
-        <!-- Step 3: Review Generated Listings -->
+        <!-- Step 3: Review Photo Groups -->
+        <div id="photoDumpGroupsStep" class="hidden">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="margin: 0;">Found <span id="photoDumpGroupCount">0</span> Items</h2>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary" onclick="app.backToPhotoDumpUpload()">
+                Back
+              </button>
+              <button class="btn btn-primary" onclick="app.generatePhotoDumpListings()">
+                Generate Listings
+              </button>
+            </div>
+          </div>
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+            Review the photo groups below. Each group will become a separate listing.
+          </p>
+          
+          <div id="photoDumpGroups"></div>
+        </div>
+
+        <!-- Step 4: Review Generated Listings -->
         <div id="photoDumpReviewStep" class="hidden">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <h2 style="margin: 0;">Generated Listings</h2>

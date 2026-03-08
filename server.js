@@ -5092,12 +5092,12 @@ async function callGeminiWithPrompt(promptText, imageParts, apiKey = null) {
   }
 }
 
-// Photo Dump Analysis endpoint - analyzes multiple photos and groups them by item
-app.post('/api/photo-dump/analyze', generateLimiter, authenticateToken, async (req, res) => {
+// Photo Dump Grouping endpoint - Step 1: Just group photos by item
+app.post('/api/photo-dump/group', generateLimiter, authenticateToken, async (req, res) => {
   const userId = req.user?.id;
   
   try {
-    const { images, platform = 'ebay' } = req.body;
+    const { images } = req.body;
 
     if (!images || !Array.isArray(images) || images.length < 3) {
       return res.status(400).json({ error: 'At least 3 photos required' });
@@ -5107,20 +5107,19 @@ app.post('/api/photo-dump/analyze', generateLimiter, authenticateToken, async (r
       return res.status(400).json({ error: 'Maximum 30 photos allowed' });
     }
 
-    logger.info('Photo dump analysis started', { userId, imageCount: images.length });
+    logger.info('Photo dump grouping started', { userId, imageCount: images.length });
 
-    // Step 1: Analyze all images to identify unique items
     const groupingPrompt = `You are analyzing a batch of photos to identify how many unique items are present.
 
 **YOUR TASK:**
 Look at ALL the images provided and determine:
 1. How many unique items are shown
-2. Which photos belong to which item (group them)
+2. Which photos belong to which item (group them by index)
 
 **IMPORTANT:**
 - Photos of the same item from different angles should be grouped together
 - Look for visual similarities: same item, same color, same brand, same type
-- If you see 3 different jackets and 2 pairs of shoes, that's 5 unique items
+- Return photo indices (0-based) for each group
 
 **RESPONSE FORMAT (JSON only):**
 {
@@ -5177,19 +5176,55 @@ Return ONLY valid JSON, no other text.`;
       };
     }
 
-    // Step 2: Generate listings for each group
+    logger.info('Photo dump grouping complete', { 
+      userId, 
+      inputCount: images.length,
+      detectedItems: groups.itemCount
+    });
+
+    res.json({
+      success: true,
+      totalPhotos: images.length,
+      detectedItems: groups.itemCount,
+      groups: groups.groups
+    });
+
+  } catch (error) {
+    logger.error('Photo dump grouping failed', { 
+      userId, 
+      error: error.message,
+      stack: error.stack 
+    });
+    
+    res.status(500).json({
+      error: 'Failed to group photos',
+      details: error.message
+    });
+  }
+});
+
+// Photo Dump Generation endpoint - Step 2: Generate listings from groups
+app.post('/api/photo-dump/generate', generateLimiter, authenticateToken, async (req, res) => {
+  const userId = req.user?.id;
+  
+  try {
+    const { groups, platform = 'ebay' } = req.body;
+
+    if (!groups || !Array.isArray(groups) || groups.length === 0) {
+      return res.status(400).json({ error: 'At least one group required' });
+    }
+
+    logger.info('Photo dump generation started', { userId, groupCount: groups.length });
+
+    // Generate listings for each group
     const items = [];
     
-    for (const group of groups.groups.slice(0, 8)) { // Max 8 items
-      const groupImages = group.photoIndices.map(idx => images[idx]).filter(Boolean);
+    for (const group of groups.slice(0, 8)) { // Max 8 items
+      const groupImages = group.images || [];
       
       if (groupImages.length === 0) continue;
 
-      // Generate listing for this group
       const listingPrompt = `You are an expert e-commerce listing specialist. Create a complete listing for this item based on the photos provided.
-
-**CONTEXT:**
-This is item ${group.itemIndex + 1} of ${groups.itemCount} in a photo batch.
 
 **REQUIRED OUTPUT FORMAT (JSON):**
 {
