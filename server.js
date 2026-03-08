@@ -4487,12 +4487,28 @@ Base your entire listing on what you can READ and VERIFY, not what you THINK you
      **---** (separator line)
 
      **Facts**
-     List key product specifications and details:
-     • Size: [UK/US/EUR/CM sizing]
-     • Material: [upper materials, construction details]
-     • Colourway: [specific colour names]
-     • Model Number: [style code if available]
-     • [Any other relevant specifications]
+     List ONLY product specifications you can actually see/verify from the photos:
+     • Size: [ONLY if visible on label/tag - otherwise OMIT this line entirely]
+     • Material: [ONLY if visible on care label - otherwise OMIT this line entirely]  
+     • Colourway: [specific colour names you can see]
+     • Model Number: [ONLY if clearly visible on tag - otherwise OMIT this line entirely]
+     • [Any other relevant specifications you can actually verify]
+     
+     **CRITICAL: DO NOT include lines for information you cannot see**
+     - If size not visible → don't mention size at all
+     - If material not readable → don't mention material
+     - If model code not visible → don't mention model number
+     - If RRP unknown → don't mention retail price
+     
+     **Examples of what NOT to write:**
+     ❌ "Size: Not visible on item"
+     ❌ "Material: Unable to determine from photos"  
+     ❌ "Model Number: Not shown in images"
+     ❌ "RRP: Unknown"
+     
+     **Examples of correct approach:**
+     ✓ Just omit the line entirely if you don't have the info
+     ✓ "Size UK 10 visible on tongue tag" - if you CAN see it
 
      **----** (separator line)
 
@@ -4558,6 +4574,7 @@ Base your entire listing on what you can READ and VERIFY, not what you THINK you
      - Overly technical jargon that doesn't sell
      - Negative framing: "No major flaws" → "Excellent condition"
      - Copy-paste from labels without context
+     - **NEVER write "Not visible", "Unknown", "Unable to determine", "N/A" - just OMIT these fields entirely**
 
    - **rrp**: Original Recommended Retail Price in GBP. Format: "£XX.XX" or "£XXX" or "Unknown"
      **CRITICAL:** You MUST use Google Search grounding to find the EXACT retail price
