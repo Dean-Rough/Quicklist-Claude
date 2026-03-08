@@ -776,8 +776,21 @@ const app = {
     const uploader = document.getElementById('imageUploader');
     const input = document.getElementById('imageInput');
 
-    uploader.addEventListener('click', () => input.click());
-    input.addEventListener('change', (e) => this.handleImageUpload(e));
+    if (!uploader || !input) {
+      console.error('Image uploader elements not found:', { uploader: !!uploader, input: !!input });
+      return;
+    }
+
+    uploader.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      input.click();
+    });
+    
+    input.addEventListener('change', (e) => {
+      console.log('Image input change event:', e.target.files?.length, 'files');
+      this.handleImageUpload(e);
+    });
 
     // Drag and drop
     uploader.addEventListener('dragover', (e) => {
@@ -963,8 +976,20 @@ const app = {
 
   // Handle image upload
   async handleImageUpload(event) {
-    const files = Array.from(event.target.files);
-    await this.processFiles(files);
+    try {
+      const files = Array.from(event.target.files || []);
+      console.log('handleImageUpload called with', files.length, 'files');
+      if (files.length === 0) {
+        console.warn('No files selected');
+        return;
+      }
+      await this.processFiles(files);
+      // Reset input so same file can be selected again
+      event.target.value = '';
+    } catch (error) {
+      console.error('Error in handleImageUpload:', error);
+      this.showToast('Failed to upload images. Please try again.', 'error');
+    }
   },
 
   // Real blur detection using Laplacian variance
@@ -1100,6 +1125,12 @@ const app = {
 
   // Process uploaded files
   async processFiles(files) {
+    console.log('processFiles called with', files?.length, 'files');
+    if (!files || files.length === 0) {
+      console.warn('No files to process');
+      return;
+    }
+    
     const totalFiles = files.length;
     let processedCount = 0;
 
@@ -1191,6 +1222,7 @@ const app = {
   // Render image grid
   renderImageGrid() {
     const grid = document.getElementById('imageGrid');
+    console.log('renderImageGrid called, grid element:', !!grid, 'uploadedImages:', this.state.uploadedImages?.length);
 
     grid.innerHTML = this.state.uploadedImages
       .map(
