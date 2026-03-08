@@ -3841,16 +3841,52 @@ app.post('/api/enhance-image', aiAnalysisLimiter, authenticateToken, async (req,
       return res.status(400).json({ error: 'Invalid image format' });
     }
 
-    // Verify user is on a premium tier (Pro or Unlimited)
-    const tierLevels = { free: 0, pro: 1, unlimited: 2 };
-    const userTier = req.user?.tier || 'free';
-    const userLevel = tierLevels[userTier] || 0;
+    // Check usage limits before generation (skip during prompt evaluation)
+    // Credits are consumed first, then monthly quota falls through
+    let generationSource = 'quota'; // will be 'credits' or 'quota'
+    const userId = req.user?.id;
+    if (process.env.PROMPT_EVAL_MODE !== '1' && pool && userId) {
+      try {
+        // 1. Check non-expired credit balance first
+        const creditBalance = await getCreditBalance(userId);
 
-    // Premium features require Pro or higher
-    if (userLevel < 1) {
-      logger.warn('Non-premium user attempted to use image enhancement', { userId: req.user?.id, tier: userTier });
-      // We'll allow it for now for testing purposes, but in production:
-      // return res.status(403).json({ error: 'Image enhancement requires Pro or Unlimited tier' });
+        if (creditBalance > 0) {
+          // Consume one credit
+          generationSource = 'credits';
+          logger.info('Using credit for hero image generation', { userId, creditBalance });
+        } else {
+          // 2. Fall through to monthly quota
+          const limit = await getPlanLimit(userId);
+          let currentUsage = 0;
+
+          const periodStart = new Date();
+          periodStart.setDate(1);
+          const periodEnd = new Date(periodStart);
+          periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+          const usageResult = await pool.query(
+            `SELECT ai_generations FROM usage_tracking
+             WHERE user_id = $1 AND period_start >= $2 AND period_start < $3
+             ORDER BY period_start DESC LIMIT 1`,
+            [userId, periodStart, periodEnd]
+          );
+          currentUsage = usageResult.rows[0]?.ai_generations || 0;
+
+          if (currentUsage >= limit) {
+            return res.status(403).json({
+              error: 'Plan limit exceeded',
+              limit,
+              currentUsage,
+              creditBalance: 0,
+            });
+          }
+          generationSource = 'quota';
+        }
+      } catch (error) {
+        if (error.code !== '42P01' && error.code !== '42703') {
+          logger.error('Usage check error:', { error: error.message, code: error.code, userId });
+        }
+      }
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -3868,7 +3904,7 @@ app.post('/api/enhance-image', aiAnalysisLimiter, authenticateToken, async (req,
 
     // Construct the prompt for Gemini Flash Image
     let promptText = 'Create a studio quality product photo of the primary object in this image.';
-    promptText += ' Do not alter the object itself, its condition, color, or shape, only replace the background and lighting.';
+    promptText += ' Do not alter the object itself, its condition, color, shapes, text, tags, or any details. Only replace the background and lighting. Keep the object exactly as it appears.';
 
     if (background === 'white') promptText += ' Place it on a pure seamless white background.';
     else if (background === 'gradient') promptText += ' Place it on a soft gradient studio background.';
@@ -3928,32 +3964,34 @@ app.post('/api/enhance-image', aiAnalysisLimiter, authenticateToken, async (req,
       throw new Error('No image returned from Nano Banana 2');
     }
 
-    // Track usage - studio edit counts as 1 credit
-    if (pool) {
+    // Track usage after successful generation
+    if (process.env.PROMPT_EVAL_MODE !== '1' && pool && userId) {
       try {
-        const now = new Date();
-        const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-        
-        await pool.query(
-          `INSERT INTO usage_tracking (user_id, period_start, period_end, listings_created)
-           VALUES ($1, $2, $3, 1)
-           ON CONFLICT (user_id, period_start) 
-           DO UPDATE SET listings_created = usage_tracking.listings_created + 1`,
-          [req.user.id, periodStart, periodEnd]
-        );
-        logger.info('Studio edit usage tracked', { userId: req.user.id });
+        if (generationSource === 'credits') {
+          // Deduct one credit from the wallet
+          await safeQuery(
+            `INSERT INTO user_credits (user_id, amount, reason, expires_at)
+             VALUES ($1, -1, 'generation', NOW() + INTERVAL '12 months')`,
+            [userId]
+          );
+        } else {
+          // Deduct from monthly quota
+          await safeQuery(
+            `INSERT INTO usage_tracking (user_id, period_start, period_end, ai_generations, listings_created)
+             VALUES ($1, DATE_TRUNC('month', CURRENT_DATE), DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month', 1, 0)
+             ON CONFLICT (user_id, period_start)
+             DO UPDATE SET ai_generations = usage_tracking.ai_generations + 1`,
+            [userId]
+          );
+        }
       } catch (usageError) {
-        logger.error('Failed to track studio edit usage:', usageError);
-        // Don't fail the request if usage tracking fails
+        logger.warn('Usage tracking failed for hero image:', { error: usageError.message, userId });
       }
     }
 
     res.json({
-      success: true,
-      enhancedImage: enhancedImageBase64
+      enhancedImage: enhancedImageBase64,
     });
-
   } catch (error) {
     logger.error('Nano Banana 2 Enhancement error:', {
       userId: req.user?.id,
@@ -5075,7 +5113,7 @@ async function callGeminiWithPrompt(promptText, imageParts, apiKey = null) {
     }
 
     const data = await response.json();
-    
+
     if (!data.candidates || data.candidates.length === 0) {
       throw new Error('No response from AI model');
     }
@@ -5095,7 +5133,7 @@ async function callGeminiWithPrompt(promptText, imageParts, apiKey = null) {
 // Photo Dump Grouping endpoint - Step 1: Just group photos by item
 app.post('/api/photo-dump/group', generateLimiter, authenticateToken, async (req, res) => {
   const userId = req.user?.id;
-  
+
   try {
     const { images } = req.body;
 
@@ -5157,7 +5195,7 @@ Return ONLY valid JSON, no other text.`;
 
     // Call AI to group photos
     const groupingResult = await callGeminiWithPrompt(groupingPrompt, imageParts);
-    
+
     let groups;
     try {
       const jsonMatch = groupingResult.match(/\{[\s\S]*\}/);
@@ -5176,8 +5214,8 @@ Return ONLY valid JSON, no other text.`;
       };
     }
 
-    logger.info('Photo dump grouping complete', { 
-      userId, 
+    logger.info('Photo dump grouping complete', {
+      userId,
       inputCount: images.length,
       detectedItems: groups.itemCount
     });
@@ -5190,12 +5228,12 @@ Return ONLY valid JSON, no other text.`;
     });
 
   } catch (error) {
-    logger.error('Photo dump grouping failed', { 
-      userId, 
+    logger.error('Photo dump grouping failed', {
+      userId,
       error: error.message,
-      stack: error.stack 
+      stack: error.stack
     });
-    
+
     res.status(500).json({
       error: 'Failed to group photos',
       details: error.message
@@ -5206,7 +5244,7 @@ Return ONLY valid JSON, no other text.`;
 // Photo Dump Generation endpoint - Step 2: Generate listings from groups
 app.post('/api/photo-dump/generate', generateLimiter, authenticateToken, async (req, res) => {
   const userId = req.user?.id;
-  
+
   try {
     const { groups, platform = 'ebay' } = req.body;
 
@@ -5218,10 +5256,10 @@ app.post('/api/photo-dump/generate', generateLimiter, authenticateToken, async (
 
     // Generate listings for each group
     const items = [];
-    
+
     for (const group of groups.slice(0, 8)) { // Max 8 items
       const groupImages = group.images || [];
-      
+
       if (groupImages.length === 0) continue;
 
       const listingPrompt = `You are an expert e-commerce listing specialist. Create a complete listing for this item based on the photos provided.
@@ -5268,19 +5306,19 @@ Return ONLY valid JSON.`;
           });
         }
       } catch (e) {
-        logger.error('Failed to generate listing for group', { 
-          userId, 
+        logger.error('Failed to generate listing for group', {
+          userId,
           groupIndex: group.itemIndex,
-          error: e.message 
+          error: e.message
         });
       }
     }
 
-    logger.info('Photo dump analysis complete', { 
-      userId, 
+    logger.info('Photo dump analysis complete', {
+      userId,
       inputCount: images.length,
       detectedItems: groups.itemCount,
-      generatedListings: items.length 
+      generatedListings: items.length
     });
 
     res.json({
@@ -5291,12 +5329,12 @@ Return ONLY valid JSON.`;
     });
 
   } catch (error) {
-    logger.error('Photo dump analysis failed', { 
-      userId, 
+    logger.error('Photo dump analysis failed', {
+      userId,
       error: error.message,
-      stack: error.stack 
+      stack: error.stack
     });
-    
+
     res.status(500).json({
       error: 'Failed to analyze photos',
       details: error.message

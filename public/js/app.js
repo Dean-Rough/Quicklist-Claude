@@ -786,7 +786,7 @@ const app = {
       e.stopPropagation();
       input.click();
     });
-    
+
     input.addEventListener('change', (e) => {
       console.log('Image input change event:', e.target.files?.length, 'files');
       this.handleImageUpload(e);
@@ -1130,7 +1130,7 @@ const app = {
       console.warn('No files to process');
       return;
     }
-    
+
     const totalFiles = files.length;
     let processedCount = 0;
 
@@ -1296,17 +1296,19 @@ const app = {
 
     try {
       const base64 = await this.fileToBase64(img.file);
-      
+      const bgStyle = document.getElementById('studioBackground')?.value || 'white';
+      const lightStyle = document.getElementById('studioLighting')?.value || 'soft';
+
       const response = await fetch(`${this.apiUrl}/enhance-image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.state.token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           image: base64,
-          background: 'white',
-          lighting: 'soft'
+          background: bgStyle,
+          lighting: lightStyle
         }),
       });
 
@@ -1322,7 +1324,7 @@ const app = {
         img.url = data.enhancedImage;
         img.studioEnhanced = true;
         img.status = 'ready';
-        
+
         this.showToast('Studio photo created!', 'success');
         this.renderImageGrid();
       } else {
@@ -2883,6 +2885,10 @@ const app = {
 
   // Display listing
   displayListing(listing, pricingIntelligence = null, stockImageData = null) {
+    const rawOutput = document.getElementById('rawOutput');
+    if (rawOutput) {
+      rawOutput.value = JSON.stringify(listing, null, 2);
+    }
     document.getElementById('outputTitle').value = listing.title || '';
     document.getElementById('outputBrand').value = listing.brand || '';
     document.getElementById('outputCategory').value = listing.category || '';
@@ -4129,6 +4135,24 @@ ${this.state.currentListing?.keywords?.join(', ')}
         zip.file('hero.jpg', heroBlob);
       }
 
+      const getStock = document.getElementById('toggleStock')?.checked || false;
+      // Add stock image if enabled and available
+      if (getStock && this.state.currentListing?.stockImageUrl) {
+        btn.innerHTML = '<span class="spinner"></span> Fetching stock image...';
+        try {
+          const res = await fetch(this.state.currentListing.stockImageUrl);
+          if (res.ok) {
+            const stockBlob = await res.blob();
+            let ext = 'jpg';
+            if (this.state.currentListing.stockImageUrl.toLowerCase().split('?')[0].endsWith('.png')) ext = 'png';
+            else if (this.state.currentListing.stockImageUrl.toLowerCase().split('?')[0].endsWith('.webp')) ext = 'webp';
+            zip.file(`stock-image.${ext}`, stockBlob);
+          }
+        } catch (err) {
+          console.error("Failed to fetch stock image for ZIP:", err);
+        }
+      }
+
       // Generate ZIP
       btn.innerHTML = '<span class="spinner"></span> Creating ZIP...';
       const content = await zip.generateAsync({ type: 'blob' });
@@ -4210,6 +4234,22 @@ ${this.state.currentListing?.keywords?.join(', ')}
         const img = this.state.uploadedImages[i];
         const blob = await fetch(img.url).then(r => r.blob());
         zip.file(`image-${i + 1}.jpg`, blob);
+      }
+
+      const getStock = document.getElementById('toggleStock')?.checked || false;
+      if (getStock && this.state.currentListing?.stockImageUrl) {
+        try {
+          const res = await fetch(this.state.currentListing.stockImageUrl);
+          if (res.ok) {
+            const stockBlob = await res.blob();
+            let ext = 'jpg';
+            if (this.state.currentListing.stockImageUrl.toLowerCase().split('?')[0].endsWith('.png')) ext = 'png';
+            else if (this.state.currentListing.stockImageUrl.toLowerCase().split('?')[0].endsWith('.webp')) ext = 'webp';
+            zip.file(`stock-image.${ext}`, stockBlob);
+          }
+        } catch (err) {
+          console.error("Failed to fetch stock image for ZIP:", err);
+        }
       }
 
       const content = await zip.generateAsync({ type: 'blob' });
@@ -5962,23 +6002,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   },
 
   highlightBottomTab(view) {
-    const tabs = document.querySelectorAll('.bottom-nav-tab');
-    tabs.forEach((tab) => {
-      const tabView = tab.getAttribute('data-view');
-      if (tabView === view) {
-        tab.classList.add('active');
-        tab.setAttribute('aria-selected', 'true');
-      } else {
-        tab.classList.remove('active');
-        tab.setAttribute('aria-selected', 'false');
-      }
-    });
-
-    // Show/hide bottom nav based on view
-    const bottomNav = document.getElementById('bottomNav');
-    if (bottomNav) {
-      bottomNav.style.display = 'flex';
-    }
+    // Bottom nav removed
   },
 
   switchAppView(view) {
@@ -5996,9 +6020,6 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       this.loadDashboardMetrics();
     } else if (view === 'photoDump') {
       this.initPhotoDump();
-      // Show bottom nav for photo dump
-      const bottomNav = document.getElementById('bottomNav');
-      if (bottomNav) bottomNav.style.display = 'flex';
     } else if (view === 'newItem') {
       // Reset and open input sheet directly when entering new item view
       this.showInitialState();
@@ -6019,12 +6040,6 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       this.state.selectedListingIds.clear();
       const selectBar = document.getElementById('savedItemsSelectBar');
       if (selectBar) selectBar.classList.add('hidden');
-    }
-
-    // Show bottom nav for all views
-    const bottomNav = document.getElementById('bottomNav');
-    if (bottomNav) {
-      bottomNav.style.display = 'flex';
     }
 
     this.highlightBottomTab(view);
@@ -7152,43 +7167,11 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
   // Initialize bottom navigation
   initBottomNav() {
-    const bottomNavTabs = document.querySelectorAll('.bottom-nav-tab');
-    bottomNavTabs.forEach((tab) => {
-      if (tab.dataset.bound === 'true') return;
-      tab.dataset.bound = 'true';
-      tab.addEventListener('click', (e) => {
-        const view = tab.getAttribute('data-view');
-        this.switchAppView(view);
-      });
-    });
-
-    this.updateBottomNavBadges();
-    this.highlightBottomTab(this.state.currentAppView);
+    // Bottom nav removed
   },
 
   updateBottomNavBadges() {
-    const listingsBadge = document.getElementById('listingsBadge');
-    if (listingsBadge && this.state.savedListings) {
-      const count = this.state.savedListings.length;
-      if (count > 0) {
-        listingsBadge.textContent = count > 99 ? '99+' : count;
-        listingsBadge.style.display = 'flex';
-      } else {
-        listingsBadge.style.display = 'none';
-      }
-    }
-
-    const messagesBadge = document.getElementById('messagesBadge');
-    const messages = this.state.messages || [];
-    if (messagesBadge) {
-      const unread = messages.filter((msg) => msg.unread).length;
-      if (unread > 0) {
-        messagesBadge.textContent = unread > 9 ? '9+' : unread;
-        messagesBadge.style.display = 'flex';
-      } else {
-        messagesBadge.style.display = 'none';
-      }
-    }
+    // Bottom nav removed
   },
 
   cameraStream: null,
@@ -7938,20 +7921,20 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   },
 
   // ==================== PHOTO DUMP FEATURE ====================
-  
+
   initPhotoDump() {
     // Reset state
     this.state.photoDumpImages = [];
     this.state.photoDumpGroups = null;
     this.state.photoDumpResults = null;
-    
+
     // Show upload step, hide others
     document.getElementById('photoDumpUploadStep').classList.remove('hidden');
     document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
     document.getElementById('photoDumpGroupsStep').classList.add('hidden');
     document.getElementById('photoDumpReviewStep').classList.add('hidden');
     document.getElementById('photoDumpPreview').classList.add('hidden');
-    
+
     // Clear grids
     document.getElementById('photoDumpGrid').innerHTML = '';
     document.getElementById('photoDumpGroups').innerHTML = '';
@@ -7960,7 +7943,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
   handlePhotoDumpUpload(files) {
     if (!files || files.length === 0) return;
-    
+
     // Convert FileList to array and add to state
     const newImages = Array.from(files).map((file, idx) => ({
       id: `pd-${Date.now()}-${idx}`,
@@ -7968,7 +7951,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       preview: URL.createObjectURL(file),
       status: 'ready'
     }));
-    
+
     this.state.photoDumpImages = [...this.state.photoDumpImages, ...newImages];
     this.renderPhotoDumpPreview();
   },
@@ -7977,10 +7960,10 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     const grid = document.getElementById('photoDumpGrid');
     const preview = document.getElementById('photoDumpPreview');
     const count = document.getElementById('photoDumpCount');
-    
+
     count.textContent = this.state.photoDumpImages.length;
     preview.classList.remove('hidden');
-    
+
     grid.innerHTML = this.state.photoDumpImages.map((img, idx) => `
       <div class="uploaded-image-item" data-id="${img.id}">
         <img src="${img.preview}" alt="Photo ${idx + 1}" />
@@ -7998,7 +7981,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   removePhotoDumpImage(id) {
     this.state.photoDumpImages = this.state.photoDumpImages.filter(img => img.id !== id);
     this.renderPhotoDumpPreview();
-    
+
     if (this.state.photoDumpImages.length === 0) {
       document.getElementById('photoDumpPreview').classList.add('hidden');
     }
@@ -8019,16 +8002,16 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     // Show analysis step
     document.getElementById('photoDumpUploadStep').classList.add('hidden');
     document.getElementById('photoDumpAnalysisStep').classList.remove('hidden');
-    
+
     const statusEl = document.getElementById('photoDumpStatus');
-    
+
     const messages = [
       "Scanning all your photos...",
       "Identifying different items...",
       "Grouping photos by item...",
       "Almost done..."
     ];
-    
+
     let msgIdx = 0;
     const msgInterval = setInterval(() => {
       msgIdx = (msgIdx + 1) % messages.length;
@@ -8061,18 +8044,18 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
       const results = await response.json();
       this.state.photoDumpGroups = results.groups;
-      
+
       // Show groups step (not listings yet)
       document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
       document.getElementById('photoDumpGroupsStep').classList.remove('hidden');
-      
+
       this.renderPhotoDumpGroups();
-      
+
     } catch (error) {
       clearInterval(msgInterval);
       console.error('Photo dump grouping error:', error);
       this.showToast('Grouping failed. Please try again.', 'error');
-      
+
       // Go back to upload step
       document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
       document.getElementById('photoDumpUploadStep').classList.remove('hidden');
@@ -8083,14 +8066,14 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   renderPhotoDumpGroups() {
     const container = document.getElementById('photoDumpGroups');
     const groups = this.state.photoDumpGroups;
-    
+
     if (!groups || groups.length === 0) {
       container.innerHTML = '<p>No items detected. Try uploading clearer photos.</p>';
       return;
     }
-    
+
     document.getElementById('photoDumpGroupCount').textContent = groups.length;
-    
+
     container.innerHTML = groups.map((group, idx) => `
       <div class="card" style="margin-bottom: 1.5rem; padding: 1.5rem;" id="pd-group-${idx}">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -8125,10 +8108,10 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   async generatePhotoDumpListings() {
     document.getElementById('photoDumpGroupsStep').classList.add('hidden');
     document.getElementById('photoDumpAnalysisStep').classList.remove('hidden');
-    
+
     const statusEl = document.getElementById('photoDumpStatus');
     statusEl.textContent = 'Generating listings...';
-    
+
     try {
       // Convert images for each group
       const groupImages = await Promise.all(
@@ -8159,13 +8142,13 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
       const results = await response.json();
       this.state.photoDumpResults = results;
-      
+
       // Show listings
       document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
       document.getElementById('photoDumpReviewStep').classList.remove('hidden');
-      
+
       this.renderPhotoDumpResults();
-      
+
     } catch (error) {
       console.error('Photo dump generation error:', error);
       this.showToast('Generation failed. Please try again.', 'error');
@@ -8178,12 +8161,12 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   renderPhotoDumpResults() {
     const container = document.getElementById('photoDumpListings');
     const results = this.state.photoDumpResults;
-    
+
     if (!results || !results.items || results.items.length === 0) {
       container.innerHTML = '<p>No listings generated. Try again.</p>';
       return;
     }
-    
+
     container.innerHTML = results.items.map((item, idx) => `
       <div class="card" style="margin-bottom: 1.5rem; padding: 1.5rem;" id="pd-item-${idx}">
         <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
@@ -8218,7 +8201,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
   async savePhotoDumpItem(idx) {
     const item = this.state.photoDumpResults.items[idx];
-    
+
     try {
       const response = await fetch('/api/listings', {
         method: 'POST',
@@ -8243,7 +8226,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   async saveAllPhotoDumpListings() {
     const items = this.state.photoDumpResults?.items || [];
     if (items.length === 0) return;
-    
+
     let saved = 0;
     for (let i = 0; i < items.length; i++) {
       try {
@@ -8253,9 +8236,9 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         console.error(`Failed to save item ${i}:`, e);
       }
     }
-    
+
     this.showToast(`${saved} of ${items.length} items saved!`, 'success');
-    
+
     // Navigate to saved items after a delay
     setTimeout(() => {
       this.navigateToApp('savedItems');
