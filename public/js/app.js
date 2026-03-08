@@ -2514,8 +2514,8 @@ const app = {
       }
     }
 
-    // Tier hierarchy: free < starter < casual < pro < business/max
-    const tierLevels = { free: 0, starter: 1, casual: 2, pro: 3, business: 4, max: 4 };
+    // Simplified tier hierarchy: free < pro < unlimited
+    const tierLevels = { free: 0, pro: 1, unlimited: 2 };
     const userLevel = tierLevels[userTier] || 0;
 
     // Enable/disable options based on tier
@@ -2557,9 +2557,9 @@ const app = {
     const studioLighting = document.getElementById('studioLighting');
     if (!toggle) return;
 
-    const tierLevels = { free: 0, starter: 1, casual: 2, pro: 3, business: 4, max: 4 };
+    const tierLevels = { free: 0, pro: 1, unlimited: 2 };
     const userLevel = tierLevels[userTier] || 0;
-    const requiredLevel = tierLevels['pro'] || 3; // Pro required for enhancement
+    const requiredLevel = 1; // Pro or higher required for enhancement
 
     if (userLevel >= requiredLevel) {
       toggle.disabled = false;
@@ -2567,7 +2567,7 @@ const app = {
         description.textContent =
           'AI-powered image improvements, auto-tagging, OCR, and quality analysis';
       }
-      // Enable studio controls for Pro and Max tiers
+      // Enable studio controls for Pro and Unlimited tiers
       if (studioControls) {
         studioControls.style.display = 'block';
         if (studioBackground) studioBackground.disabled = false;
@@ -2578,9 +2578,9 @@ const app = {
       toggle.checked = false;
       if (description) {
         description.innerHTML =
-          'Upgrade to <strong>Pro</strong> or <strong>Max</strong> for AI image enhancements';
+          'Upgrade to <strong>Pro</strong> or <strong>Unlimited</strong> for AI image enhancements';
       }
-      // Hide studio controls for free/casual tiers
+      // Hide studio controls for free tier
       if (studioControls) {
         studioControls.style.display = 'none';
       }

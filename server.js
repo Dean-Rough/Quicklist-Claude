@@ -420,32 +420,31 @@ app.get('/api/config/auth', (_req, res) => {
 app.get('/api/config/pricing', (_req, res) => {
   res.json({
     tiers: {
-      casual: {
-        priceId: process.env.STRIPE_PRICE_CASUAL || null,
-        name: 'Casual',
-        price: 4.99,
-        listings: 50,
+      free: {
+        priceId: null,
+        name: 'Free',
+        price: 0,
+        listings: 5,
       },
       pro: {
         priceId: process.env.STRIPE_PRICE_PRO || null,
         name: 'Pro',
-        price: 9.99,
-        listings: 200,
+        price: 4.99,
+        listings: 50,
         featured: true,
       },
-      max: {
-        priceId: process.env.STRIPE_PRICE_MAX || null,
-        name: 'Max',
-        price: 19.99,
+      unlimited: {
+        priceId: process.env.STRIPE_PRICE_UNLIMITED || null,
+        name: 'Unlimited',
+        price: 9.99,
         listings: -1, // unlimited
       },
     },
     currency: 'GBP',
     currencySymbol: '£',
     configured: !!(
-      process.env.STRIPE_PRICE_CASUAL &&
       process.env.STRIPE_PRICE_PRO &&
-      process.env.STRIPE_PRICE_MAX
+      process.env.STRIPE_PRICE_UNLIMITED
     ),
   });
 });
@@ -961,9 +960,8 @@ async function getPlanLimit(userId) {
     const planType = result.rows[0]?.plan_type || 'free';
     const planLimits = {
       free: 5,
-      casual: 50,
-      pro: 200,
-      max: 10000,
+      pro: 50,
+      unlimited: 999999, // Effectively unlimited
     };
     return planLimits[planType] || 5;
   } catch (error) {
@@ -1168,7 +1166,7 @@ app.post('/api/stripe/create-checkout-session', authenticateToken, async (req, r
     }
 
     // Validate planType is one of the expected values
-    const validPlanTypes = ['casual', 'pro', 'max'];
+    const validPlanTypes = ['pro', 'unlimited'];
     if (typeof planType !== 'string' || !validPlanTypes.includes(planType)) {
       return res.status(400).json({ error: 'Invalid plan type. Must be one of: casual, pro, max' });
     }
@@ -1455,11 +1453,10 @@ async function handlePaymentFailed(invoice) {
 }
 
 function mapPriceIdToPlanType(priceId) {
-  // Map your Stripe price IDs to plan types
+  // Map your Stripe price IDs to plan types (simplified 3-tier)
   const priceMap = {
-    [process.env.STRIPE_PRICE_CASUAL]: 'casual',
     [process.env.STRIPE_PRICE_PRO]: 'pro',
-    [process.env.STRIPE_PRICE_MAX]: 'max',
+    [process.env.STRIPE_PRICE_UNLIMITED]: 'unlimited',
   };
   return priceMap[priceId] || 'free';
 }
@@ -1486,7 +1483,7 @@ app.post('/api/user/mock-upgrade', authenticateToken, async (req, res) => {
   }
 
   const { planType } = req.body;
-  const validPlanTypes = ['free', 'casual', 'pro', 'max'];
+  const validPlanTypes = ['free', 'pro', 'unlimited'];
 
   if (!validPlanTypes.includes(planType)) {
     return res.status(400).json({ error: 'Invalid plan type' });
@@ -1580,16 +1577,16 @@ app.get('/api/subscription/status', authenticateToken, async (req, res) => {
 
     const listingsCreated = usageResult.rows.length > 0 ? usageResult.rows[0].listings_created : 0;
 
-    // Get plan limits
+    // Get plan limits (simplified 3-tier model)
     const planLimits = {
       free: 5,
-      casual: 50,
-      pro: 200,
-      max: 10000,
+      pro: 50,
+      unlimited: 999999, // Effectively unlimited
     };
 
     const planType = subscription.plan_type || 'free';
     const limit = planLimits[planType] || 5;
+    const isUnlimited = planType === 'unlimited';
 
     res.json({
       user: {
@@ -3844,16 +3841,16 @@ app.post('/api/enhance-image', aiAnalysisLimiter, authenticateToken, async (req,
       return res.status(400).json({ error: 'Invalid image format' });
     }
 
-    // Verify user is on a premium tier (Pro or Max)
-    const tierLevels = { free: 0, starter: 1, casual: 2, pro: 3, business: 4, max: 4 };
+    // Verify user is on a premium tier (Pro or Unlimited)
+    const tierLevels = { free: 0, pro: 1, unlimited: 2 };
     const userTier = req.user?.tier || 'free';
     const userLevel = tierLevels[userTier] || 0;
 
-    // Default to success if tier check fails (for testing), but ideally block it
-    if (userLevel < 3) {
+    // Premium features require Pro or higher
+    if (userLevel < 1) {
       logger.warn('Non-premium user attempted to use image enhancement', { userId: req.user?.id, tier: userTier });
       // We'll allow it for now for testing purposes, but in production:
-      // return res.status(403).json({ error: 'Image enhancement requires Pro or Max tier' });
+      // return res.status(403).json({ error: 'Image enhancement requires Pro or Unlimited tier' });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -3961,7 +3958,7 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
 
     const { images, platform, hint, itemModel, conditionInfo, personality } = req.body;
 
-    // Validate and enforce personality tier restrictions
+    // Validate and enforce personality tier restrictions (simplified 3-tier)
     const PERSONALITY_TIERS = {
       standard: 'free',
       expert: 'free',
@@ -3970,7 +3967,7 @@ app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) =
       streetwear: 'pro',
       delboy: 'pro',
     };
-    const TIER_LEVELS = { free: 0, starter: 1, casual: 2, pro: 3, business: 4, max: 4 };
+    const TIER_LEVELS = { free: 0, pro: 1, unlimited: 2 };
 
     let validatedPersonality = 'standard'; // Default
 

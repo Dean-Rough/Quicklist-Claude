@@ -123,7 +123,7 @@
             "name": "Is QuickList AI free?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes, QuickList AI has a free tier that gives you 5 listings per month with no credit card required. You can upgrade to Casual (£4.99/month), Pro (£9.99/month), or Max (£19.99/month) for more listings and premium features like image enhancement, real-time market data, and direct eBay posting."
+              "text": "Yes, QuickList AI has a free tier that gives you 5 listings per month with no credit card required. You can upgrade to Pro (£4.99/month) for 50 listings, or Unlimited (£9.99/month) for unlimited listings. Both paid plans include premium features like image enhancement, real-time market data, and direct eBay posting."
             }
           },
           {
@@ -941,66 +941,48 @@
       <section class="section">
         <div class="container">
           <h1 class="section-title">Simple, Transparent Pricing</h1>
-          <div class="pricing-grid">
+          <div class="pricing-grid" style="max-width: 900px; margin: 0 auto;">
             <div class="pricing-card">
-              <div class="pricing-tier">Starter</div>
-              <div class="pricing-price">Free</div>
+              <div class="pricing-tier">Free</div>
+              <div class="pricing-price">£0</div>
               <div class="pricing-period">Forever</div>
               <ul class="pricing-features">
-                <li>5 listings per month</li>
+                <li><strong>5 listings/month</strong></li>
                 <li>AI descriptions</li>
-                <li>Basic price suggestions</li>
-                <li>Standard image tools</li>
+                <li>All platforms (Vinted, eBay, Gumtree)</li>
+                <li>Photo Dump (up to 5 items)</li>
               </ul>
               <button class="btn btn-secondary" onclick="app.showAuthModal()" aria-label="Get started with QuickList">
                 Get Started
               </button>
             </div>
-            <div class="pricing-card">
-              <div class="pricing-tier">Casual</div>
+            <div class="pricing-card featured">
+              <div class="pricing-tier">Pro</div>
               <div class="pricing-price">£4.99</div>
               <div class="pricing-period">per month</div>
               <ul class="pricing-features">
-                <li>50 listings per month</li>
-                <li>Advanced AI descriptions</li>
-                <li>Market data pricing</li>
+                <li><strong>50 listings/month</strong></li>
+                <li>Everything in Free</li>
                 <li>Image enhancement</li>
-                <li>Keywords & hashtags</li>
-              </ul>
-              <button class="btn btn-secondary" onclick="app.handlePlanSelection('casual', 'price_casual')">
-                Choose Casual
-              </button>
-            </div>
-            <div class="pricing-card featured">
-              <div class="pricing-tier">Pro</div>
-              <div class="pricing-price">£9.99</div>
-              <div class="pricing-period">per month</div>
-              <ul class="pricing-features">
-                <li>200 listings per month</li>
-                <li>Premium AI descriptions</li>
-                <li>Real-time market data</li>
-                <li>Hero image generation</li>
+                <li>Real-time market pricing</li>
                 <li>Blur detection & fixing</li>
-                <li>Batch processing</li>
               </ul>
               <button class="btn btn-primary" onclick="app.handlePlanSelection('pro', 'price_pro')">
                 Choose Pro
               </button>
             </div>
             <div class="pricing-card">
-              <div class="pricing-tier">Max</div>
-              <div class="pricing-price">£19.99</div>
+              <div class="pricing-tier">Unlimited</div>
+              <div class="pricing-price">£9.99</div>
               <div class="pricing-period">per month</div>
               <ul class="pricing-features">
-                <li>Unlimited listings</li>
+                <li><strong>Unlimited listings</strong></li>
                 <li>Everything in Pro</li>
                 <li>Priority processing</li>
-                <li>API access</li>
-                <li>Custom integrations</li>
-                <li>Priority support</li>
+                <li>Early access to new features</li>
               </ul>
-              <button class="btn btn-secondary" onclick="app.handlePlanSelection('max', 'price_max')">
-                Choose Max
+              <button class="btn btn-secondary" onclick="app.handlePlanSelection('unlimited', 'price_unlimited')">
+                Choose Unlimited
               </button>
             </div>
           </div>
@@ -2132,7 +2114,7 @@
             </div>
             <p id="referMilestoneNote"
               style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; display: none">
-              You've earned a free month of Starter! Keep referring to stack more credits.
+              You've earned a free month of Pro! Keep referring to stack more credits.
             </p>
           </div>
 
