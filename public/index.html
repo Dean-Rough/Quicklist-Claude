@@ -50,6 +50,7 @@
 
   <!-- Additional SEO -->
   <meta name="theme-color" content="#EAC119" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="QuickList" />
@@ -123,7 +124,7 @@
             "name": "Is QuickList AI free?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes, QuickList AI has a free tier that gives you 5 listings per month with no credit card required. You can upgrade to Casual (£4.99/month), Pro (£9.99/month), or Max (£19.99/month) for more listings and premium features like image enhancement, real-time market data, and direct eBay posting."
+              "text": "Yes, QuickList AI has a free tier that gives you 5 listings per month with no credit card required. You can upgrade to Pro (£4.99/month) for 50 listings, or Unlimited (£9.99/month) for unlimited listings. Both paid plans include premium features like image enhancement, real-time market data, and direct eBay posting."
             }
           },
           {
@@ -302,6 +303,15 @@
     })();
   </script>
 
+  <!-- Preconnect to external origins for faster resource loading -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin />
+  <link rel="preconnect" href="https://res.cloudinary.com" />
+  <link rel="preconnect" href="https://api.cloudinary.com" />
+  <link rel="preconnect" href="https://api.clerk.com" />
+  <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+  <link rel="dns-prefetch" href="https://accounts.clerk.dev" />
+
   <link rel="preload" href="/fonts/Maison-Regular-subset.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/Maison-Bold-subset.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/MaisonMono-Regular-subset.woff2" as="font" type="font/woff2" crossorigin />
@@ -449,7 +459,7 @@
   <div id="navOverlay" class="nav-overlay"></div>
   <nav id="slideNav" class="slide-nav">
     <div class="slide-nav-header">
-      <div class="logo" onclick="app.navigateToApp('newItem'); app.closeSlideNav()" style="cursor: pointer">
+      <div class="logo" onclick="app.navigateToApp('dashboard'); app.closeSlideNav()" style="cursor: pointer">
         <img src="/brand/QL4-Static.svg" alt="QuickList AI" width="120" height="27" decoding="async" />
       </div>
       <button class="slide-nav-close" onclick="app.closeSlideNav()" aria-label="Close navigation">
@@ -462,6 +472,18 @@
     </div>
 
     <div class="slide-nav-links">
+      <a class="slide-nav-link" onclick="app.navigateToApp('dashboard'); app.closeSlideNav()">
+        <span class="slide-nav-link-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+          </svg>
+        </span>
+        <span class="slide-nav-link-text">Dashboard</span>
+      </a>
       <a class="slide-nav-link" onclick="app.navigateToApp('newItem'); app.closeSlideNav()">
         <span class="slide-nav-link-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -479,18 +501,6 @@
           </svg>
         </span>
         <span class="slide-nav-link-text">Saved Items</span>
-      </a>
-      <a class="slide-nav-link" onclick="app.navigateToApp('dashboard'); app.closeSlideNav()">
-        <span class="slide-nav-link-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7" />
-            <rect x="14" y="3" width="7" height="7" />
-            <rect x="14" y="14" width="7" height="7" />
-            <rect x="3" y="14" width="7" height="7" />
-          </svg>
-        </span>
-        <span class="slide-nav-link-text">Dashboard</span>
       </a>
       <a class="slide-nav-link" onclick="app.navigateToApp('settings'); app.closeSlideNav()">
         <span class="slide-nav-link-icon">
@@ -600,7 +610,12 @@
               <div id="step1-animation" class="step-image" style="height: 260px; width: 100%; margin-bottom: 1.5rem;"
                 aria-label="Illustration of scanning and photographing items">
                 <div class="animation-fallback">
-                  <span class="animation-fallback-emoji" aria-hidden="true">📸</span>
+                  <span class="animation-fallback-emoji" aria-hidden="true"><svg width="48" height="48"
+                      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <path d="M21 15l-5-5L5 21" />
+                    </svg></span>
                   <span>Photo scan</span>
                 </div>
               </div>
@@ -620,7 +635,10 @@
               <div id="step2-animation" class="step-image" style="height: 260px; width: 100%; margin-bottom: 1.5rem;"
                 aria-label="Illustration of AI processing in real-time">
                 <div class="animation-fallback">
-                  <span class="animation-fallback-emoji" aria-hidden="true">✨</span>
+                  <span class="animation-fallback-emoji" aria-hidden="true"><svg width="48" height="48"
+                      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M12 2l2 7h7l-5.5 4 2 7-5.5-4-5.5 4 2-7L3 9h7z" />
+                    </svg></span>
                   <span>AI analysis</span>
                 </div>
               </div>
@@ -941,66 +959,48 @@
       <section class="section">
         <div class="container">
           <h1 class="section-title">Simple, Transparent Pricing</h1>
-          <div class="pricing-grid">
+          <div class="pricing-grid" style="max-width: 900px; margin: 0 auto;">
             <div class="pricing-card">
-              <div class="pricing-tier">Starter</div>
-              <div class="pricing-price">Free</div>
+              <div class="pricing-tier">Free</div>
+              <div class="pricing-price">£0</div>
               <div class="pricing-period">Forever</div>
               <ul class="pricing-features">
-                <li>5 listings per month</li>
+                <li><strong>5 listings/month</strong></li>
                 <li>AI descriptions</li>
-                <li>Basic price suggestions</li>
-                <li>Standard image tools</li>
+                <li>All platforms (Vinted, eBay, Gumtree)</li>
+                <li>Photo Dump (up to 5 items)</li>
               </ul>
               <button class="btn btn-secondary" onclick="app.showAuthModal()" aria-label="Get started with QuickList">
                 Get Started
               </button>
             </div>
-            <div class="pricing-card">
-              <div class="pricing-tier">Casual</div>
+            <div class="pricing-card featured">
+              <div class="pricing-tier">Pro</div>
               <div class="pricing-price">£4.99</div>
               <div class="pricing-period">per month</div>
               <ul class="pricing-features">
-                <li>50 listings per month</li>
-                <li>Advanced AI descriptions</li>
-                <li>Market data pricing</li>
+                <li><strong>50 listings/month</strong></li>
+                <li>Everything in Free</li>
                 <li>Image enhancement</li>
-                <li>Keywords & hashtags</li>
-              </ul>
-              <button class="btn btn-secondary" onclick="app.handlePlanSelection('casual', 'price_casual')">
-                Choose Casual
-              </button>
-            </div>
-            <div class="pricing-card featured">
-              <div class="pricing-tier">Pro</div>
-              <div class="pricing-price">£9.99</div>
-              <div class="pricing-period">per month</div>
-              <ul class="pricing-features">
-                <li>200 listings per month</li>
-                <li>Premium AI descriptions</li>
-                <li>Real-time market data</li>
-                <li>Hero image generation</li>
+                <li>Real-time market pricing</li>
                 <li>Blur detection & fixing</li>
-                <li>Batch processing</li>
               </ul>
               <button class="btn btn-primary" onclick="app.handlePlanSelection('pro', 'price_pro')">
                 Choose Pro
               </button>
             </div>
             <div class="pricing-card">
-              <div class="pricing-tier">Max</div>
-              <div class="pricing-price">£19.99</div>
+              <div class="pricing-tier">Unlimited</div>
+              <div class="pricing-price">£9.99</div>
               <div class="pricing-period">per month</div>
               <ul class="pricing-features">
-                <li>Unlimited listings</li>
+                <li><strong>Unlimited listings</strong></li>
                 <li>Everything in Pro</li>
                 <li>Priority processing</li>
-                <li>API access</li>
-                <li>Custom integrations</li>
-                <li>Priority support</li>
+                <li>Early access to new features</li>
               </ul>
-              <button class="btn btn-secondary" onclick="app.handlePlanSelection('max', 'price_max')">
-                Choose Max
+              <button class="btn btn-secondary" onclick="app.handlePlanSelection('unlimited', 'price_unlimited')">
+                Choose Unlimited
               </button>
             </div>
           </div>
@@ -1011,8 +1011,90 @@
 
   <!-- App Views -->
   <main id="appView" class="hidden">
+
+    <!-- Dashboard View (Authenticated Landing) -->
+    <div id="dashboardView">
+      <div class="container section" style="padding-top: 2rem;">
+        <h1 class="section-title" style="margin-bottom: 2rem; text-align: center;">Welcome back, <span
+            id="dashboardUserName" style="color: var(--accent-indigo);">there</span>!</h1>
+
+        <div class="dashboard-grid">
+          <!-- New Item Button -->
+          <button class="dashboard-action-btn card" onclick="app.navigateToApp('newItem')">
+            <div class="dashboard-icon-wrapper" style="background: var(--accent-indigo, #6366f1); color: white;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </div>
+            <h2>New Item</h2>
+            <p>Scan barcodes or snap photos to generate a listing.</p>
+          </button>
+
+          <!-- Photo Dump Button -->
+          <button class="dashboard-action-btn card" onclick="app.navigateToApp('photoDump')">
+            <div class="dashboard-icon-wrapper" style="background: var(--accent-purple, #A855F7); color: white;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </div>
+            <h2>Photo Dump</h2>
+            <p>Upload multiple items at once and let AI organize them.</p>
+          </button>
+
+          <!-- Saved Items Button -->
+          <button class="dashboard-action-btn card" onclick="app.navigateToApp('savedItems')">
+            <div class="dashboard-icon-wrapper" style="background: var(--cl-primary, #FF7A5C); color: white;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <h2>Saved Items</h2>
+            <p>View and manage your previous listing generations.</p>
+          </button>
+
+          <!-- Settings Button -->
+          <button class="dashboard-action-btn card" onclick="app.navigateToApp('settings')">
+            <div class="dashboard-icon-wrapper"
+              style="background: var(--bg-tertiary, #f3f4f6); color: var(--text-primary, #111827);">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                </path>
+              </svg>
+            </div>
+            <h2>Settings</h2>
+            <p>Manage your account, API keys, and app preferences.</p>
+          </button>
+
+          <!-- Help Button -->
+          <button class="dashboard-action-btn card" onclick="window.location.href='mailto:support@quicklist.it.com'">
+            <div class="dashboard-icon-wrapper" style="background: #10B981; color: white;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </div>
+            <h2 style="margin: 1rem 0 0.5rem; font-size: 1.5rem;">Help & Support</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Get assistance with quicklist or report an issue.
+            </p>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- New Item View -->
-    <div id="newItemView">
+    <div id="newItemView" class="hidden">
 
       <!-- Sheet backdrop -->
       <div id="sheetBackdrop" onclick="app.closeInputSheet(true)"></div>
@@ -1055,13 +1137,12 @@
 
 
 
-                <!-- Studio Photo Controls (Pro & Max only) -->
-                <div class="form-group" id="studioControls" style="margin-top: 1rem; display: none;">
-                  <label class="form-label">
+                <!-- Studio Photo Controls -->
+                <div class="form-group" id="studioControls" style="margin-top: 1rem;">
+                  <label class="form-label" for="studioBackground">
                     Studio Photo Background
-                    <small style="color: var(--text-muted)">(Pro & Max only)</small>
                   </label>
-                  <select class="form-input" id="studioBackground" disabled>
+                  <select class="form-input" id="studioBackground">
                     <option value="neutral">Neutral Gray</option>
                     <option value="white">Pure White</option>
                     <option value="gradient">Gradient Fade</option>
@@ -1077,10 +1158,10 @@
                     Choose background style for hero image generation
                   </small>
 
-                  <label class="form-label" style="margin-top: 1rem;">
+                  <label class="form-label" for="studioLighting" style="margin-top: 1rem;">
                     Lighting Style
                   </label>
-                  <select class="form-input" id="studioLighting" disabled>
+                  <select class="form-input" id="studioLighting">
                     <option value="soft">Soft Shadow</option>
                     <option value="dramatic">Dramatic Shadow</option>
                     <option value="none">No Shadow</option>
@@ -1764,6 +1845,124 @@
       </div>
     </div>
 
+    <!-- Photo Dump View -->
+    <div id="photoDumpView" class="hidden">
+      <div class="container section" style="padding-top: 1rem;">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+          <button class="btn btn-secondary" onclick="app.navigateToApp('dashboard')" style="padding: 0.5rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </button>
+          <h1 class="section-title" style="margin: 0;">Photo Dump</h1>
+        </div>
+
+        <!-- Wizard Progress Indicator -->
+        <!-- Step 1: Upload Photos -->
+        <div id="photoDumpUploadStep">
+          <div class="card" style="padding: 2rem; text-align: center;">
+            <div class="image-uploader" id="photoDumpUploader" style="min-height: 300px;">
+              <div class="image-uploader-icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+              </div>
+              <h3 style="margin: 1rem 0;">Dump all your photos here</h3>
+              <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+                Upload photos of <strong>multiple items</strong> at once.<br>
+                The AI will automatically group them into separate listings.
+              </p>
+              <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">
+                Tip: Take 3-5 photos of each item from different angles
+              </p>
+              <button class="btn btn-primary btn-lg" onclick="document.getElementById('photoDumpInput').click()">
+                Select Photos
+              </button>
+            </div>
+            <input type="file" id="photoDumpInput" accept="image/*" multiple style="display: none"
+              onchange="app.handlePhotoDumpUpload(this.files)" />
+          </div>
+
+          <!-- Selected Photos Preview -->
+          <div id="photoDumpPreview" class="hidden" style="margin-top: 1.5rem;">
+            <div class="card" style="padding: 1.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin: 0;"><span id="photoDumpCount">0</span> photos selected</h3>
+                <button class="btn btn-secondary" onclick="app.clearPhotoDump()">Clear All</button>
+              </div>
+              <div id="photoDumpGrid" class="uploaded-images-grid"></div>
+
+              <div style="margin-top: 1.5rem; text-align: center;">
+                <button class="btn btn-primary btn-lg" onclick="app.startPhotoDumpAnalysis()" id="photoDumpAnalyzeBtn">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="display: inline-block; vertical-align: middle; margin-right: 0.5rem;">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  Analyze & Group Items
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Analysis Progress -->
+        <div id="photoDumpAnalysisStep" class="hidden">
+          <div class="card" style="padding: 2rem; text-align: center;">
+            <div class="comedy-loading">
+              <div class="comedy-loading-text" id="photoDumpStatus">Analyzing your photos...</div>
+              <div class="comedy-progress-bar">
+                <div class="comedy-progress-bar-fill" id="photoDumpProgress"></div>
+              </div>
+              <p style="color: var(--text-muted); margin-top: 1rem;" id="photoDumpSubstatus">
+                Identifying items and grouping photos...
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Review Photo Groups -->
+        <div id="photoDumpGroupsStep" class="hidden">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="margin: 0;">Found <span id="photoDumpGroupCount">0</span> Items</h2>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary" onclick="app.backToPhotoDumpUpload()">
+                Back
+              </button>
+              <button class="btn btn-primary" onclick="app.generatePhotoDumpListings()">
+                Generate Listings
+              </button>
+            </div>
+          </div>
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+            Review the photo groups below. Each group will become a separate listing.
+          </p>
+
+          <div id="photoDumpGroups"></div>
+        </div>
+
+        <!-- Step 4: Review Generated Listings -->
+        <div id="photoDumpReviewStep" class="hidden">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="margin: 0;">Generated Listings</h2>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary" onclick="app.saveAllPhotoDumpListings()">
+                Save All
+              </button>
+              <button class="btn btn-primary" onclick="app.startNewPhotoDump()">
+                New Dump
+              </button>
+            </div>
+          </div>
+
+          <div id="photoDumpListings"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Saved Items View -->
     <div id="savedItemsView" class="hidden" style="padding: 0 1rem;">
       <div class="container section">
@@ -1955,7 +2154,7 @@
             </div>
             <p id="referMilestoneNote"
               style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; display: none">
-              You've earned a free month of Starter! Keep referring to stack more credits.
+              You've earned a free month of Pro! Keep referring to stack more credits.
             </p>
           </div>
 
@@ -2176,6 +2375,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Bottom Navigation -->
+
   </main>
 
   <!-- Footer -->
@@ -2459,9 +2661,7 @@
 
       // Auto-dismiss after 10 seconds
       setTimeout(() => {
-        if (errorDiv.parentNode) {
-          errorDiv.remove();
-        }
+        if (errorDiv.parentNode) errorDiv.remove();
       }, 10000);
     }
 
@@ -2976,6 +3176,7 @@
     </div>
   </div>
 
+  <!-- Item Selection Modal (Multi-item detection) -->
   <!-- Upsell Sticky Footer (Free Users) -->
   <div id="upsellFooter" class="upsell-footer hidden">
     <div class="upsell-content">
@@ -3164,6 +3365,87 @@
     @media (max-width: 480px) {
       body.has-upsell-footer {
         padding-bottom: 120px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #appView {
+        padding-bottom: 70px;
+      }
+    }
+
+    /* Dashboard Grid - 4 Large Buttons */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 480px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+    }
+
+    .dashboard-action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 2rem 1.5rem;
+      border: none;
+      background: var(--card-bg);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .dashboard-action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .dashboard-action-btn:active {
+      transform: scale(0.98);
+    }
+
+    .dashboard-icon-wrapper {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.5rem;
+    }
+
+    @media (max-width: 480px) {
+      .dashboard-action-btn {
+        padding: 1.5rem 1rem;
+        flex-direction: row;
+        text-align: left;
+        gap: 1rem;
+      }
+
+      .dashboard-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        margin-bottom: 0;
+        flex-shrink: 0;
+      }
+
+      .dashboard-action-btn h2 {
+        margin: 0 0 0.25rem 0 !important;
+        font-size: 1.25rem !important;
+      }
+
+      .dashboard-action-btn p {
+        font-size: 0.875rem !important;
       }
     }
   </style>
