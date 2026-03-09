@@ -1137,7 +1137,62 @@
         </div>
 
         <!-- Step containers (shown/hidden by JS) -->
-        <div id="wizardStep-upload"><!-- Step 1: populated in Task 3 --></div>
+        <div id="wizardStep-upload">
+          <!-- Drag/drop upload area -->
+          <div class="wizard-upload-area" id="wizardUploadArea"
+            ondragover="event.preventDefault(); this.classList.add('drag-over')"
+            ondragleave="this.classList.remove('drag-over')"
+            ondrop="event.preventDefault(); this.classList.remove('drag-over'); app.handleWizardUpload(event.dataTransfer.files)">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-indigo);">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <p style="margin: 1rem 0 0.5rem; font-weight: 600; font-size: 1.1rem;">Drop photos here</p>
+            <p style="color: var(--text-muted); margin: 0 0 1rem;">or tap to select from your device</p>
+            <button class="btn btn-primary" onclick="document.getElementById('wizardFileInput').click()" style="padding: 0.6rem 1.5rem;">
+              Select Photos
+            </button>
+            <input type="file" id="wizardFileInput" accept="image/*" multiple
+              style="display: none;" onchange="app.handleWizardUpload(this.files)">
+          </div>
+
+          <!-- Uploaded images grid -->
+          <div id="wizardImageGrid" class="wizard-upload-grid" style="display: none;"></div>
+
+          <!-- Optional inputs -->
+          <div class="wizard-options" style="margin-top: 1.5rem;">
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label class="form-label" for="wizardHint">Item hint (optional)</label>
+              <input type="text" id="wizardHint" class="form-input" placeholder="e.g. Nike Air Max 90, size 10"
+                oninput="app.state.wizard.hint = this.value">
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label class="form-label" for="wizardCondition">Condition (optional)</label>
+              <input type="text" id="wizardCondition" class="form-input" placeholder="e.g. worn twice, like new"
+                oninput="app.state.wizard.condition = this.value">
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label class="form-label" for="wizardPlatform">Platform</label>
+              <select id="wizardPlatform" class="form-input" onchange="app.state.wizard.platform = this.value">
+                <option value="vinted">Vinted</option>
+                <option value="ebay">eBay</option>
+                <option value="gumtree">Gumtree</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Analyze button -->
+          <button id="wizardAnalyzeBtn" class="btn btn-primary" onclick="app.startWizardAnalysis()"
+            disabled style="width: 100%; padding: 1rem; font-size: 1.1rem; margin-top: 1rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              style="vertical-align: middle; margin-right: 8px;">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            Analyze Photos
+          </button>
+        </div>
         <div id="wizardStep-analyze" class="hidden"><!-- Step 2: populated in Task 4 --></div>
         <div id="wizardStep-select" class="hidden"><!-- Step 2b: populated in Task 5 --></div>
         <div id="wizardStep-review" class="hidden"><!-- Step 3: populated in Task 6 --></div>

@@ -247,6 +247,78 @@ const app = {
     });
   },
 
+  async handleWizardUpload(files) {
+    if (!files || files.length === 0) return;
+
+    this.showToast(`Compressing ${files.length} image${files.length !== 1 ? 's' : ''}...`, 'info');
+
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) continue;
+
+      try {
+        const compressed = await this.compressImage(file, 1920, 0.85);
+        const compressedFile = compressed instanceof Blob && compressed !== file
+          ? new File([compressed], file.name, { type: 'image/jpeg' })
+          : file;
+
+        const id = Date.now() + Math.random();
+        const preview = URL.createObjectURL(compressedFile);
+
+        this.state.wizard.uploadedImages.push({ id, file: compressedFile, preview });
+      } catch (error) {
+        console.error('Failed to compress image:', error);
+      }
+    }
+
+    this.renderWizardImageGrid();
+    this.updateWizardAnalyzeButton();
+
+    // Clear file input so same files can be re-selected
+    const input = document.getElementById('wizardFileInput');
+    if (input) input.value = '';
+  },
+
+  renderWizardImageGrid() {
+    const grid = document.getElementById('wizardImageGrid');
+    const images = this.state.wizard.uploadedImages;
+
+    if (images.length === 0) {
+      grid.style.display = 'none';
+      return;
+    }
+
+    grid.style.display = 'grid';
+    grid.innerHTML = images.map((img, idx) => `
+      <div class="wizard-upload-thumb">
+        <img src="${img.preview}" alt="Photo ${idx + 1}" loading="lazy">
+        <div class="thumb-index">${idx + 1}</div>
+        <button class="thumb-remove" onclick="app.removeWizardImage('${img.id}')" title="Remove">×</button>
+      </div>
+    `).join('');
+  },
+
+  removeWizardImage(id) {
+    const numId = parseFloat(id);
+    const idx = this.state.wizard.uploadedImages.findIndex(img => img.id === numId);
+    if (idx !== -1) {
+      URL.revokeObjectURL(this.state.wizard.uploadedImages[idx].preview);
+      this.state.wizard.uploadedImages.splice(idx, 1);
+    }
+    this.renderWizardImageGrid();
+    this.updateWizardAnalyzeButton();
+  },
+
+  updateWizardAnalyzeButton() {
+    const btn = document.getElementById('wizardAnalyzeBtn');
+    if (btn) {
+      const count = this.state.wizard.uploadedImages.length;
+      btn.disabled = count === 0;
+      btn.querySelector('svg').nextSibling.textContent = count > 0
+        ? ` Analyze ${count} Photo${count !== 1 ? 's' : ''}`
+        : ' Analyze Photos';
+    }
+  },
+
   scheduleMarketingAnimations() {
     if (!this.shouldLoadRichAnimations()) {
       return;
