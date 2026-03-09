@@ -2088,6 +2088,17 @@
         return configPromise;
       };
 
+      const getFrontendApiUrl = (publishableKey) => {
+        // publishableKey format: pk_test_{base64(frontendApiUrl)}$ or pk_live_{base64(frontendApiUrl)}$
+        const keyWithoutPrefix = publishableKey.replace(/^pk_(test|live)_/, '');
+        const keyWithoutSuffix = keyWithoutPrefix.replace(/\$$/, '');
+        try {
+          return atob(keyWithoutSuffix);
+        } catch {
+          return null;
+        }
+      };
+
       const loadClerkScript = (publishableKey) => {
         if (window.Clerk) {
           return Promise.resolve(window.Clerk);
@@ -2098,7 +2109,13 @@
 
         window.__clerkScriptPromise = new Promise((resolve, reject) => {
           const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
+
+          // Prefer Clerk's own CDN — it serves UI component chunks correctly
+          const frontendApi = getFrontendApiUrl(publishableKey);
+          script.src = frontendApi
+            ? `https://${frontendApi}/npm/@clerk/clerk-js@latest/dist/clerk.browser.js`
+            : 'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
+
           script.crossOrigin = 'anonymous';
           script.async = true;
           script.setAttribute('data-clerk-publishable-key', publishableKey);
