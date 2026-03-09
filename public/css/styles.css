@@ -4727,3 +4727,43 @@ body {
   font-size: 0.8rem;
   color: var(--text-muted);
 }
+
+.wizard-item-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 12px;
+}
+
+.wizard-review-fields .form-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.wizard-review-fields .form-input {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: 10px;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #111827);
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.wizard-review-fields .form-input:focus {
+  outline: none;
+  border-color: var(--accent-indigo, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.wizard-review-fields textarea.form-input {
+  resize: vertical;
+  min-height: 120px;
+}

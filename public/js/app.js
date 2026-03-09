@@ -378,9 +378,166 @@ const app = {
     }
   },
 
-  // Stub for review — will be built in Task 6
   showWizardReview() {
-    // Populated in Task 6
+    const listings = this.state.wizard.generatedListings;
+    const idx = this.state.wizard.currentListingIndex;
+    const listing = listings[idx];
+
+    if (!listing) return;
+
+    // Show/hide multi-item navigation
+    const nav = document.getElementById('wizardItemNav');
+    if (listings.length > 1) {
+      nav.style.display = 'flex';
+      document.getElementById('wizardItemCounter').textContent = `Item ${idx + 1} of ${listings.length}`;
+      document.getElementById('wizardPrevBtn').disabled = idx === 0;
+      document.getElementById('wizardNextBtn').disabled = idx === listings.length - 1;
+    } else {
+      nav.style.display = 'none';
+    }
+
+    // Populate image thumbnails
+    const imagesGrid = document.getElementById('wizardReviewImages');
+    if (listing.images && listing.images.length > 0) {
+      imagesGrid.style.display = 'grid';
+      imagesGrid.innerHTML = listing.images.map((img, i) => `
+        <div class="wizard-upload-thumb">
+          <img src="${img.preview || img.url || img}" alt="Photo ${i + 1}" loading="lazy">
+        </div>
+      `).join('');
+    } else {
+      imagesGrid.style.display = 'none';
+    }
+
+    // Populate fields
+    document.getElementById('wizardTitle').value = listing.title || '';
+    document.getElementById('wizardBrand').value = listing.brand || '';
+    document.getElementById('wizardCategory').value = listing.category || '';
+    document.getElementById('wizardReviewCondition').value = listing.condition || '';
+    document.getElementById('wizardDescription').value = listing.description || '';
+    document.getElementById('wizardRRP').value = listing.rrp || '';
+    document.getElementById('wizardPrice').value = listing.price || '';
+    document.getElementById('wizardKeywords').value = Array.isArray(listing.keywords)
+      ? listing.keywords.join(', ')
+      : (listing.keywords || '');
+    document.getElementById('wizardReviewPlatform').value = this.state.wizard.platform;
+
+    // Update character counters
+    this.updateWizardCharCount('wizardTitle', 'wizardTitleCount', 80);
+    this.updateWizardCharCount('wizardDescription', 'wizardDescCount', 1000);
+
+    // Add live character count listeners
+    document.getElementById('wizardTitle').oninput = () =>
+      this.updateWizardCharCount('wizardTitle', 'wizardTitleCount', 80);
+    document.getElementById('wizardDescription').oninput = () =>
+      this.updateWizardCharCount('wizardDescription', 'wizardDescCount', 1000);
+  },
+
+  updateWizardCharCount(inputId, countId, max) {
+    const len = document.getElementById(inputId)?.value?.length || 0;
+    const el = document.getElementById(countId);
+    if (el) el.textContent = len;
+  },
+
+  collectWizardFields() {
+    return {
+      title: document.getElementById('wizardTitle')?.value || '',
+      brand: document.getElementById('wizardBrand')?.value || '',
+      category: document.getElementById('wizardCategory')?.value || '',
+      condition: document.getElementById('wizardReviewCondition')?.value || '',
+      description: document.getElementById('wizardDescription')?.value || '',
+      rrp: document.getElementById('wizardRRP')?.value || '',
+      price: document.getElementById('wizardPrice')?.value || '',
+      keywords: (document.getElementById('wizardKeywords')?.value || '')
+        .split(',').map(k => k.trim()).filter(Boolean),
+      platform: document.getElementById('wizardReviewPlatform')?.value || 'vinted',
+    };
+  },
+
+  saveWizardFieldsToState() {
+    const idx = this.state.wizard.currentListingIndex;
+    const listing = this.state.wizard.generatedListings[idx];
+    if (!listing) return;
+
+    const fields = this.collectWizardFields();
+    Object.assign(listing, fields);
+  },
+
+  wizardPrevItem() {
+    this.saveWizardFieldsToState();
+    if (this.state.wizard.currentListingIndex > 0) {
+      this.state.wizard.currentListingIndex--;
+      this.showWizardReview();
+    }
+  },
+
+  wizardNextItem() {
+    this.saveWizardFieldsToState();
+    const max = this.state.wizard.generatedListings.length - 1;
+    if (this.state.wizard.currentListingIndex < max) {
+      this.state.wizard.currentListingIndex++;
+      this.showWizardReview();
+    }
+  },
+
+  async saveWizardItem() {
+    this.saveWizardFieldsToState();
+
+    const idx = this.state.wizard.currentListingIndex;
+    const listing = this.state.wizard.generatedListings[idx];
+    if (!listing) return;
+
+    try {
+      // Convert images to base64 for saving
+      const imageData = [];
+      if (listing.images) {
+        for (const img of listing.images) {
+          if (img.file) {
+            const base64 = await this.fileToBase64(img.file);
+            imageData.push({ image_data: base64 });
+          }
+        }
+      }
+
+      const response = await fetch(`${this.apiUrl}/listings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.state.token}`,
+        },
+        body: JSON.stringify({
+          title: listing.title,
+          brand: listing.brand,
+          category: listing.category,
+          condition: listing.condition,
+          description: listing.description,
+          rrp: listing.rrp,
+          price: listing.price,
+          keywords: listing.keywords,
+          platform: listing.platform || this.state.wizard.platform,
+          images: imageData,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Save failed');
+
+      const saved = await response.json();
+      listing.savedId = saved.id || saved.listing?.id;
+      this.showToast(`"${listing.title}" saved!`, 'success');
+
+      // Move to export step
+      this.showWizardStep('export');
+      this.showWizardExport();
+
+    } catch (error) {
+      console.error('Save error:', error);
+      this.showToast('Failed to save listing. Please try again.', 'error');
+    }
+  },
+
+  // Stub for export — will be built in Task 7
+  showWizardExport() {
+    // Populated in Task 7
   },
 
   renderWizardItemSelection() {

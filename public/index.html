@@ -1232,7 +1232,82 @@
             </button>
           </div>
         </div>
-        <div id="wizardStep-review" class="hidden"><!-- Step 3: populated in Task 6 --></div>
+        <div id="wizardStep-review" class="hidden">
+          <!-- Multi-item navigation -->
+          <div id="wizardItemNav" class="wizard-item-nav" style="display: none;">
+            <button class="btn btn-secondary" onclick="app.wizardPrevItem()" id="wizardPrevBtn" disabled style="padding: 0.4rem 0.75rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <span id="wizardItemCounter" style="font-weight: 600;">Item 1 of 1</span>
+            <button class="btn btn-secondary" onclick="app.wizardNextItem()" id="wizardNextBtn" style="padding: 0.4rem 0.75rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+
+          <!-- Image thumbnails -->
+          <div id="wizardReviewImages" class="wizard-upload-grid" style="margin-bottom: 1.5rem;"></div>
+
+          <!-- Editable fields -->
+          <div class="wizard-review-fields">
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label class="form-label" for="wizardTitle">Title</label>
+              <input type="text" id="wizardTitle" class="form-input" maxlength="80">
+              <div style="text-align: right; font-size: 0.8rem; color: var(--text-muted);"><span id="wizardTitleCount">0</span>/80</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label" for="wizardBrand">Brand</label>
+                <input type="text" id="wizardBrand" class="form-input">
+              </div>
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label" for="wizardCategory">Category</label>
+                <input type="text" id="wizardCategory" class="form-input">
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label class="form-label" for="wizardReviewCondition">Condition</label>
+              <input type="text" id="wizardReviewCondition" class="form-input">
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label class="form-label" for="wizardDescription">Description</label>
+              <textarea id="wizardDescription" class="form-input" rows="6" maxlength="1000"></textarea>
+              <div style="text-align: right; font-size: 0.8rem; color: var(--text-muted);"><span id="wizardDescCount">0</span>/1000</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label" for="wizardRRP">RRP</label>
+                <input type="text" id="wizardRRP" class="form-input">
+              </div>
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label" for="wizardPrice">Price</label>
+                <input type="text" id="wizardPrice" class="form-input">
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label class="form-label" for="wizardKeywords">Keywords</label>
+              <input type="text" id="wizardKeywords" class="form-input" placeholder="comma separated">
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+              <label class="form-label" for="wizardReviewPlatform">Platform</label>
+              <select id="wizardReviewPlatform" class="form-input" onchange="app.state.wizard.platform = this.value">
+                <option value="vinted">Vinted</option>
+                <option value="ebay">eBay</option>
+                <option value="gumtree">Gumtree</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" onclick="app.saveWizardItem()"
+            style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              style="vertical-align: middle; margin-right: 8px;">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Save Listing
+          </button>
+        </div>
         <div id="wizardStep-export" class="hidden"><!-- Step 4: populated in Task 7 --></div>
       </div>
     </div>
