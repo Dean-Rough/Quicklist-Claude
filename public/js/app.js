@@ -274,10 +274,8 @@ const app = {
     }, 2500);
 
     try {
-      // Convert images to base64
-      const base64Images = await Promise.all(
-        images.map(img => this.fileToBase64(img.file))
-      );
+      // Compress images for API (more aggressive than upload preview to fit Vercel's 4.5 MB limit)
+      const base64Images = await this.compressImagesForApi(images);
 
       // Refresh token if available
       if (window.Clerk?.session) {
@@ -2399,10 +2397,8 @@ const app = {
     btn.textContent = 'Analyzing...';
 
     try {
-      // Convert all images to base64
-      const images = await Promise.all(
-        this.state.uploadedImages.map((img) => this.fileToBase64(img.file))
-      );
+      // Compress images for API (aggressive to fit Vercel's 4.5 MB limit)
+      const images = await this.compressImagesForApi(this.state.uploadedImages);
 
       const response = await fetch(`${this.apiUrl}/analyze-damage`, {
         method: 'POST',
@@ -2762,10 +2758,8 @@ const app = {
       const hint = this.getItemHint();
       const location = document.getElementById('itemLocation')?.value || '';
 
-      // Convert all images to base64
-      const base64Images = await Promise.all(
-        this.state.uploadedImages.map((img) => this.fileToBase64(img.file))
-      );
+      // Compress images for API (aggressive to fit Vercel's 4.5 MB limit)
+      const base64Images = await this.compressImagesForApi(this.state.uploadedImages);
 
       // Check if cancelled during image conversion
       if (this.state.generationCancelled) {
@@ -3455,6 +3449,27 @@ const app = {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+  },
+
+  /**
+   * Compress images for API transmission.
+   * Uses more aggressive compression than the upload preview to stay
+   * within Vercel's 4.5 MB serverless body limit.
+   * @param {Array<{file: File|Blob}>} images - Array of image objects with .file property
+   * @returns {Promise<string[]>} Array of base64 data-URL strings
+   */
+  async compressImagesForApi(images) {
+    const count = images.length;
+    // Scale compression based on image count to keep total payload under ~4 MB
+    const maxWidth = count > 10 ? 768 : 1024;
+    const quality = count > 10 ? 0.5 : 0.7;
+
+    return Promise.all(
+      images.map(async (img) => {
+        const compressed = await this.compressImage(img.file, maxWidth, quality);
+        return this.fileToBase64(compressed);
+      })
+    );
   },
 
   startComedyCycler() {
