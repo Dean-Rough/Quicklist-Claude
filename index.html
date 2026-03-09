@@ -2098,7 +2098,7 @@
 
         window.__clerkScriptPromise = new Promise((resolve, reject) => {
           const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.js';
+          script.src = 'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
           script.crossOrigin = 'anonymous';
           script.async = true;
           script.setAttribute('data-clerk-publishable-key', publishableKey);
