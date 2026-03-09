@@ -4663,3 +4663,67 @@ body {
 .spin-animation {
   animation: spin 1.5s linear infinite;
 }
+
+.wizard-item-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.wizard-item-card {
+  border: 2px solid var(--border-color, #d1d5db);
+  border-radius: 12px;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.wizard-item-card.selected {
+  border-color: var(--accent-indigo, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.wizard-item-card .item-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color, #d1d5db);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary, #fff);
+  transition: all 0.2s;
+}
+
+.wizard-item-card.selected .item-check {
+  background: var(--accent-indigo, #6366f1);
+  border-color: var(--accent-indigo, #6366f1);
+  color: white;
+}
+
+.wizard-item-card img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.wizard-item-card .item-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wizard-item-card .item-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}

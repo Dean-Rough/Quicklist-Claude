@@ -383,9 +383,144 @@ const app = {
     // Populated in Task 6
   },
 
-  // Stub for item selection render — will be built in Task 5
   renderWizardItemSelection() {
-    // Populated in Task 5
+    const items = this.state.wizard.detectedItems;
+    const grid = document.getElementById('wizardItemGrid');
+    const countEl = document.getElementById('wizardItemCount');
+
+    if (countEl) countEl.textContent = items.length;
+
+    grid.innerHTML = items.map((item, idx) => `
+      <div class="wizard-item-card ${this.state.wizard.selectedItemIds.has(idx) ? 'selected' : ''}"
+           data-item-idx="${idx}" onclick="app.toggleWizardItemSelection(${idx})">
+        <div class="item-check">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <img src="${item.preview || ''}" alt="${item.title}" loading="lazy">
+        <div class="item-title">${item.title}</div>
+        <div class="item-meta">${item.photoIndices.length} photo${item.photoIndices.length !== 1 ? 's' : ''}</div>
+      </div>
+    `).join('');
+
+    this.updateWizardSelectedCount();
+  },
+
+  toggleWizardItemSelection(idx) {
+    const selected = this.state.wizard.selectedItemIds;
+    if (selected.has(idx)) {
+      selected.delete(idx);
+    } else {
+      selected.add(idx);
+    }
+
+    const card = document.querySelector(`[data-item-idx="${idx}"]`);
+    if (card) card.classList.toggle('selected');
+    this.updateWizardSelectedCount();
+  },
+
+  selectAllWizardItems() {
+    const items = this.state.wizard.detectedItems;
+    this.state.wizard.selectedItemIds = new Set(items.map((_, idx) => idx));
+    document.querySelectorAll('.wizard-item-card').forEach(card => card.classList.add('selected'));
+    this.updateWizardSelectedCount();
+  },
+
+  deselectAllWizardItems() {
+    this.state.wizard.selectedItemIds.clear();
+    document.querySelectorAll('.wizard-item-card').forEach(card => card.classList.remove('selected'));
+    this.updateWizardSelectedCount();
+  },
+
+  updateWizardSelectedCount() {
+    const count = this.state.wizard.selectedItemIds.size;
+    const el = document.getElementById('wizardSelectedCount');
+    if (el) el.textContent = count;
+
+    const btn = document.getElementById('wizardGenerateSelectedBtn');
+    if (btn) btn.disabled = count === 0;
+  },
+
+  async generateSelectedWizardItems() {
+    const selected = this.state.wizard.selectedItemIds;
+    if (selected.size === 0) {
+      this.showToast('Please select at least one item', 'warning');
+      return;
+    }
+
+    // Show analyze step with generating message
+    this.showWizardStep('analyze');
+    const statusEl = document.getElementById('wizardAnalyzeStatus');
+    if (statusEl) statusEl.textContent = `Generating ${selected.size} listing${selected.size !== 1 ? 's' : ''}...`;
+
+    const comedyMessages = [
+      'Writing compelling descriptions...',
+      'Researching market prices...',
+      'Finding the perfect keywords...',
+      'Polishing the copy...',
+      'Almost ready...',
+    ];
+
+    let msgIdx = 0;
+    const comedyEl = document.getElementById('wizardAnalyzeComedy');
+    const msgInterval = setInterval(() => {
+      msgIdx = (msgIdx + 1) % comedyMessages.length;
+      if (comedyEl) comedyEl.textContent = comedyMessages[msgIdx];
+    }, 2500);
+
+    try {
+      const images = this.state.wizard.uploadedImages;
+      const selectedItems = this.state.wizard.detectedItems.filter((_, idx) => selected.has(idx));
+
+      // Convert images for each selected group
+      const groupImages = await Promise.all(
+        selectedItems.map(async item => {
+          const imgs = await Promise.all(
+            item.photoIndices.map(idx => this.fileToBase64(images[idx].file))
+          );
+          return { images: imgs };
+        })
+      );
+
+      const response = await fetch(`${this.apiUrl}/photo-dump/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.state.token}`,
+        },
+        body: JSON.stringify({
+          groups: groupImages,
+          platform: this.state.wizard.platform,
+          hint: this.state.wizard.hint,
+        }),
+      });
+
+      clearInterval(msgInterval);
+
+      if (!response.ok) throw new Error('Generation failed');
+
+      const results = await response.json();
+
+      // Store generated listings with their images
+      this.state.wizard.generatedListings = (results.items || []).map((item, idx) => ({
+        ...item,
+        images: selectedItems[idx]?.photoIndices.map(photoIdx => ({
+          preview: images[photoIdx]?.preview,
+          file: images[photoIdx]?.file,
+        })) || [],
+      }));
+
+      this.state.wizard.currentListingIndex = 0;
+      this.showWizardStep('review');
+      this.showWizardReview();
+
+    } catch (error) {
+      clearInterval(msgInterval);
+      console.error('Wizard generation error:', error);
+      this.showToast('Generation failed. Please try again.', 'error');
+      this.showWizardStep('select');
+    }
   },
 
   async handleWizardUpload(files) {

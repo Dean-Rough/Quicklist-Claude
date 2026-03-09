@@ -1212,7 +1212,26 @@
             <p id="wizardAnalyzeComedy" style="color: var(--text-muted); font-size: 0.95rem;">Warming up the AI...</p>
           </div>
         </div>
-        <div id="wizardStep-select" class="hidden"><!-- Step 2b: populated in Task 5 --></div>
+        <div id="wizardStep-select" class="hidden">
+          <div style="margin-bottom: 1.5rem;">
+            <h2 style="margin: 0 0 0.5rem; font-size: 1.25rem;">Select Items to Generate</h2>
+            <p style="color: var(--text-muted); margin: 0;">We detected <strong id="wizardItemCount">0</strong> items. Choose which to generate listings for.</p>
+          </div>
+
+          <div id="wizardItemGrid" class="wizard-item-grid"></div>
+
+          <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap;">
+            <button class="btn btn-secondary" onclick="app.selectAllWizardItems()" style="flex: 0 0 auto;">Select All</button>
+            <button class="btn btn-secondary" onclick="app.deselectAllWizardItems()" style="flex: 0 0 auto;">Clear</button>
+            <div style="flex: 1;"></div>
+            <button id="wizardGenerateSelectedBtn" class="btn btn-primary" onclick="app.generateSelectedWizardItems()" style="flex: 0 0 auto;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              Generate <span id="wizardSelectedCount">0</span> Listings
+            </button>
+          </div>
+        </div>
         <div id="wizardStep-review" class="hidden"><!-- Step 3: populated in Task 6 --></div>
         <div id="wizardStep-export" class="hidden"><!-- Step 4: populated in Task 7 --></div>
       </div>
