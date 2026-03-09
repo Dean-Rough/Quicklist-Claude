@@ -247,6 +247,147 @@ const app = {
     });
   },
 
+  async startWizardAnalysis() {
+    const images = this.state.wizard.uploadedImages;
+    if (images.length === 0) return;
+
+    // Show analyze step
+    this.showWizardStep('analyze');
+
+    // Comedy messages
+    const comedyMessages = [
+      'Warming up the AI...',
+      'Squinting at your photos...',
+      'Consulting the fashion oracle...',
+      'Cross-referencing marketplaces...',
+      'Checking the latest trends...',
+      'Doing some detective work...',
+      'Almost there...',
+      'Putting the finishing touches on...',
+    ];
+
+    let msgIdx = 0;
+    const comedyEl = document.getElementById('wizardAnalyzeComedy');
+    const msgInterval = setInterval(() => {
+      msgIdx = (msgIdx + 1) % comedyMessages.length;
+      if (comedyEl) comedyEl.textContent = comedyMessages[msgIdx];
+    }, 2500);
+
+    try {
+      // Convert images to base64
+      const base64Images = await Promise.all(
+        images.map(img => this.fileToBase64(img.file))
+      );
+
+      // Refresh token if available
+      if (window.Clerk?.session) {
+        try {
+          const freshToken = await window.Clerk.session.getToken();
+          if (freshToken) {
+            this.state.token = freshToken;
+            localStorage.setItem('quicklist-token', freshToken);
+          }
+        } catch (e) { /* ignore */ }
+      }
+
+      const platform = this.state.wizard.platform;
+      const hint = this.state.wizard.hint;
+      const condition = this.state.wizard.condition;
+
+      if (images.length <= 2) {
+        // Single item path — call /api/generate directly
+        const statusEl = document.getElementById('wizardAnalyzeStatus');
+        if (statusEl) statusEl.textContent = 'Generating your listing...';
+
+        const response = await fetch(`${this.apiUrl}/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.state.token}`,
+          },
+          body: JSON.stringify({
+            images: base64Images,
+            platform,
+            hint: [hint, condition].filter(Boolean).join('. '),
+          }),
+        });
+
+        clearInterval(msgInterval);
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            throw new Error('Authentication failed. Please sign in again.');
+          }
+          throw new Error('Generation failed');
+        }
+
+        const listing = await response.json();
+
+        // Store listing with images
+        this.state.wizard.generatedListings = [{
+          ...listing,
+          images: images.map(img => ({ preview: img.preview, file: img.file })),
+        }];
+
+        // Skip select step, go directly to review
+        this.showWizardStep('review');
+        this.showWizardReview();
+
+      } else {
+        // Multi-item path — call /api/photo-dump/group
+        const statusEl = document.getElementById('wizardAnalyzeStatus');
+        if (statusEl) statusEl.textContent = 'Grouping your items...';
+
+        const response = await fetch(`${this.apiUrl}/photo-dump/group`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.state.token}`,
+          },
+          body: JSON.stringify({ images: base64Images }),
+        });
+
+        clearInterval(msgInterval);
+
+        if (!response.ok) {
+          throw new Error('Grouping failed');
+        }
+
+        const results = await response.json();
+        this.state.wizard.detectedItems = results.groups.map((group, idx) => ({
+          title: group.description || `Item ${idx + 1}`,
+          photoIndices: group.photoIndices,
+          preview: images[group.photoIndices[0]]?.preview,
+        }));
+
+        // Select all by default
+        this.state.wizard.selectedItemIds = new Set(
+          this.state.wizard.detectedItems.map((_, idx) => idx)
+        );
+
+        // Show select step
+        this.showWizardStep('select');
+        this.renderWizardItemSelection();
+      }
+
+    } catch (error) {
+      clearInterval(msgInterval);
+      console.error('Wizard analysis error:', error);
+      this.showToast(error.message || 'Analysis failed. Please try again.', 'error');
+      this.showWizardStep('upload');
+    }
+  },
+
+  // Stub for review — will be built in Task 6
+  showWizardReview() {
+    // Populated in Task 6
+  },
+
+  // Stub for item selection render — will be built in Task 5
+  renderWizardItemSelection() {
+    // Populated in Task 5
+  },
+
   async handleWizardUpload(files) {
     if (!files || files.length === 0) return;
 

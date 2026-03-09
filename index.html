@@ -1193,7 +1193,25 @@
             Analyze Photos
           </button>
         </div>
-        <div id="wizardStep-analyze" class="hidden"><!-- Step 2: populated in Task 4 --></div>
+        <div id="wizardStep-analyze" class="hidden">
+          <div class="wizard-analyze-container" style="text-align: center; padding: 3rem 1rem;">
+            <div class="comedy-spinner" style="margin-bottom: 1.5rem;">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent-indigo, #6366f1)" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" class="spin-animation">
+                <line x1="12" y1="2" x2="12" y2="6"></line>
+                <line x1="12" y1="18" x2="12" y2="22"></line>
+                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                <line x1="2" y1="12" x2="6" y2="12"></line>
+                <line x1="18" y1="12" x2="22" y2="12"></line>
+                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+              </svg>
+            </div>
+            <p id="wizardAnalyzeStatus" style="font-size: 1.1rem; font-weight: 500; margin-bottom: 0.5rem;">Analyzing your photos...</p>
+            <p id="wizardAnalyzeComedy" style="color: var(--text-muted); font-size: 0.95rem;">Warming up the AI...</p>
+          </div>
+        </div>
         <div id="wizardStep-select" class="hidden"><!-- Step 2b: populated in Task 5 --></div>
         <div id="wizardStep-review" class="hidden"><!-- Step 3: populated in Task 6 --></div>
         <div id="wizardStep-export" class="hidden"><!-- Step 4: populated in Task 7 --></div>
