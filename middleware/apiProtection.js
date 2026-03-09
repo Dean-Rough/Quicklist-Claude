@@ -1,5 +1,5 @@
 // API Cost Protection Middleware for Gemini API
-const logger = require('../logger');
+const logger = require('console-log-level')({ level: process.env.LOG_LEVEL || 'info' });
 
 /**
  * FAILSAFE API Protection - NOT strict rate limiting
