@@ -201,6 +201,52 @@ const app = {
     return !(prefersReducedMotion || lowBandwidth || saveData || lowMemory || smallViewport);
   },
 
+  // ========================================
+  // UNIFIED WIZARD FLOW
+  // ========================================
+
+  initWizard() {
+    // Reset wizard state
+    this.state.wizard = {
+      step: 'upload',
+      uploadedImages: [],
+      platform: 'vinted',
+      hint: '',
+      condition: '',
+      detectedItems: [],
+      selectedItemIds: new Set(),
+      generatedListings: [],
+      currentListingIndex: 0,
+    };
+
+    // Show upload step, hide others
+    this.showWizardStep('upload');
+  },
+
+  showWizardStep(step) {
+    const steps = ['upload', 'analyze', 'select', 'review', 'export'];
+    steps.forEach(s => {
+      const el = document.getElementById(`wizardStep-${s}`);
+      if (el) el.classList.toggle('hidden', s !== step);
+    });
+
+    this.state.wizard.step = step;
+
+    // Update progress indicator
+    const stepMap = { upload: 1, analyze: 2, select: 2, review: 3, export: 4 };
+    const currentStepNum = stepMap[step] || 1;
+    const progressSteps = document.querySelectorAll('#wizardProgress .wizard-step');
+    progressSteps.forEach((stepEl) => {
+      const stepNum = parseInt(stepEl.dataset.step);
+      stepEl.classList.remove('active', 'completed');
+      if (stepNum < currentStepNum) {
+        stepEl.classList.add('completed');
+      } else if (stepNum === currentStepNum) {
+        stepEl.classList.add('active');
+      }
+    });
+  },
+
   scheduleMarketingAnimations() {
     if (!this.shouldLoadRichAnimations()) {
       return;
@@ -6068,7 +6114,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   },
 
   switchAppView(view) {
-    const views = ['dashboard', 'photoDump', 'newItem', 'savedItems', 'settings', 'profile'];
+    const views = ['dashboard', 'createListing', 'photoDump', 'newItem', 'savedItems', 'settings', 'profile'];
     views.forEach((v) => {
       const el = document.getElementById(`${v}View`);
       if (el) {
@@ -6080,6 +6126,8 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
     if (view === 'dashboard') {
       this.loadDashboardMetrics();
+    } else if (view === 'createListing') {
+      this.initWizard();
     } else if (view === 'photoDump') {
       this.initPhotoDump();
     } else if (view === 'newItem') {

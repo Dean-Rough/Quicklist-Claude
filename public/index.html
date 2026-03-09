@@ -430,7 +430,7 @@
   <!-- App Header -->
   <header id="appHeader" class="header hidden">
     <div class="header-content">
-      <div class="logo" onclick="app.navigateToApp('newItem')" style="cursor: pointer">
+      <div class="logo" onclick="app.navigateToApp('createListing')" style="cursor: pointer">
         <div id="logo-animation-2" class="logo-animation-shell" style="height: 40px; width: 120px">
           <img class="logo-fallback" src="/brand/QL4-Static.svg" alt="" width="242" height="54" decoding="async"
             aria-hidden="true" />
@@ -484,14 +484,14 @@
         </span>
         <span class="slide-nav-link-text">Dashboard</span>
       </a>
-      <a class="slide-nav-link" onclick="app.navigateToApp('newItem'); app.closeSlideNav()">
+      <a class="slide-nav-link" onclick="app.navigateToApp('createListing'); app.closeSlideNav()">
         <span class="slide-nav-link-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 5v14M5 12h14" />
           </svg>
         </span>
-        <span class="slide-nav-link-text">New Item</span>
+        <span class="slide-nav-link-text">Create Listing</span>
       </a>
       <a class="slide-nav-link" onclick="app.navigateToApp('savedItems'); app.closeSlideNav()">
         <span class="slide-nav-link-icon">
@@ -1019,8 +1019,8 @@
             id="dashboardUserName" style="color: var(--accent-indigo);">there</span>!</h1>
 
         <div class="dashboard-grid">
-          <!-- New Item Button -->
-          <button class="dashboard-action-btn card" onclick="app.navigateToApp('newItem')">
+          <!-- Create Listing Button -->
+          <button class="dashboard-action-btn card" onclick="app.navigateToApp('createListing')">
             <div class="dashboard-icon-wrapper" style="background: var(--accent-indigo, #6366f1); color: white;">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -1028,22 +1028,8 @@
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
             </div>
-            <h2>New Item</h2>
-            <p>Scan barcodes or snap photos to generate a listing.</p>
-          </button>
-
-          <!-- Photo Dump Button -->
-          <button class="dashboard-action-btn card" onclick="app.navigateToApp('photoDump')">
-            <div class="dashboard-icon-wrapper" style="background: var(--accent-purple, #A855F7); color: white;">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                <polyline points="21 15 16 10 5 21"></polyline>
-              </svg>
-            </div>
-            <h2>Photo Dump</h2>
-            <p>Upload multiple items at once and let AI organize them.</p>
+            <h2>Create Listing</h2>
+            <p>Upload photos and let AI generate your listing.</p>
           </button>
 
           <!-- Saved Items Button -->
@@ -1090,6 +1076,72 @@
             </p>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Create Listing View (Unified Wizard) -->
+    <div id="createListingView" class="hidden">
+      <div class="container section" style="padding-top: 1rem;">
+        <!-- Back button + title -->
+        <div class="wizard-header">
+          <button class="btn btn-secondary" onclick="app.navigateToApp('dashboard')" style="padding: 0.5rem 0.75rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <h1 class="section-title" style="margin: 0;">Create Listing</h1>
+        </div>
+
+        <!-- Wizard progress indicator -->
+        <div class="wizard-progress" id="wizardProgress">
+          <div class="wizard-step active" data-step="1">
+            <div class="wizard-step-circle">
+              <span class="wizard-step-number">1</span>
+              <svg class="wizard-step-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="wizard-step-label">Upload</div>
+          </div>
+          <div class="wizard-step-line"></div>
+          <div class="wizard-step" data-step="2">
+            <div class="wizard-step-circle">
+              <span class="wizard-step-number">2</span>
+              <svg class="wizard-step-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="wizard-step-label">Generate</div>
+          </div>
+          <div class="wizard-step-line"></div>
+          <div class="wizard-step" data-step="3">
+            <div class="wizard-step-circle">
+              <span class="wizard-step-number">3</span>
+              <svg class="wizard-step-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="wizard-step-label">Review</div>
+          </div>
+          <div class="wizard-step-line"></div>
+          <div class="wizard-step" data-step="4">
+            <div class="wizard-step-circle">
+              <span class="wizard-step-number">4</span>
+              <svg class="wizard-step-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="wizard-step-label">Export</div>
+          </div>
+        </div>
+
+        <!-- Step containers (shown/hidden by JS) -->
+        <div id="wizardStep-upload"><!-- Step 1: populated in Task 3 --></div>
+        <div id="wizardStep-analyze" class="hidden"><!-- Step 2: populated in Task 4 --></div>
+        <div id="wizardStep-select" class="hidden"><!-- Step 2b: populated in Task 5 --></div>
+        <div id="wizardStep-review" class="hidden"><!-- Step 3: populated in Task 6 --></div>
+        <div id="wizardStep-export" class="hidden"><!-- Step 4: populated in Task 7 --></div>
       </div>
     </div>
 
