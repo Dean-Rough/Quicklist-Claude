@@ -9051,9 +9051,8 @@ function initLazyAnimations() {
     const container = document.getElementById(id);
     if (container) {
       animationObserver.observe(container);
-    } else {
-      console.warn(`Animation container not found: ${id}`);
     }
+    // Silently skip missing containers - they may not be on current page
   });
 
   // Pause animations when tab is not visible (save CPU/battery)
