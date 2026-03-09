@@ -25,7 +25,7 @@ const app = {
   state: {
     isAuthenticated: false,
     currentView: 'home',
-    currentAppView: 'newItem',
+    currentAppView: 'dashboard',
     wizardPhase: 'photos',
     dashboardMetrics: null,
     uploadedImages: [],
@@ -1443,77 +1443,14 @@ const app = {
 
   // Event listeners
   attachEventListeners() {
-    // Image uploader
-    const uploader = document.getElementById('imageUploader');
-    const input = document.getElementById('imageInput');
-
-    if (!uploader || !input) {
-      console.error('Image uploader elements not found:', { uploader: !!uploader, input: !!input });
-      return;
-    }
-
-    uploader.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      input.click();
-    });
-
-    input.addEventListener('change', (e) => {
-      console.log('Image input change event:', e.target.files?.length, 'files');
-      this.handleImageUpload(e);
-    });
-
-    // Drag and drop
-    uploader.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      uploader.style.borderColor = 'var(--accent-indigo)';
-    });
-
-    uploader.addEventListener('dragleave', () => {
-      uploader.style.borderColor = 'var(--border-color)';
-    });
-
-    uploader.addEventListener('drop', (e) => {
-      e.preventDefault();
-      uploader.style.borderColor = 'var(--border-color)';
-      const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'));
-      this.processFiles(files);
-    });
-
-    // Generate button
-    document.getElementById('generateBtn').addEventListener('click', () => this.generateListing());
-
-    // Platform selectors - sync input and output selectors
-    const platformInputSelect = document.getElementById('platformSelectInput');
-    const platformOutputSelect = document.getElementById('platformSelect');
-
-    if (platformInputSelect) {
-      platformInputSelect.addEventListener('change', () => {
-        // Sync to output selector if it exists
-        if (platformOutputSelect) {
-          platformOutputSelect.value = platformInputSelect.value;
-        }
-      });
-    }
-
-    if (platformOutputSelect) {
-      platformOutputSelect.addEventListener('change', () => {
-        // Sync back to input selector
-        if (platformInputSelect) {
-          platformInputSelect.value = platformOutputSelect.value;
-        }
-        // Apply format to current listing
-        if (this.state.currentListing) {
-          this.applyPlatformFormat(platformOutputSelect.value);
-        }
-      });
-    }
-
     // Settings
-    document.getElementById('settingAutoDownload').addEventListener('change', (e) => {
-      this.state.settings.autoDownloadZip = e.target.checked;
-      this.saveSettings();
-    });
+    const settingAutoDownload = document.getElementById('settingAutoDownload');
+    if (settingAutoDownload) {
+      settingAutoDownload.addEventListener('change', (e) => {
+        this.state.settings.autoDownloadZip = e.target.checked;
+        this.saveSettings();
+      });
+    }
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
@@ -1554,8 +1491,7 @@ const app = {
           case 'N':
             e.preventDefault();
             if (this.state.isAuthenticated) {
-              this.navigateToApp('newItem');
-              this.showInitialState();
+              this.navigateToApp('createListing');
             }
             break;
         }
@@ -2106,7 +2042,7 @@ const app = {
   },
 
   resumeDraftFromWizard() {
-    this.navigateToApp('newItem');
+    this.navigateToApp('createListing');
     const draft = this.loadDraft();
     if (draft) {
       this.showToast('Draft settings restored. Upload saved photos to continue.', 'info');
@@ -6042,8 +5978,8 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     const listing = this.state.savedListings.find((l) => l.id === id);
     if (!listing) return;
 
-    // Switch to new item view
-    this.navigateToApp('newItem');
+    // Switch to create listing view
+    this.navigateToApp('createListing');
 
     // Load images
     this.state.uploadedImages = listing.images || [];
@@ -7045,7 +6981,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
     if (this.state.isAuthenticated || clerk.user) {
       this.updateUI();
-      this.navigateToApp('newItem');
+      this.navigateToApp('dashboard');
       return;
     }
 
