@@ -16,6 +16,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const cloudinary = require('cloudinary').v2;
+const { protectGeminiAPI, getUsageStats } = require('./middleware/apiProtection');
 
 // Only load .env in non-production environments (Vercel provides env vars directly)
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
@@ -151,6 +152,11 @@ if (
   if (!process.env.VERCEL && process.env.PROMPT_EVAL_MODE !== '1') {
     process.exit(1);
   }
+}
+
+// Make pool available to middleware
+if (pool) {
+  app.set('pool', pool);
 }
 
 // Clerk is now the only authentication method
@@ -4003,7 +4009,7 @@ app.post('/api/enhance-image', aiAnalysisLimiter, authenticateToken, async (req,
     });
   }
 });
-app.post('/api/generate', generateLimiter, authenticateToken, async (req, res) => {
+app.post('/api/generate', generateLimiter, authenticateToken, protectGeminiAPI, async (req, res) => {
   const userId = req.user?.id; // Define at function scope for error logging
   try {
     // Log request body for debugging
@@ -5131,7 +5137,7 @@ async function callGeminiWithPrompt(promptText, imageParts, apiKey = null) {
 }
 
 // Photo Dump Grouping endpoint - Step 1: Just group photos by item
-app.post('/api/photo-dump/group', generateLimiter, authenticateToken, async (req, res) => {
+app.post('/api/photo-dump/group', generateLimiter, authenticateToken, protectGeminiAPI, async (req, res) => {
   const userId = req.user?.id;
 
   try {
@@ -5242,7 +5248,7 @@ Return ONLY valid JSON, no other text.`;
 });
 
 // Photo Dump Generation endpoint - Step 2: Generate listings from groups
-app.post('/api/photo-dump/generate', generateLimiter, authenticateToken, async (req, res) => {
+app.post('/api/photo-dump/generate', generateLimiter, authenticateToken, protectGeminiAPI, async (req, res) => {
   const userId = req.user?.id;
 
   try {
@@ -6373,6 +6379,23 @@ app.get('/api/health', async (_req, res) => {
   } catch (error) {
     logger.error('Health check error:', { error: error.message });
     res.status(503).json({ status: 'error', timestamp: new Date().toISOString() });
+  }
+});
+
+// Admin: API Usage Stats (protected)
+app.get('/api/admin/usage-stats', authenticateToken, async (req, res) => {
+  try {
+    // Only allow admins (check if user has admin role or specific email)
+    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim());
+    if (!adminEmails.includes(req.user.email)) {
+      return res.status(403).json({ error: 'Unauthorized - Admin access required' });
+    }
+
+    const stats = await getUsageStats(pool);
+    res.json(stats);
+  } catch (error) {
+    logger.error('Error fetching usage stats:', error);
+    res.status(500).json({ error: 'Failed to fetch usage stats' });
   }
 });
 
