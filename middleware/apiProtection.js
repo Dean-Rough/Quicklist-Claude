@@ -2,44 +2,55 @@
 const logger = require('../logger');
 
 /**
- * Track and limit Gemini API usage to prevent excessive costs
+ * FAILSAFE API Protection - NOT strict rate limiting
  *
- * Limits by tier:
- * - Free: 10 generations/day
- * - Starter: 50 generations/day
- * - Pro: 200 generations/day
- * - Business: Unlimited
+ * Purpose: Prevent runaway costs from bugs, loops, or abuse
+ * Philosophy: High limits that allow legitimate heavy usage
+ *
+ * These limits should NEVER be hit by normal customers, even power users
+ * They only catch anomalies like:
+ * - Infinite loops in code
+ * - Accidental repeated clicks
+ * - Malicious automated abuse
+ *
+ * Limits are intentionally generous - legitimate customers always work
  */
 
 const TIER_LIMITS = {
   free: {
-    daily: 10,
-    monthly: 200,
-    maxImagesPerRequest: 5
+    hourly: 50,        // Catches infinite loops (50 requests in 1 hour = 1 every 72 seconds)
+    daily: 100,        // Very generous - allows heavy legitimate usage
+    monthly: 2000,     // ~66/day average
+    maxImagesPerRequest: 50  // Photo dump can handle large batches
   },
   starter: {
-    daily: 50,
-    monthly: 1000,
-    maxImagesPerRequest: 10
+    hourly: 200,       // ~1 every 18 seconds before blocking
+    daily: 500,        // Allows all-day usage
+    monthly: 10000,    // ~333/day average
+    maxImagesPerRequest: 50
   },
   pro: {
-    daily: 200,
-    monthly: 5000,
-    maxImagesPerRequest: 20
+    hourly: 500,       // Very high - catches only obvious issues
+    daily: 2000,       // Professional usage
+    monthly: 50000,    // ~1666/day average
+    maxImagesPerRequest: 100
   },
   business: {
+    hourly: 1000,      // Even business gets hourly failsafe
     daily: Infinity,
     monthly: Infinity,
-    maxImagesPerRequest: 50
+    maxImagesPerRequest: 100
   }
 };
 
 // Emergency kill switch - set via environment variable
 const EMERGENCY_SHUTDOWN = process.env.GEMINI_EMERGENCY_SHUTDOWN === 'true';
 
-// Global monthly cost tracking
+// Global monthly cost tracking (FAILSAFE ONLY - high limit)
 let monthlySpend = 0;
-const MONTHLY_BUDGET = parseFloat(process.env.GEMINI_MONTHLY_BUDGET) || 500; // $500 default
+const MONTHLY_BUDGET = parseFloat(process.env.GEMINI_MONTHLY_BUDGET) || 5000; // $5000 default failsafe
+// Note: This is NOT a business budget - it's an emergency brake
+// Set lower if needed, but keep high enough for legitimate growth
 
 /**
  * Estimate token cost for Gemini API call
@@ -86,28 +97,30 @@ function estimateTokenCost(imageCount, model = 'gemini-2.5-flash') {
  */
 async function getUserUsage(pool, userId) {
   const now = new Date();
+  const hourStart = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
   try {
     const result = await pool.query(
       `SELECT
-        COUNT(CASE WHEN created_at >= $1 THEN 1 END) as daily_count,
-        COUNT(CASE WHEN created_at >= $2 THEN 1 END) as monthly_count,
-        COALESCE(SUM(CASE WHEN created_at >= $2 THEN 1 END), 0) as monthly_generations
+        COUNT(CASE WHEN created_at >= $1 THEN 1 END) as hourly_count,
+        COUNT(CASE WHEN created_at >= $2 THEN 1 END) as daily_count,
+        COUNT(CASE WHEN created_at >= $3 THEN 1 END) as monthly_count
       FROM listings
-      WHERE user_id = $3`,
-      [todayStart, monthStart, userId]
+      WHERE user_id = $4`,
+      [hourStart, todayStart, monthStart, userId]
     );
 
     return {
+      hourlyCount: parseInt(result.rows[0]?.hourly_count || 0),
       dailyCount: parseInt(result.rows[0]?.daily_count || 0),
       monthlyCount: parseInt(result.rows[0]?.monthly_count || 0)
     };
   } catch (error) {
     logger.error('Error fetching user usage:', error);
     // Fail open - allow request but log error
-    return { dailyCount: 0, monthlyCount: 0 };
+    return { hourlyCount: 0, dailyCount: 0, monthlyCount: 0 };
   }
 }
 
@@ -136,30 +149,40 @@ function getUserTier(user) {
 function checkLimits(usage, tier, imageCount) {
   const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
 
-  // Check daily limit
-  if (usage.dailyCount >= limits.daily) {
+  // MOST IMPORTANT: Hourly limit catches runaway loops/bugs
+  // This should almost NEVER trigger for legitimate users
+  if (limits.hourly !== Infinity && usage.hourlyCount >= limits.hourly) {
     return {
       allowed: false,
-      reason: `Daily limit reached (${limits.daily} generations/day for ${tier} tier)`,
-      upgradePrompt: tier === 'free' ? 'Upgrade to Starter for 50 generations/day' : null
+      reason: `Unusual activity detected: ${usage.hourlyCount} requests in 1 hour. This suggests a potential issue. Please wait a moment and try again.`,
+      code: 'ANOMALY_DETECTED'
     };
   }
 
-  // Check monthly limit
-  if (usage.monthlyCount >= limits.monthly) {
+  // Daily limit - Very high, only blocks extreme usage
+  if (limits.daily !== Infinity && usage.dailyCount >= limits.daily) {
     return {
       allowed: false,
-      reason: `Monthly limit reached (${limits.monthly} generations/month for ${tier} tier)`,
-      upgradePrompt: tier === 'free' ? 'Upgrade for higher limits' : null
+      reason: `Daily safety limit reached (${limits.daily} generations). This is unusually high. If you need more, please contact support.`,
+      code: 'DAILY_FAILSAFE'
     };
   }
 
-  // Check images per request
+  // Monthly limit - Catches sustained excessive usage
+  if (limits.monthly !== Infinity && usage.monthlyCount >= limits.monthly) {
+    return {
+      allowed: false,
+      reason: `Monthly safety limit reached (${limits.monthly} generations). Please contact support to discuss your usage needs.`,
+      code: 'MONTHLY_FAILSAFE'
+    };
+  }
+
+  // Images per request - Reasonable limit
   if (imageCount > limits.maxImagesPerRequest) {
     return {
       allowed: false,
-      reason: `Too many images (max ${limits.maxImagesPerRequest} for ${tier} tier)`,
-      upgradePrompt: tier !== 'business' ? 'Upgrade for more images per request' : null
+      reason: `Too many images in one request (max ${limits.maxImagesPerRequest}). Try splitting into smaller batches.`,
+      code: 'TOO_MANY_IMAGES'
     };
   }
 
@@ -232,13 +255,17 @@ async function protectGeminiAPI(req, res, next) {
   // Check limits
   const limitCheck = checkLimits(usage, tier, imageCount);
   if (!limitCheck.allowed) {
-    logger.warn(`User ${user.id} (${tier}) exceeded limit:`, limitCheck.reason);
+    logger.warn(`FAILSAFE TRIGGERED - User ${user.id} (${tier}):`, {
+      reason: limitCheck.reason,
+      code: limitCheck.code,
+      usage: usage,
+      imageCount
+    });
     return res.status(429).json({
       error: limitCheck.reason,
-      code: 'RATE_LIMIT_EXCEEDED',
+      code: limitCheck.code || 'RATE_LIMIT_EXCEEDED',
       currentUsage: usage,
-      limits: TIER_LIMITS[tier],
-      upgradePrompt: limitCheck.upgradePrompt
+      limits: TIER_LIMITS[tier]
     });
   }
 
