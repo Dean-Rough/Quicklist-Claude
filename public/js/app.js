@@ -54,6 +54,51 @@ const app = {
       'Turn on auto-download to keep listings organized offline',
     ],
     progressTimeouts: [],
+
+    // Wizard flow state
+    wizardProgress: {
+      upload: 'pending',      // pending | active | complete
+      generate: 'pending',
+      edit: 'pending',
+      enhance: 'pending',
+    },
+
+    // Bundle workflow state (Photo Dump multi-item flow)
+    currentBundle: {
+      id: null,               // Unique bundle ID
+      images: [],             // Array of uploaded image objects
+      analyzedItems: [],      // Array of AI-detected items with titles
+      selectedItemIndices: new Set(), // Set of selected item indices
+      savedToDb: false,       // Whether bundle has been saved
+    },
+
+    // Photo Dump state
+    photoDumpImages: [],      // Array of uploaded images for Photo Dump
+    photoDumpAnalyzing: false, // Whether AI is analyzing images
+
+    // Image enhancement state
+    imageEnhancement: {
+      isOpen: false,          // Whether enhancement modal is open
+      mainImageIndex: 0,      // Selected main image index
+      options: {
+        fixBlurry: true,      // Apply blur correction
+        removeBackground: false, // Remove background
+        generateHero: false,  // Generate hero image
+        heroBackground: 'neutral', // neutral | gradient | product-shot
+        heroLighting: 'soft', // soft | dramatic | studio
+      },
+      heroPreview: null,      // Base64 or URL of hero preview
+      heroGenerating: false,  // Whether hero is being generated
+      heroProgress: 0,        // Progress percentage (0-100)
+      comedyMessage: '',      // Current comedy progress message
+    },
+
+    // Item selection modal state
+    itemSelection: {
+      isOpen: false,
+      items: [],              // Array of detected items with preview
+      selectedIds: new Set(), // Set of selected item IDs
+    },
   },
 
   getPlatform() {
@@ -198,6 +243,447 @@ const app = {
     const smallViewport = window.innerWidth < 1024;
 
     return !(prefersReducedMotion || lowBandwidth || saveData || lowMemory || smallViewport);
+  },
+
+  // ========================================
+  // WIZARD FLOW FUNCTIONS
+  // ========================================
+
+  /**
+   * Update wizard progress indicator
+   * @param {number} step - Current step (1-4)
+   */
+  updateWizardProgress(step) {
+    const progress = document.getElementById('photoDumpWizardProgress');
+    if (!progress) return;
+
+    // Show progress indicator
+    progress.style.display = 'flex';
+
+    // Update step states
+    const steps = progress.querySelectorAll('.wizard-step');
+    steps.forEach((stepEl, idx) => {
+      const stepNumber = idx + 1;
+      stepEl.classList.remove('active', 'completed');
+
+      if (stepNumber < step) {
+        stepEl.classList.add('completed');
+      } else if (stepNumber === step) {
+        stepEl.classList.add('active');
+      }
+    });
+
+    // Update wizard state
+    this.state.wizardProgress.upload = step > 1 ? 'complete' : step === 1 ? 'active' : 'pending';
+    this.state.wizardProgress.generate = step > 2 ? 'complete' : step === 2 ? 'active' : 'pending';
+    this.state.wizardProgress.edit = step > 3 ? 'complete' : step === 3 ? 'active' : 'pending';
+    this.state.wizardProgress.enhance = step === 4 ? 'active' : step > 4 ? 'complete' : 'pending';
+  },
+
+  /**
+   * Item Selection Modal - Multi-item detection flow
+   */
+  openItemSelectionModal(items) {
+    const modal = document.getElementById('itemSelectionModal');
+    const grid = document.getElementById('itemSelectionGrid');
+    const itemCount = document.getElementById('itemCount');
+    const selectedCount = document.getElementById('selectedCount');
+
+    if (!modal || !grid || !itemCount) return;
+
+    // Update state
+    this.state.itemSelection.isOpen = true;
+    this.state.itemSelection.items = items;
+    this.state.itemSelection.selectedIds = new Set(items.map((_, idx) => idx)); // Select all by default
+
+    // Update count
+    itemCount.textContent = items.length;
+    selectedCount.textContent = items.length;
+
+    // Render item cards
+    grid.innerHTML = items
+      .map(
+        (item, idx) => `
+      <div class="item-card ${this.state.itemSelection.selectedIds.has(idx) ? 'selected' : ''}"
+           data-item-index="${idx}"
+           onclick="app.toggleItemSelection(${idx})">
+        <div class="item-checkbox">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <img src="${item.preview || item.image}" alt="${item.title}" class="item-thumbnail">
+        <div class="item-title">${item.title || 'Untitled Item'}</div>
+        <div class="item-meta">${item.images?.length || 1} photo${item.images?.length !== 1 ? 's' : ''}</div>
+      </div>
+    `
+      )
+      .join('');
+
+    modal.classList.remove('hidden');
+  },
+
+  closeItemSelectionModal() {
+    const modal = document.getElementById('itemSelectionModal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+    this.state.itemSelection.isOpen = false;
+  },
+
+  toggleItemSelection(index) {
+    const selectedIds = this.state.itemSelection.selectedIds;
+
+    if (selectedIds.has(index)) {
+      selectedIds.delete(index);
+    } else {
+      selectedIds.add(index);
+    }
+
+    // Update UI
+    const card = document.querySelector(`[data-item-index="${index}"]`);
+    if (card) {
+      card.classList.toggle('selected');
+    }
+
+    // Update count
+    const selectedCount = document.getElementById('selectedCount');
+    if (selectedCount) {
+      selectedCount.textContent = selectedIds.size;
+    }
+  },
+
+  selectAllItems() {
+    const items = this.state.itemSelection.items;
+    this.state.itemSelection.selectedIds = new Set(items.map((_, idx) => idx));
+
+    // Update UI
+    document.querySelectorAll('.item-card').forEach((card) => {
+      card.classList.add('selected');
+    });
+
+    const selectedCount = document.getElementById('selectedCount');
+    if (selectedCount) {
+      selectedCount.textContent = items.length;
+    }
+  },
+
+  deselectAllItems() {
+    this.state.itemSelection.selectedIds.clear();
+
+    // Update UI
+    document.querySelectorAll('.item-card').forEach((card) => {
+      card.classList.remove('selected');
+    });
+
+    const selectedCount = document.getElementById('selectedCount');
+    if (selectedCount) {
+      selectedCount.textContent = '0';
+    }
+  },
+
+  async generateSelectedItems() {
+    const selectedIds = this.state.itemSelection.selectedIds;
+
+    if (selectedIds.size === 0) {
+      this.showToast('Please select at least one item', 'warning');
+      return;
+    }
+
+    // Get selected items
+    const selectedItems = this.state.itemSelection.items.filter((_, idx) => selectedIds.has(idx));
+
+    // Close modal
+    this.closeItemSelectionModal();
+
+    // Save unselected items as bundle (without using credits)
+    const unselectedItems = this.state.itemSelection.items.filter((_, idx) => !selectedIds.has(idx));
+    if (unselectedItems.length > 0) {
+      this.showToast(`${unselectedItems.length} item${unselectedItems.length !== 1 ? 's' : ''} saved for later`, 'info');
+      // TODO: Save unselected items to database without generating listings
+    }
+
+    // Show generating toast
+    this.showToast(`Generating ${selectedItems.length} listing${selectedItems.length !== 1 ? 's' : ''}...`, 'info');
+
+    // Filter groups to only selected items
+    const selectedGroupIndices = selectedItems.map(item => item.groupIndex);
+    const selectedGroups = this.state.photoDumpGroups.filter((_, idx) => selectedGroupIndices.includes(idx));
+
+    // Temporarily replace photoDumpGroups with only selected ones
+    const originalGroups = this.state.photoDumpGroups;
+    this.state.photoDumpGroups = selectedGroups;
+
+    try {
+      // Generate listings for selected items
+      await this.generatePhotoDumpListings();
+
+      // Show success
+      this.showToast(
+        `Generated ${selectedItems.length} listing${selectedItems.length !== 1 ? 's' : ''}!`,
+        'success'
+      );
+    } catch (error) {
+      console.error('Error generating listings:', error);
+      this.showToast('Failed to generate some listings', 'error');
+    } finally {
+      // Restore original groups
+      this.state.photoDumpGroups = originalGroups;
+    }
+  },
+
+  async generateListingForItem(item) {
+    // TODO: Implement actual listing generation
+    // This will call the /api/generate endpoint with item images
+    console.log('Generating listing for item:', item);
+
+    // For now, simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  },
+
+  /**
+   * Image Enhancement Modal
+   */
+  openImageEnhancementModal(listing) {
+    const modal = document.getElementById('imageEnhancementModal');
+    const mainImageGrid = document.getElementById('mainImageGrid');
+
+    if (!modal || !mainImageGrid) return;
+
+    // Update wizard to step 4 (Enhance)
+    this.updateWizardProgress(4);
+
+    // Update state
+    this.state.imageEnhancement.isOpen = true;
+    this.state.imageEnhancement.mainImageIndex = 0;
+
+    // Store current listing
+    this.state.currentListing = listing;
+
+    // Render main image selector
+    const images = listing.images || [];
+    mainImageGrid.innerHTML = images
+      .map(
+        (img, idx) => `
+      <div class="main-image-thumb ${idx === 0 ? 'selected' : ''}"
+           data-image-index="${idx}"
+           onclick="app.selectMainImage(${idx})">
+        <img src="${img.url || img.preview || img}" alt="Image ${idx + 1}">
+        <div class="main-image-badge">Main</div>
+      </div>
+    `
+      )
+      .join('');
+
+    // Reset checkboxes to defaults
+    document.getElementById('fixBlurryCheck').checked = true;
+    document.getElementById('removeBackgroundCheck').checked = false;
+    document.getElementById('generateHeroCheck').checked = false;
+    document.getElementById('heroOptions').style.display = 'none';
+
+    modal.classList.remove('hidden');
+  },
+
+  closeImageEnhancementModal() {
+    const modal = document.getElementById('imageEnhancementModal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+    this.state.imageEnhancement.isOpen = false;
+  },
+
+  selectMainImage(index) {
+    this.state.imageEnhancement.mainImageIndex = index;
+
+    // Update UI
+    document.querySelectorAll('.main-image-thumb').forEach((thumb, idx) => {
+      if (idx === index) {
+        thumb.classList.add('selected');
+      } else {
+        thumb.classList.remove('selected');
+      }
+    });
+  },
+
+  updateEnhancementOption(option, value) {
+    this.state.imageEnhancement.options[option] = value;
+  },
+
+  toggleHeroOptions(checked) {
+    const heroOptions = document.getElementById('heroOptions');
+    if (heroOptions) {
+      heroOptions.style.display = checked ? 'block' : 'none';
+    }
+    this.state.imageEnhancement.options.generateHero = checked;
+  },
+
+  async skipEnhancement() {
+    this.closeImageEnhancementModal();
+
+    // Save the Photo Dump item that triggered this flow
+    if (typeof this.state.currentPhotoDumpItemIndex !== 'undefined') {
+      const idx = this.state.currentPhotoDumpItemIndex;
+      await this.finalizePhotoDumpItemSave(idx);
+      delete this.state.currentPhotoDumpItemIndex;
+    } else {
+      // Regular listing save (non-Photo Dump flow)
+      this.showToast('Enhancements skipped', 'info');
+    }
+  },
+
+  async applyEnhancements() {
+    const options = this.state.imageEnhancement.options;
+
+    // Close enhancement modal
+    this.closeImageEnhancementModal();
+
+    // If generating hero, open hero preview modal
+    if (options.generateHero) {
+      this.openHeroPreviewModal();
+    } else {
+      // Apply other enhancements
+      this.showToast('Applying enhancements...', 'info');
+
+      try {
+        // TODO: Call backend API to apply enhancements
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        this.showToast('Enhancements applied!', 'success');
+      } catch (error) {
+        console.error('Error applying enhancements:', error);
+        this.showToast('Failed to apply enhancements', 'error');
+      }
+    }
+  },
+
+  /**
+   * Hero Preview Modal with Comedy Progress
+   */
+  openHeroPreviewModal() {
+    const modal = document.getElementById('heroPreviewModal');
+    const heroPreviewImage = document.getElementById('heroPreviewImage');
+    const heroGeneratingProgress = document.getElementById('heroGeneratingProgress');
+
+    if (!modal) return;
+
+    // Show modal
+    modal.classList.remove('hidden');
+
+    // Hide image, show progress
+    heroPreviewImage.style.display = 'none';
+    heroGeneratingProgress.style.display = 'flex';
+
+    // Start generating hero image
+    this.generateHeroImage();
+  },
+
+  closeHeroPreviewModal() {
+    const modal = document.getElementById('heroPreviewModal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+
+    // Reset state
+    this.state.imageEnhancement.heroGenerating = false;
+    this.state.imageEnhancement.heroProgress = 0;
+  },
+
+  async generateHeroImage() {
+    this.state.imageEnhancement.heroGenerating = true;
+    this.state.imageEnhancement.heroProgress = 0;
+
+    const comedyMessages = [
+      'Digging out the cameras...',
+      'Adjusting the lights...',
+      'Fluffing the cushions...',
+      'Polishing the lens...',
+      'Finding the perfect angle...',
+      'Adding a splash of style...',
+      'Consulting the color wheel...',
+      'Channeling inner Ansel Adams...',
+      'Sprinkling some AI magic...',
+      'Almost there...',
+      'Putting on the finishing touches...',
+    ];
+
+    const progressFill = document.getElementById('heroProgressFill');
+    const progressPercent = document.getElementById('heroProgressPercent');
+    const comedyText = document.getElementById('comedyProgressText');
+
+    // Animate progress
+    const duration = 8000; // 8 seconds
+    const steps = 100;
+    const interval = duration / steps;
+
+    for (let i = 0; i <= steps; i++) {
+      await new Promise((resolve) => setTimeout(resolve, interval));
+
+      const progress = i;
+      this.state.imageEnhancement.heroProgress = progress;
+
+      // Update UI
+      if (progressFill) progressFill.style.width = `${progress}%`;
+      if (progressPercent) progressPercent.textContent = `${progress}%`;
+
+      // Update comedy message every 10%
+      if (comedyText && i % 10 === 0) {
+        const messageIndex = Math.min(Math.floor(i / 10), comedyMessages.length - 1);
+        comedyText.textContent = comedyMessages[messageIndex];
+      }
+    }
+
+    // TODO: Call actual hero generation API
+    // For now, simulate with a placeholder
+    const heroPreview = '/api/placeholder-hero.jpg'; // Replace with actual API call
+
+    // Show the preview
+    this.showHeroPreview(heroPreview);
+  },
+
+  showHeroPreview(imageUrl) {
+    const heroPreviewImage = document.getElementById('heroPreviewImage');
+    const heroGeneratingProgress = document.getElementById('heroGeneratingProgress');
+
+    if (heroPreviewImage && heroGeneratingProgress) {
+      heroPreviewImage.src = imageUrl;
+      heroPreviewImage.style.display = 'block';
+      heroGeneratingProgress.style.display = 'none';
+    }
+
+    this.state.imageEnhancement.heroGenerating = false;
+    this.state.imageEnhancement.heroPreview = imageUrl;
+  },
+
+  async regenerateHero() {
+    const heroPreviewImage = document.getElementById('heroPreviewImage');
+    const heroGeneratingProgress = document.getElementById('heroGeneratingProgress');
+
+    // Hide image, show progress
+    if (heroPreviewImage) heroPreviewImage.style.display = 'none';
+    if (heroGeneratingProgress) heroGeneratingProgress.style.display = 'flex';
+
+    // Regenerate
+    await this.generateHeroImage();
+  },
+
+  async acceptHeroPreview() {
+    // Save hero image to listing
+    const heroPreview = this.state.imageEnhancement.heroPreview;
+
+    if (heroPreview) {
+      // TODO: Add hero image to listing images
+      console.log('Accepting hero preview:', heroPreview);
+      this.showToast('Hero image added!', 'success');
+    }
+
+    this.closeHeroPreviewModal();
+
+    // Save the Photo Dump item that triggered this flow
+    if (typeof this.state.currentPhotoDumpItemIndex !== 'undefined') {
+      const idx = this.state.currentPhotoDumpItemIndex;
+      await this.finalizePhotoDumpItemSave(idx);
+      delete this.state.currentPhotoDumpItemIndex;
+    }
   },
 
   scheduleMarketingAnimations() {
@@ -8007,6 +8493,9 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     document.getElementById('photoDumpGrid').innerHTML = '';
     document.getElementById('photoDumpGroups').innerHTML = '';
     document.getElementById('photoDumpListings').innerHTML = '';
+
+    // Reset wizard progress to step 1
+    this.updateWizardProgress(1);
   },
 
   async handlePhotoDumpUpload(files) {
@@ -8181,11 +8670,27 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       const results = await response.json();
       this.state.photoDumpGroups = results.groups;
 
-      // Show groups step (not listings yet)
+      // WIZARD FLOW INTEGRATION
+      // If only 1 item: auto-generate
+      // If multiple items: show Item Selection Modal
       document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
-      document.getElementById('photoDumpGroupsStep').classList.remove('hidden');
 
-      this.renderPhotoDumpGroups();
+      if (results.groups.length === 1) {
+        // Single item - generate automatically
+        this.showToast('Single item detected, generating listing...', 'info');
+        await this.generatePhotoDumpListings();
+      } else {
+        // Multiple items - show Item Selection Modal
+        const items = results.groups.map((group, idx) => ({
+          title: group.description || `Item ${idx + 1}`,
+          preview: this.state.photoDumpImages[group.photoIndices[0]]?.preview,
+          images: group.photoIndices.map(photoIdx => this.state.photoDumpImages[photoIdx]),
+          photoIndices: group.photoIndices,
+          groupIndex: idx
+        }));
+
+        this.openItemSelectionModal(items);
+      }
 
     } catch (error) {
       clearInterval(msgInterval);
@@ -8247,6 +8752,9 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
     document.getElementById('photoDumpGroupsStep').classList.add('hidden');
     document.getElementById('photoDumpAnalysisStep').classList.remove('hidden');
 
+    // Update wizard to step 2 (Generate)
+    this.updateWizardProgress(2);
+
     const statusEl = document.getElementById('photoDumpStatus');
     statusEl.textContent = 'Generating listings...';
 
@@ -8281,10 +8789,11 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       const results = await response.json();
       this.state.photoDumpResults = results;
 
-      // Show listings
+      // Show listings - Update wizard to step 3 (Edit)
       document.getElementById('photoDumpAnalysisStep').classList.add('hidden');
       document.getElementById('photoDumpReviewStep').classList.remove('hidden');
 
+      this.updateWizardProgress(3);
       this.renderPhotoDumpResults();
 
     } catch (error) {
@@ -8340,6 +8849,23 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
   async savePhotoDumpItem(idx) {
     const item = this.state.photoDumpResults.items[idx];
 
+    // WIZARD FLOW: Trigger Image Enhancement Modal before saving
+    // Store the item for later saving
+    this.state.currentPhotoDumpItemIndex = idx;
+
+    // Open Image Enhancement Modal with listing data
+    const listingWithImages = {
+      ...item,
+      images: item.images || [{ url: item.thumbnail }]
+    };
+
+    this.openImageEnhancementModal(listingWithImages);
+  },
+
+  // Actually save the Photo Dump item (called after enhancement or skip)
+  async finalizePhotoDumpItemSave(idx) {
+    const item = this.state.photoDumpResults.items[idx];
+
     try {
       const response = await fetch('/api/listings', {
         method: 'POST',
@@ -8352,12 +8878,15 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
 
       if (response.ok) {
         this.showToast(`"${item.title}" saved!`, 'success');
-        document.getElementById(`pd-item-${idx}`).style.opacity = '0.5';
+        const itemElement = document.getElementById(`pd-item-${idx}`);
+        if (itemElement) itemElement.style.opacity = '0.5';
+        return true;
       } else {
         throw new Error('Save failed');
       }
     } catch (error) {
       this.showToast('Failed to save item', 'error');
+      return false;
     }
   },
 

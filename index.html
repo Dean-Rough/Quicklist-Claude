@@ -1843,6 +1843,55 @@
           <h1 class="section-title" style="margin: 0;">Photo Dump</h1>
         </div>
 
+        <!-- Wizard Progress Indicator -->
+        <div class="wizard-progress" id="photoDumpWizardProgress" style="display: none; margin-bottom: 2rem;">
+          <div class="wizard-step" data-step="1">
+            <div class="wizard-step-circle">
+              <span class="wizard-step-number">1</span>
+              <svg class="wizard-step-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="wizard-step-label">Upload</div>
+          </div>
+
+          <div class="wizard-step-line"></div>
+
+          <div class="wizard-step" data-step="2">
+            <div class="wizard-step-circle">
+              <span class="wizard-step-number">2</span>
+              <svg class="wizard-step-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="wizard-step-label">Generate</div>
+          </div>
+
+          <div class="wizard-step-line"></div>
+
+          <div class="wizard-step" data-step="3">
+            <div class="wizard-step-circle">
+              <span class="wizard-step-number">3</span>
+              <svg class="wizard-step-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="wizard-step-label">Edit</div>
+          </div>
+
+          <div class="wizard-step-line"></div>
+
+          <div class="wizard-step" data-step="4">
+            <div class="wizard-step-circle">
+              <span class="wizard-step-number">4</span>
+              <svg class="wizard-step-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="wizard-step-label">Enhance</div>
+          </div>
+        </div>
+
         <!-- Step 1: Upload Photos -->
         <div id="photoDumpUploadStep">
           <div class="card" style="padding: 2rem; text-align: center;">
@@ -3154,6 +3203,203 @@
           </button>
           <button class="btn btn-primary" onclick="app.confirmSold()" style="flex: 1">
             Mark as Sold
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Item Selection Modal (Multi-item detection) -->
+  <div id="itemSelectionModal" class="modal hidden">
+    <div class="modal-content" style="max-width: 1000px">
+      <div class="modal-header">
+        <h3>Select Items to Generate</h3>
+        <button class="btn-close" onclick="app.closeItemSelectionModal()">×</button>
+      </div>
+
+      <div style="padding: 1.5rem">
+        <p style="margin-bottom: 1.5rem; color: var(--text-secondary)">
+          We detected <strong id="itemCount">0</strong> items in your photos. Select which ones you'd like to generate listings for.
+        </p>
+
+        <!-- Item Selection Grid -->
+        <div id="itemSelectionGrid" class="item-selection-grid">
+          <!-- Dynamically populated with item cards -->
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 1rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color)">
+          <button class="btn btn-secondary" onclick="app.selectAllItems()" style="flex: 0 0 auto">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px">
+              <polyline points="9 11 12 14 22 4"></polyline>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            Select All
+          </button>
+          <button class="btn btn-secondary" onclick="app.deselectAllItems()" style="flex: 0 0 auto">
+            Clear
+          </button>
+          <div style="flex: 1"></div>
+          <button class="btn btn-secondary" onclick="app.closeItemSelectionModal()" style="flex: 0 0 auto">
+            Cancel
+          </button>
+          <button class="btn btn-primary" onclick="app.generateSelectedItems()" style="flex: 0 0 auto">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            Generate <span id="selectedCount">0</span> Listings
+          </button>
+        </div>
+
+        <!-- Bundle Save Option -->
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 12px; display: flex; align-items: center; gap: 1rem">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; color: var(--accent-blue)">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <div style="flex: 1; font-size: 0.9rem; color: var(--text-secondary)">
+            <strong style="color: var(--text-primary)">Bundle Tip:</strong> Unselected items will be saved to your library without using credits. You can generate them later.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Enhancement Modal -->
+  <div id="imageEnhancementModal" class="modal hidden">
+    <div class="modal-content" style="max-width: 1200px">
+      <div class="modal-header">
+        <h3>Enhance Images</h3>
+        <button class="btn-close" onclick="app.closeImageEnhancementModal()">×</button>
+      </div>
+
+      <div style="padding: 1.5rem">
+        <!-- Main Image Selector -->
+        <div class="main-image-selector">
+          <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: var(--text-primary)">Select Main Image</h4>
+          <div id="mainImageGrid" class="main-image-grid">
+            <!-- Dynamically populated with image thumbnails -->
+          </div>
+        </div>
+
+        <!-- Enhancement Options -->
+        <div class="enhancement-options">
+          <h4 style="margin: 2rem 0 1rem 0; font-size: 1rem; color: var(--text-primary)">Enhancement Options</h4>
+
+          <div class="enhancement-option-card">
+            <div style="display: flex; align-items: center; gap: 1rem">
+              <input type="checkbox" id="fixBlurryCheck" class="enhancement-checkbox" checked onchange="app.updateEnhancementOption('fixBlurry', this.checked)">
+              <label for="fixBlurryCheck" style="flex: 1; cursor: pointer">
+                <div style="font-weight: 500; margin-bottom: 4px">Fix Blurry Images</div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary)">Automatically sharpen and enhance blurry photos</div>
+              </label>
+            </div>
+          </div>
+
+          <div class="enhancement-option-card">
+            <div style="display: flex; align-items: center; gap: 1rem">
+              <input type="checkbox" id="removeBackgroundCheck" class="enhancement-checkbox" onchange="app.updateEnhancementOption('removeBackground', this.checked)">
+              <label for="removeBackgroundCheck" style="flex: 1; cursor: pointer">
+                <div style="font-weight: 500; margin-bottom: 4px">Remove Background</div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary)">Create clean white background product shots</div>
+              </label>
+            </div>
+          </div>
+
+          <div class="enhancement-option-card">
+            <div style="display: flex; align-items: center; gap: 1rem">
+              <input type="checkbox" id="generateHeroCheck" class="enhancement-checkbox" onchange="app.toggleHeroOptions(this.checked)">
+              <label for="generateHeroCheck" style="flex: 1; cursor: pointer">
+                <div style="font-weight: 500; margin-bottom: 4px">Generate Hero Image</div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary)">Create professional marketing image with AI</div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Hero Options (hidden by default) -->
+          <div id="heroOptions" class="hero-options" style="display: none">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
+              <div>
+                <label class="form-label" style="margin-bottom: 0.5rem; display: block">Background Style</label>
+                <select id="heroBackground" class="form-input" onchange="app.updateEnhancementOption('heroBackground', this.value)">
+                  <option value="neutral">Neutral</option>
+                  <option value="gradient">Gradient</option>
+                  <option value="product-shot">Product Shot</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label" style="margin-bottom: 0.5rem; display: block">Lighting</label>
+                <select id="heroLighting" class="form-input" onchange="app.updateEnhancementOption('heroLighting', this.value)">
+                  <option value="soft">Soft</option>
+                  <option value="dramatic">Dramatic</option>
+                  <option value="studio">Studio</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 1rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color)">
+          <button class="btn btn-secondary" onclick="app.skipEnhancement()" style="flex: 1">
+            Skip Enhancement
+          </button>
+          <button class="btn btn-primary" onclick="app.applyEnhancements()" style="flex: 1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            Apply Enhancements
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero Preview Modal -->
+  <div id="heroPreviewModal" class="modal hidden">
+    <div class="modal-content" style="max-width: 900px">
+      <div class="modal-header">
+        <h3>Hero Image Preview</h3>
+        <button class="btn-close" onclick="app.closeHeroPreviewModal()">×</button>
+      </div>
+
+      <div style="padding: 1.5rem">
+        <!-- Hero Preview Container -->
+        <div class="hero-preview-container">
+          <img id="heroPreviewImage" src="" alt="Hero Image Preview" style="width: 100%; height: auto; border-radius: 12px; display: none">
+
+          <!-- Comedy Progress (shown while generating) -->
+          <div id="heroGeneratingProgress" class="comedy-progress-modal" style="display: none">
+            <div class="comedy-progress-icon">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+            </div>
+            <div class="comedy-progress-text" id="comedyProgressText">Digging out the cameras...</div>
+            <div class="comedy-progress-bar">
+              <div class="comedy-progress-fill" id="heroProgressFill" style="width: 0%"></div>
+            </div>
+            <div class="comedy-progress-percent" id="heroProgressPercent">0%</div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div id="heroPreviewActions" style="display: flex; gap: 1rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color)">
+          <button class="btn btn-secondary" onclick="app.regenerateHero()" style="flex: 1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            Regenerate
+          </button>
+          <button class="btn btn-primary" onclick="app.acceptHeroPreview()" style="flex: 1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Use This Image
           </button>
         </div>
       </div>
