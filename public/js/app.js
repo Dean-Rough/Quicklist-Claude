@@ -535,9 +535,128 @@ const app = {
     }
   },
 
-  // Stub for export — will be built in Task 7
   showWizardExport() {
-    // Populated in Task 7
+    const listings = this.state.wizard.generatedListings;
+    const idx = this.state.wizard.currentListingIndex;
+    const listing = listings[idx];
+
+    // Update subtitle
+    const subtitle = document.getElementById('wizardExportSubtitle');
+    if (subtitle && listing) {
+      subtitle.textContent = `"${listing.title}" has been saved to your library.`;
+    }
+
+    // Show "Next Item" button if multi-item and more items remain
+    const nextItemDiv = document.getElementById('wizardExportNextItem');
+    if (nextItemDiv) {
+      const hasMore = idx < listings.length - 1;
+      nextItemDiv.style.display = hasMore ? 'block' : 'none';
+    }
+  },
+
+  wizardExportNextItem() {
+    this.state.wizard.currentListingIndex++;
+    this.showWizardStep('review');
+    this.showWizardReview();
+  },
+
+  async wizardDownloadZip() {
+    const idx = this.state.wizard.currentListingIndex;
+    const listing = this.state.wizard.generatedListings[idx];
+    if (!listing) return;
+
+    try {
+      if (typeof JSZip === 'undefined') {
+        this.showToast('ZIP library not loaded. Try again.', 'error');
+        return;
+      }
+
+      const zip = new JSZip();
+
+      // Add listing text
+      const text = [
+        `Title: ${listing.title}`,
+        `Brand: ${listing.brand}`,
+        `Category: ${listing.category}`,
+        `Condition: ${listing.condition}`,
+        `Description: ${listing.description}`,
+        `Price: ${listing.price}`,
+        `RRP: ${listing.rrp}`,
+        `Keywords: ${Array.isArray(listing.keywords) ? listing.keywords.join(', ') : listing.keywords}`,
+        `Platform: ${listing.platform || this.state.wizard.platform}`,
+      ].join('\n\n');
+
+      zip.file('listing.txt', text);
+
+      // Add images
+      if (listing.images) {
+        for (let i = 0; i < listing.images.length; i++) {
+          const img = listing.images[i];
+          if (img.file) {
+            zip.file(`image-${i + 1}.jpg`, img.file);
+          }
+        }
+      }
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(listing.title || 'listing').replace(/[^a-z0-9]/gi, '-').substring(0, 50)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      this.showToast('ZIP downloaded!', 'success');
+    } catch (error) {
+      console.error('ZIP download error:', error);
+      this.showToast('Failed to create ZIP', 'error');
+    }
+  },
+
+  async wizardCopyAll() {
+    const idx = this.state.wizard.currentListingIndex;
+    const listing = this.state.wizard.generatedListings[idx];
+    if (!listing) return;
+
+    const text = [
+      listing.title,
+      '',
+      listing.description,
+      '',
+      `Price: ${listing.price}`,
+      listing.brand ? `Brand: ${listing.brand}` : '',
+      listing.condition ? `Condition: ${listing.condition}` : '',
+      Array.isArray(listing.keywords) && listing.keywords.length
+        ? `Keywords: ${listing.keywords.join(', ')}`
+        : '',
+    ].filter(Boolean).join('\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      this.showToast('Listing copied to clipboard!', 'success');
+    } catch (error) {
+      this.showToast('Failed to copy', 'error');
+    }
+  },
+
+  async wizardShare() {
+    const idx = this.state.wizard.currentListingIndex;
+    const listing = this.state.wizard.generatedListings[idx];
+    if (!listing) return;
+
+    const text = `${listing.title}\n\n${listing.description}\n\nPrice: ${listing.price}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: listing.title, text });
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          await this.wizardCopyAll();
+        }
+      }
+    } else {
+      await this.wizardCopyAll();
+    }
   },
 
   renderWizardItemSelection() {
