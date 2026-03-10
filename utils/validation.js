@@ -76,6 +76,23 @@ function validateListingDescription(description) {
   return { valid: true };
 }
 
+/**
+ * Validate and sanitize URL - only allow http/https protocols
+ */
+function sanitizeUrl(url) {
+  if (typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return trimmed;
+    }
+  } catch {
+    // Not a valid URL
+  }
+  return '';
+}
+
 module.exports = {
   validateEmail,
   sanitizeInput,
@@ -84,4 +101,5 @@ module.exports = {
   isValidPlanType,
   validateListingTitle,
   validateListingDescription,
+  sanitizeUrl,
 };
