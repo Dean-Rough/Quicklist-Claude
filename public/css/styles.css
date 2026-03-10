@@ -100,7 +100,7 @@
   --space-section: 5rem;
   --space-hero: 6rem;
   --bento-gap: 16px;
-  --page-gutter: clamp(1rem, 4vw, 2rem);
+  --page-gutter: clamp(1rem, 5vw, 3rem);
 
   /* Radius */
   --radius-sm: 8px;
@@ -438,7 +438,7 @@ p {
 }
 
 .header-content {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 1rem var(--page-gutter);
   display: flex;
@@ -747,7 +747,7 @@ body.loading::after {
 
 /* Container */
 .container {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 var(--page-gutter);
 }
@@ -781,7 +781,7 @@ body.loading::after {
 .hero-content {
   position: relative;
   z-index: 1;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: var(--space-hero) var(--page-gutter);
   display: grid;
