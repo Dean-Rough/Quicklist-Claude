@@ -45,6 +45,17 @@ async function fetchWithTimeout(url, options, timeoutMs = 30000) {
   }
 }
 
+// XML entity escaping for safe interpolation into XML strings
+function escapeXml(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 // Initialize Sentry error tracking (optional - only if DSN is configured)
 const Sentry = require('@sentry/node');
 if (process.env.SENTRY_DSN) {
@@ -2671,8 +2682,8 @@ async function postToEbay(listingData, images, userToken, ebayCategoryId = null)
     <ErrorLanguage>en_US</ErrorLanguage>
     <WarningLevel>High</WarningLevel>
     <Item>
-        <Title>${listingData.title.substring(0, 80)}</Title>
-        <Description><![CDATA[${listingData.description}]]></Description>
+        <Title>${escapeXml(listingData.title.substring(0, 80))}</Title>
+        <Description><![CDATA[${listingData.description.replace(/]]>/g, ']]]]><![CDATA[>')}]]></Description>
         <PrimaryCategory>
             <CategoryID>${categoryId}</CategoryID>
         </PrimaryCategory>
@@ -2684,7 +2695,7 @@ async function postToEbay(listingData, images, userToken, ebayCategoryId = null)
         <Country>GB</Country>
         <Currency>GBP</Currency>
         <PictureDetails>
-            ${imageUrls.map((url) => `<PictureURL>${url}</PictureURL>`).join('\n            ')}
+            ${imageUrls.map((url) => `<PictureURL>${escapeXml(url)}</PictureURL>`).join('\n            ')}
         </PictureDetails>
         <ReturnPolicy>
             <ReturnsAcceptedOption>ReturnsAccepted</ReturnsAcceptedOption>
