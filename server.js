@@ -994,7 +994,7 @@ async function getPlanLimit(userId) {
 // Auth middleware - Enhanced Clerk middleware that adds user info to req.user
 const authenticateToken = async (req, res, next) => {
   try {
-    if (process.env.ALLOW_TEST_AUTH === '1' && process.env.NODE_ENV !== 'production') {
+    if (process.env.ALLOW_TEST_AUTH === '1' && process.env.NODE_ENV === 'development') {
       req.user = {
         id: 1,
         clerkId: 'test-user',

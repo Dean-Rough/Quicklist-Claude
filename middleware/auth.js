@@ -16,7 +16,7 @@ function createAuthMiddleware({ pool, logger, ensureSchemaReady }) {
   return async function authenticateToken(req, res, next) {
     try {
       // Test mode bypass
-      if (process.env.ALLOW_TEST_AUTH === '1' && process.env.NODE_ENV !== 'production') {
+      if (process.env.ALLOW_TEST_AUTH === '1' && process.env.NODE_ENV === 'development') {
         req.user = {
           id: 1,
           clerkId: 'test-user',
