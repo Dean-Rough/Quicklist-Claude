@@ -383,8 +383,8 @@ app.post('/api/stripe/webhook', stripeWebhookMiddleware, async (req, res) => {
 });
 
 // Body parsing middleware
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Error handler for JSON parsing errors
 app.use((err, req, res, next) => {
