@@ -4718,37 +4718,37 @@ ${description}
         <div class="field">
             <span class="field-label">Brand:</span>
             <span class="field-value">${brand.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
-            <button class="copy-btn" onclick="copyToClipboard('${brand.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;')}')">Copy</button>
+            <button class="copy-btn" onclick="copyToClipboard('${app.escapeAttr(brand)}')">Copy</button>
         </div>
         
         <div class="field">
             <span class="field-label">Category:</span>
             <span class="field-value">${category.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
-            <button class="copy-btn" onclick="copyToClipboard('${category.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;')}')">Copy</button>
+            <button class="copy-btn" onclick="copyToClipboard('${app.escapeAttr(category)}')">Copy</button>
         </div>
         
         <div class="field">
             <span class="field-label">Condition:</span>
             <span class="field-value">${condition.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
-            <button class="copy-btn" onclick="copyToClipboard('${condition.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;')}')">Copy</button>
+            <button class="copy-btn" onclick="copyToClipboard('${app.escapeAttr(condition)}')">Copy</button>
         </div>
         
         <div class="field">
             <span class="field-label">RRP:</span>
             <span class="field-value">${rrp.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
-            <button class="copy-btn" onclick="copyToClipboard('${rrp.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;')}')">Copy</button>
+            <button class="copy-btn" onclick="copyToClipboard('${app.escapeAttr(rrp)}')">Copy</button>
         </div>
         
         <div class="field">
             <span class="field-label">Price:</span>
             <span class="field-value">${price.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
-            <button class="copy-btn" onclick="copyToClipboard('${price.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;')}')">Copy</button>
+            <button class="copy-btn" onclick="copyToClipboard('${app.escapeAttr(price)}')">Copy</button>
         </div>
         
         <div class="field">
             <span class="field-label">Description:</span>
             <div class="field-value textarea">${description.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</div>
-            <button class="copy-btn" onclick="copyToClipboard('${description.replace(/'/g, "\\'").replace(/\\/g, '\\\\').replace(/\n/g, '\\n')}')">Copy</button>
+            <button class="copy-btn" onclick="copyToClipboard('${app.escapeAttr(description)}')">Copy</button>
         </div>
         
         <div class="field">
@@ -4756,7 +4756,7 @@ ${description}
             <div class="keywords">
                 ${keywords.map((kw) => `<span class="keyword-tag">${kw.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`).join('')}
             </div>
-            <button class="copy-btn" onclick="copyToClipboard('${keywords.join(', ').replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;')}')">Copy All</button>
+            <button class="copy-btn" onclick="copyToClipboard('${app.escapeAttr(keywords.join(', '))}')">Copy All</button>
         </div>
     </div>
     
@@ -6374,20 +6374,20 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
           : 'Draft';
         const statusLabel = listing.status === 'sold' ? ' • Sold' : '';
         return `
-                        <div class="swipeable-card" data-listing-id="${listing.id}" style="${isSelected ? 'outline:2px solid var(--accent-indigo);border-radius:var(--radius-bento);' : ''}">
+                        <div class="swipeable-card" data-listing-id="${parseInt(listing.id, 10) || 0}" style="${isSelected ? 'outline:2px solid var(--accent-indigo);border-radius:var(--radius-bento);' : ''}">
                             <div class="swipeable-card-actions swipeable-card-action-left" style="flex-direction:column;gap:4px;">${this._icon('edit', 16)}<span style="font-size:11px;">Edit</span></div>
                             <div class="swipeable-card-actions swipeable-card-action-right" style="flex-direction:column;gap:4px;">${this._icon('check', 16)}<span style="font-size:11px;">Sold</span></div>
                             <div class="swipeable-card-content">
-                                <button type="button" class="saved-item-cb" onclick="app.toggleSelectItem(${listing.id})" aria-label="Select listing" style="background:none;border:none;cursor:pointer;padding:0 4px 0 0;display:flex;align-items:center;flex-shrink:0;color:var(--text-muted);">${isSelected ? this._icon('checkbox-checked', 18) : this._icon('checkbox', 18)}</button>
+                                <button type="button" class="saved-item-cb" onclick="app.toggleSelectItem(${parseInt(listing.id, 10) || 0})" aria-label="Select listing" style="background:none;border:none;cursor:pointer;padding:0 4px 0 0;display:flex;align-items:center;flex-shrink:0;color:var(--text-muted);">${isSelected ? this._icon('checkbox-checked', 18) : this._icon('checkbox', 18)}</button>
                                 ${imgEl}${imgPlaceholder}
                                 <div class="swipeable-card-info">
-                                    <div class="swipeable-card-title">${listing.title || 'Untitled'}</div>
-                                    <div class="swipeable-card-meta">${(listing.platform || 'Draft').toUpperCase()} · ${createdDate}${statusLabel}</div>
-                                    <div style="font-weight: 600; margin-top: 4px;">${listing.price || '—'}</div>
+                                    <div class="swipeable-card-title">${this.escapeHtml(listing.title || 'Untitled')}</div>
+                                    <div class="swipeable-card-meta">${this.escapeHtml((listing.platform || 'Draft').toUpperCase())} · ${createdDate}${statusLabel}</div>
+                                    <div style="font-weight: 600; margin-top: 4px;">${this.escapeHtml(listing.price || '—')}</div>
                                 </div>
                                 <div style="display:flex;gap:8px;flex-shrink:0;">
-                                    <button class="btn btn-secondary btn-small" type="button" onclick="app.loadListing(${listing.id})">Open</button>
-                                    <button class="btn btn-secondary btn-small" type="button" onclick="app.deleteListing(${listing.id})" aria-label="Delete listing" style="padding:6px 10px;color:var(--error,#e53e3e);display:flex;align-items:center;">${this._icon('trash', 15)}</button>
+                                    <button class="btn btn-secondary btn-small" type="button" onclick="app.loadListing(${parseInt(listing.id, 10) || 0})">Open</button>
+                                    <button class="btn btn-secondary btn-small" type="button" onclick="app.deleteListing(${parseInt(listing.id, 10) || 0})" aria-label="Delete listing" style="padding:6px 10px;color:var(--error,#e53e3e);display:flex;align-items:center;">${this._icon('trash', 15)}</button>
                                 </div>
                             </div>
                         </div>
@@ -6510,7 +6510,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       }
       if (tipsEl) {
         tipsEl.innerHTML = this.state.dashboardTips
-          .map((tip) => `<li style="color: var(--text-secondary);">• ${tip}</li>`)
+          .map((tip) => `<li style="color: var(--text-secondary);">• ${this.escapeHtml(tip)}</li>`)
           .join('');
       }
       return;
@@ -6550,7 +6550,7 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
       const tipSource =
         metrics.tips && metrics.tips.length ? metrics.tips : this.state.dashboardTips;
       tipsEl.innerHTML = tipSource
-        .map((tip) => `<li style="color: var(--text-secondary);">• ${tip}</li>`)
+        .map((tip) => `<li style="color: var(--text-secondary);">• ${this.escapeHtml(tip)}</li>`)
         .join('');
     }
   },
@@ -6590,10 +6590,10 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         const badge = message.unread
           ? '<span class="badge" style="background: var(--accent-indigo);">Unread</span>'
           : '';
+        const safeMsgId = parseInt(message.id, 10) || 0;
         const quickReplies = this.getQuickReplies(message.platform)
           .map((reply) => {
-            const safeReply = reply.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-            return `<button class="btn btn-secondary btn-small" type="button" onclick="app.sendQuickReply(${message.id}, '${safeReply}')">${reply}</button>`;
+            return `<button class="btn btn-secondary btn-small" type="button" onclick="app.sendQuickReply(${safeMsgId}, '${this.escapeAttr(reply)}')">${this.escapeHtml(reply)}</button>`;
           })
           .join('');
         const snippet = message.snippet || message.last_reply_text || 'New message';
@@ -6604,16 +6604,16 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
                                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                                     <div class="message-avatar">${initials}</div>
                                     <div>
-                                        <div style="font-weight: 600;">${buyerName}</div>
-                                        <div class="message-meta">${message.platform || 'Marketplace'} · ${timeAgo}</div>
+                                        <div style="font-weight: 600;">${this.escapeHtml(buyerName)}</div>
+                                        <div class="message-meta">${this.escapeHtml(message.platform || 'Marketplace')} · ${timeAgo}</div>
                                     </div>
                                 </div>
                                 ${badge}
                             </div>
-                            <p style="margin: 0.75rem 0;">${snippet}</p>
+                            <p style="margin: 0.75rem 0;">${this.escapeHtml(snippet)}</p>
                             <div class="message-actions">
                                 ${quickReplies}
-                                <button class="btn btn-secondary btn-small" type="button" onclick="app.markMessageRead(${message.id})">Mark read</button>
+                                <button class="btn btn-secondary btn-small" type="button" onclick="app.markMessageRead(${safeMsgId})">Mark read</button>
                             </div>
                         </div>
                     `;
@@ -7664,18 +7664,18 @@ ${this.state.currentListing?.keywords?.join(', ') || ''}
         (plan) => `
                     <div class="card" style="${plan.featured ? 'border: 2px solid var(--accent-indigo);' : ''}">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <h3 style="margin: 0;">${plan.name}</h3>
+                            <h3 style="margin: 0;">${this.escapeHtml(plan.name)}</h3>
                             ${plan.current ? '<span class="badge" style="background: var(--success);">Current</span>' : ''}
                         </div>
                         <div style="font-size: 2rem; font-weight: 600; margin-bottom: 1rem;">
                             ${plan.price}<span style="font-size: 1rem; color: var(--text-muted);">/${plan.period}</span>
                         </div>
                         <ul style="list-style: none; padding: 0; margin-bottom: 1.5rem;">
-                            ${plan.features.map((f) => `<li style="padding: 0.5rem 0; border-bottom: 1px solid var(--bg-secondary);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle"><polyline points="20 6 9 17 4 12"></polyline></svg> ${f}</li>`).join('')}
+                            ${plan.features.map((f) => `<li style="padding: 0.5rem 0; border-bottom: 1px solid var(--bg-secondary);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle"><polyline points="20 6 9 17 4 12"></polyline></svg> ${this.escapeHtml(f)}</li>`).join('')}
                         </ul>
                         ${plan.current
             ? '<button class="btn btn-secondary" disabled>Current Plan</button>'
-            : `<button class="btn ${plan.featured ? 'btn-primary' : 'btn-secondary'}" onclick="app.handlePlanSelection('${plan.id}', '${plan.priceId}')">Upgrade to ${plan.name}</button>`
+            : `<button class="btn ${plan.featured ? 'btn-primary' : 'btn-secondary'}" onclick="app.handlePlanSelection('${this.escapeAttr(plan.id)}', '${this.escapeAttr(plan.priceId)}')">Upgrade to ${this.escapeHtml(plan.name)}</button>`
           }
                     </div>
                 `
