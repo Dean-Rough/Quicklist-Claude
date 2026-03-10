@@ -57,6 +57,38 @@ const app = {
 
   },
 
+  // HTML entity escaping for safe innerHTML interpolation
+  escapeHtml(str) {
+    if (typeof str !== 'string') return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
+  // URL sanitization — only allow safe protocols
+  sanitizeUrl(url) {
+    if (typeof url !== 'string') return '';
+    const trimmed = url.trim();
+    if (/^(https?:\/\/|\/[^\/])/i.test(trimmed)) return trimmed;
+    if (/^[a-z0-9]/i.test(trimmed) && !trimmed.includes(':')) return trimmed;
+    return '';
+  },
+
+  // Escape string for use inside a JS string literal in an onclick attribute
+  escapeAttr(str) {
+    if (typeof str !== 'string') return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/'/g, '&#039;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\\/g, '\\\\');
+  },
+
   getPlatform() {
     // Check input selector first (before generation), then output selector (after generation)
     const inputSelect = document.getElementById('platformSelectInput');
