@@ -432,7 +432,7 @@ const app = {
       imagesGrid.style.display = 'grid';
       imagesGrid.innerHTML = listing.images.map((img, i) => `
         <div class="wizard-upload-thumb">
-          <img src="${img.preview || img.url || img}" alt="Photo ${i + 1}" loading="lazy">
+          <img src="${this.sanitizeUrl(img.preview || img.url || img)}" alt="Photo ${i + 1}" loading="lazy">
         </div>
       `).join('');
     } else {
@@ -704,8 +704,8 @@ const app = {
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </div>
-        <img src="${item.preview || ''}" alt="${item.title}" loading="lazy">
-        <div class="item-title">${item.title}</div>
+        <img src="${this.sanitizeUrl(item.preview || '')}" alt="${this.escapeHtml(item.title)}" loading="lazy">
+        <div class="item-title">${this.escapeHtml(item.title)}</div>
         <div class="item-meta">${item.photoIndices.length} photo${item.photoIndices.length !== 1 ? 's' : ''}</div>
       </div>
     `).join('');
@@ -882,7 +882,7 @@ const app = {
       <div class="wizard-upload-thumb">
         <img src="${img.preview}" alt="Photo ${idx + 1}" loading="lazy">
         <div class="thumb-index">${idx + 1}</div>
-        <button class="thumb-remove" onclick="app.removeWizardImage('${img.id}')" title="Remove">×</button>
+        <button class="thumb-remove" onclick="app.removeWizardImage('${app.escapeAttr(img.id)}')" title="Remove">×</button>
       </div>
     `).join('');
   },
@@ -1872,12 +1872,12 @@ const app = {
     grid.innerHTML = this.state.uploadedImages
       .map(
         (img, index) => `
-                    <div class="image-thumbnail ${img.isMain ? 'main-image' : ''}" style="position: relative;" onclick="app.setMainImage('${img.id}')">
-                        <img src="${img.url}" alt="Uploaded">
-                        <button class="image-thumbnail-delete" onclick="event.stopPropagation(); app.deleteImage('${img.id}')" aria-label="Delete image">×</button>
+                    <div class="image-thumbnail ${img.isMain ? 'main-image' : ''}" style="position: relative;" onclick="app.setMainImage('${app.escapeAttr(img.id)}')">
+                        <img src="${app.sanitizeUrl(img.url)}" alt="Uploaded">
+                        <button class="image-thumbnail-delete" onclick="event.stopPropagation(); app.deleteImage('${app.escapeAttr(img.id)}')" aria-label="Delete image">×</button>
                         ${img.isMain
             ? `<div class="main-image-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Main</div>
-               ${!img.studioEnhanced ? `<button class="studio-edit-btn" onclick="event.stopPropagation(); app.studioEditImage('${img.id}')" title="Transform to studio photo (uses 1 credit)">
+               ${!img.studioEnhanced ? `<button class="studio-edit-btn" onclick="event.stopPropagation(); app.studioEditImage('${app.escapeAttr(img.id)}')" title="Transform to studio photo (uses 1 credit)">
                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                  Studio Edit
                </button>` : '<div class="studio-enhanced-badge">Studio</div>'}`
