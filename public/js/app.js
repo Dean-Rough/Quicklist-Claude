@@ -3702,13 +3702,13 @@ const app = {
     // Keywords
     const keywordsContainer = document.getElementById('keywordsTags');
     keywordsContainer.innerHTML = (listing.keywords || [])
-      .map((kw) => `<span class="tag">${kw}</span>`)
+      .map((kw) => `<span class="tag">${this.escapeHtml(kw)}</span>`)
       .join('');
 
     // Sources
     const sourcesList = document.getElementById('sourcesList');
     sourcesList.innerHTML = (listing.sources || [])
-      .map((src) => `<li><a href="${src.url}" target="_blank">${src.title || src.url}</a></li>`)
+      .map((src) => `<li><a href="${this.sanitizeUrl(src.url)}" target="_blank" rel="noopener noreferrer">${this.escapeHtml(src.title || src.url)}</a></li>`)
       .join('');
 
     // Show pricing intelligence if available and platform is eBay
@@ -3904,10 +3904,10 @@ const app = {
         : ''
       }
                             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
-                                <button class="btn btn-primary" onclick="app.openStockImage('${stockImageData.stockImageUrl}')">
+                                <button class="btn btn-primary" onclick="app.openStockImage('${app.escapeAttr(app.sanitizeUrl(stockImageData.stockImageUrl))}')">
                                     View Full Size
                                 </button>
-                                <button class="btn btn-secondary" onclick="app.downloadStockImage('${stockImageData.stockImageUrl}', '${(document.getElementById('outputTitle').value || 'product').replace(/[^a-z0-9]/gi, '_')}')">
+                                <button class="btn btn-secondary" onclick="app.downloadStockImage('${app.escapeAttr(app.sanitizeUrl(stockImageData.stockImageUrl))}', '${(document.getElementById('outputTitle').value || 'product').replace(/[^a-z0-9]/gi, '_')}')">
                                     Download Image
                                 </button>
                                 ${stockImageData.alternatives &&
@@ -4065,7 +4065,7 @@ const app = {
           .map(
             (pp) => `
                                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: var(--bg-secondary); border-radius: 8px; cursor: pointer; transition: background 0.2s;"
-                                         onclick="document.getElementById('outputPrice').value = '£${pp.price.toFixed(2)}'; app.showToast('Price updated to £${pp.price.toFixed(2)}', 'success');">
+                                         onclick="document.getElementById('outputPrice').value = '£${Number(pp.price).toFixed(2)}'; app.showToast('Price updated to £${Number(pp.price).toFixed(2)}', 'success');">
                                         <div style="display: flex; align-items: center; gap: 1rem;">
                                             <div>
                                                 <div style="color: var(--text-primary); font-weight: 600;">£${pp.price.toFixed(2)}</div>
@@ -4151,13 +4151,13 @@ const app = {
         .map(
           (url, index) => `
                                 <div style="border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
-                                    <img src="${url}" alt="Alternative ${index + 1}" 
+                                    <img src="${app.sanitizeUrl(url)}" alt="Alternative ${index + 1}"
                                          style="width: 100%; height: 200px; object-fit: cover; cursor: pointer;"
-                                         onclick="window.open('${url}', '_blank')"
+                                         onclick="window.open('${app.escapeAttr(app.sanitizeUrl(url))}', '_blank')"
                                          onerror="this.parentElement.style.display='none'">
                                     <div style="padding: 0.5rem; text-align: center;">
-                                        <button class="btn btn-secondary" style="width: 100%; font-size: 0.875rem;" 
-                                                onclick="app.downloadStockImage('${url}', 'alternative_${index + 1}')">
+                                        <button class="btn btn-secondary" style="width: 100%; font-size: 0.875rem;"
+                                                onclick="app.downloadStockImage('${app.escapeAttr(app.sanitizeUrl(url))}', 'alternative_${index + 1}')">
                                             Download
                                         </button>
                                     </div>
@@ -4390,7 +4390,7 @@ ${description}
       '#musthave',
     ];
 
-    container.innerHTML = newKeywords.map((kw) => `<span class="tag">${kw}</span>`).join('');
+    container.innerHTML = newKeywords.map((kw) => `<span class="tag">${this.escapeHtml(kw)}</span>`).join('');
   },
 
   // Select best image for hero (simple heuristic: first non-blurry image)
