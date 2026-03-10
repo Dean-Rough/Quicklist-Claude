@@ -10,6 +10,19 @@
  * - View/watcher counts
  */
 
+function sanitizeUrl(url) {
+  if (typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (/^(https?:\/\/|\/[^\/])/i.test(trimmed)) return trimmed;
+  if (/^[a-z0-9]/i.test(trimmed) && !trimmed.includes(':')) return trimmed;
+  return '';
+}
+
+function escapeCssUrl(url) {
+  if (typeof url !== 'string') return '';
+  return url.replace(/[()'"\\]/g, '\\$&');
+}
+
 class ListingCard {
   constructor(listing, options = {}) {
     this.listing = listing;
@@ -33,7 +46,7 @@ class ListingCard {
 
     const card = document.createElement('div');
     card.className = `listing-card ${this.options.compact ? 'listing-card-compact' : ''}`;
-    card.dataset.listingId = this.listing.id;
+    card.dataset.listingId = parseInt(this.listing.id, 10) || 0;
 
     card.innerHTML = `
       ${this.renderImage()}
@@ -51,7 +64,7 @@ class ListingCard {
     const platformBadges = this.renderPlatformBadges();
 
     return `
-      <div class="card-image" style="background-image: url('${firstImage}')">
+      <div class="card-image" style="background-image: url('${escapeCssUrl(sanitizeUrl(firstImage))}')">
         ${platformBadges}
         ${this.renderImageCount()}
       </div>
@@ -100,7 +113,7 @@ class ListingCard {
         ${posted
           .map(
             (s) => `
-          <span class="badge badge-${s.platform}" title="${s.platform} - ${s.views || 0} views">
+          <span class="badge badge-${this.escapeHtml(s.platform)}" title="${this.escapeHtml(s.platform)} - ${parseInt(s.views, 10) || 0} views">
             ${this.getPlatformIcon(s.platform)}
           </span>
         `
@@ -239,23 +252,23 @@ class ListingCard {
 
     return `
       <div class="card-actions">
-        <button class="btn-secondary btn-sm" data-action="edit" data-listing-id="${this.listing.id}">
+        <button class="btn-secondary btn-sm" data-action="edit" data-listing-id="${parseInt(this.listing.id, 10) || 0}">
           ✏️ Edit
         </button>
         ${
           hasPosted
             ? `
-          <button class="btn-secondary btn-sm" data-action="view-posts" data-listing-id="${this.listing.id}">
+          <button class="btn-secondary btn-sm" data-action="view-posts" data-listing-id="${parseInt(this.listing.id, 10) || 0}">
             👁️ View Posts
           </button>
         `
             : `
-          <button class="btn-primary btn-sm" data-action="post" data-listing-id="${this.listing.id}">
+          <button class="btn-primary btn-sm" data-action="post" data-listing-id="${parseInt(this.listing.id, 10) || 0}">
             📤 Post to Platforms
           </button>
         `
         }
-        <button class="btn-icon btn-sm" data-action="more" data-listing-id="${this.listing.id}">
+        <button class="btn-icon btn-sm" data-action="more" data-listing-id="${parseInt(this.listing.id, 10) || 0}">
           ⋯
         </button>
       </div>
@@ -267,7 +280,7 @@ class ListingCard {
    */
   async fetchPlatformStatuses() {
     try {
-      const response = await fetch(`/api/listings/${this.listing.id}/platform-status`, {
+      const response = await fetch(`/api/listings/${parseInt(this.listing.id, 10) || 0}/platform-status`, {
         headers: {
           Authorization: `Bearer ${window.app?.authToken || localStorage.getItem('auth_token')}`,
         },
@@ -426,7 +439,7 @@ class ListingCard {
             ${posted
               .map(
                 (p) => `
-              <a href="${p.platform_url}" target="_blank" class="post-link">
+              <a href="${sanitizeUrl(p.platform_url)}" target="_blank" rel="noopener noreferrer" class="post-link">
                 <span class="post-link-icon">${this.getPlatformIcon(p.platform)}</span>
                 <span class="post-link-platform">${this.capitalize(p.platform)}</span>
                 <span class="post-link-stats">
@@ -534,7 +547,8 @@ class ListingCard {
       );
 
       if (platformStatus?.platform_url) {
-        window.open(platformStatus.platform_url, '_blank');
+        const safeUrl = sanitizeUrl(platformStatus.platform_url);
+        if (safeUrl) window.open(safeUrl, '_blank');
       }
     } else if (status === 'draft') {
       // Open platform selector with this platform pre-selected
@@ -596,7 +610,7 @@ class ListingCard {
       this.showToast('Listing deleted', 'success');
 
       // Remove card from DOM
-      const card = document.querySelector(`[data-listing-id="${this.listing.id}"]`);
+      const card = document.querySelector(`[data-listing-id="${parseInt(this.listing.id, 10) || 0}"]`);
       if (card) {
         card.style.animation = 'card-remove 0.3s ease';
         setTimeout(() => card.remove(), 300);
