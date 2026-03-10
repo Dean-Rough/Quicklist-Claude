@@ -6293,12 +6293,13 @@ app.get('/api/ebay/analytics/:listingId', authenticateToken, async (req, res) =>
   const { listingId } = req.params;
 
   try {
-    // Get eBay item ID from platform status
+    // Get eBay item ID from platform status (JOIN listings for ownership check)
     const result = await pool.query(
-      `SELECT platform_listing_id
-       FROM listing_platform_status
-       WHERE listing_id = $1 AND platform = 'ebay'`,
-      [listingId]
+      `SELECT lps.platform_listing_id
+       FROM listing_platform_status lps
+       JOIN listings l ON l.id = lps.listing_id
+       WHERE lps.listing_id = $1 AND lps.platform = 'ebay' AND l.user_id = $2`,
+      [listingId, req.user.id]
     );
 
     if (result.rows.length === 0) {
@@ -6315,14 +6316,18 @@ app.get('/api/ebay/analytics/:listingId', authenticateToken, async (req, res) =>
     const ebayInventory = new EbayInventory(accessToken, isSandbox);
     const analytics = await ebayInventory.getItemAnalytics(itemId);
 
-    // Update database
+    // Update database (ownership enforced via JOIN)
     await pool.query(
-      `UPDATE listing_platform_status
+      `UPDATE listing_platform_status lps
        SET view_count = $1,
            watcher_count = $2,
            updated_at = NOW()
-       WHERE listing_id = $3 AND platform = 'ebay'`,
-      [analytics.viewCount, analytics.watcherCount, listingId]
+       FROM listings l
+       WHERE lps.listing_id = l.id
+         AND lps.listing_id = $3
+         AND lps.platform = 'ebay'
+         AND l.user_id = $4`,
+      [analytics.viewCount, analytics.watcherCount, listingId, req.user.id]
     );
 
     res.json(analytics);
