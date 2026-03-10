@@ -2089,11 +2089,11 @@
       };
 
       const getFrontendApiUrl = (publishableKey) => {
-        // publishableKey format: pk_test_{base64(frontendApiUrl)}$ or pk_live_{base64(frontendApiUrl)}$
+        // Clerk encodes the frontend API URL + "$" inside the base64 portion of the key
         const keyWithoutPrefix = publishableKey.replace(/^pk_(test|live)_/, '');
-        const keyWithoutSuffix = keyWithoutPrefix.replace(/\$$/, '');
         try {
-          return atob(keyWithoutSuffix);
+          const decoded = atob(keyWithoutPrefix);
+          return decoded.replace(/\$$/, '');
         } catch {
           return null;
         }
