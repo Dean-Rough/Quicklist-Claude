@@ -214,6 +214,22 @@ const barcodeLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const writeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: 'Too many requests, please slow down',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const financialLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: 'Too many payment requests, please try again shortly',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Security headers with Helmet
 app.use(
   helmet({
@@ -1168,7 +1184,7 @@ app.get('/api/auth/verify', authenticateToken, async (req, res) => {
 });
 
 // Stripe: Create checkout session
-app.post('/api/stripe/create-checkout-session', authenticateToken, async (req, res) => {
+app.post('/api/stripe/create-checkout-session', financialLimiter, authenticateToken, async (req, res) => {
   try {
     if (!stripe) {
       return res.status(503).json({ error: 'Stripe not configured' });
@@ -1276,7 +1292,7 @@ app.post('/api/stripe/create-checkout-session', authenticateToken, async (req, r
 });
 
 // Stripe: Create portal session (manage subscription)
-app.post('/api/stripe/create-portal-session', authenticateToken, async (req, res) => {
+app.post('/api/stripe/create-portal-session', financialLimiter, authenticateToken, async (req, res) => {
   try {
     if (!stripe) {
       return res.status(503).json({ error: 'Stripe not configured' });
@@ -1498,7 +1514,7 @@ app.get('/api/stripe/publishable-key', (_req, res) => {
 
 // Get user subscription status with usage
 // Mock upgrade endpoint for local testing
-app.post('/api/user/mock-upgrade', authenticateToken, async (req, res) => {
+app.post('/api/user/mock-upgrade', writeLimiter, authenticateToken, async (req, res) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(403).json({ error: 'Not available in production' });
   }
@@ -1793,7 +1809,7 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/messages/:id/read', authenticateToken, async (req, res) => {
+app.post('/api/messages/:id/read', writeLimiter, authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const messageId = parseInt(req.params.id, 10);
@@ -1820,7 +1836,7 @@ app.post('/api/messages/:id/read', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/messages/:id/reply', authenticateToken, async (req, res) => {
+app.post('/api/messages/:id/reply', writeLimiter, authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const messageId = parseInt(req.params.id, 10);
@@ -1904,7 +1920,7 @@ app.get('/api/referral/code', authenticateToken, async (req, res) => {
 });
 
 // POST /api/referral/complete — submitted by new users after Clerk signup
-app.post('/api/referral/complete', authenticateToken, async (req, res) => {
+app.post('/api/referral/complete', writeLimiter, authenticateToken, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -2040,7 +2056,7 @@ app.get('/api/credits', authenticateToken, async (req, res) => {
 });
 
 // Listing endpoints
-app.post('/api/listings', authenticateToken, async (req, res) => {
+app.post('/api/listings', writeLimiter, authenticateToken, async (req, res) => {
   // Validate request body exists
   if (!req.body || typeof req.body !== 'object') {
     return res.status(400).json({ error: 'Request body required' });
@@ -2313,7 +2329,7 @@ app.get('/api/listings/:id/images', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/listings/:id', authenticateToken, async (req, res) => {
+app.put('/api/listings/:id', writeLimiter, authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const listingId = req.params.id;
@@ -2390,7 +2406,7 @@ app.put('/api/listings/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/listings/:id', authenticateToken, async (req, res) => {
+app.delete('/api/listings/:id', writeLimiter, authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const listingId = parseInt(req.params.id, 10);
@@ -2424,7 +2440,7 @@ app.delete('/api/listings/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/listings/:id/mark-sold', authenticateToken, async (req, res) => {
+app.post('/api/listings/:id/mark-sold', writeLimiter, authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const listingId = parseInt(req.params.id, 10);
@@ -3618,7 +3634,7 @@ app.post('/api/images/upload', uploadLimiter, authenticateToken, async (req, res
  * (publicId should be URL-encoded, e.g., quicklist/123/abc123def456 -> quicklist%2F123%2Fabc123def456)
  * Returns: { success: true, message: "Image deleted successfully" }
  */
-app.delete('/api/images/:publicId(*)', authenticateToken, async (req, res) => {
+app.delete('/api/images/:publicId(*)', writeLimiter, authenticateToken, async (req, res) => {
   try {
     const publicId = req.params.publicId;
     const userId = req.user.id;
@@ -5493,7 +5509,7 @@ async function lookupOpenFoodFacts(barcode) {
 }
 
 // Post listing to eBay
-app.post('/api/listings/:id/post-to-ebay', authenticateToken, async (req, res) => {
+app.post('/api/listings/:id/post-to-ebay', writeLimiter, authenticateToken, async (req, res) => {
   try {
     const listingId = req.params.id;
     const userId = req.user.id;
@@ -5953,7 +5969,7 @@ app.get('/api/listings/:id/platform-variations', authenticateToken, async (req, 
 });
 
 // Optimize listing for single platform
-app.post('/api/listings/:id/optimize-for-platform', authenticateToken, async (req, res) => {
+app.post('/api/listings/:id/optimize-for-platform', writeLimiter, authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { platform } = req.body;
@@ -6033,7 +6049,7 @@ app.get('/api/listings/:id/platform-status', authenticateToken, async (req, res)
 });
 
 // Update platform status for a listing
-app.post('/api/listings/:id/platform-status', authenticateToken, async (req, res) => {
+app.post('/api/listings/:id/platform-status', writeLimiter, authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { platform, status, platformListingId, platformUrl } = req.body;
@@ -6231,7 +6247,7 @@ app.get('/api/ebay/status', authenticateToken, async (req, res) => {
 });
 
 // Disconnect eBay account
-app.post('/api/ebay/disconnect', authenticateToken, async (req, res) => {
+app.post('/api/ebay/disconnect', writeLimiter, authenticateToken, async (req, res) => {
   try {
     await ebayAuth.disconnect(req.user.id);
     res.json({ success: true });
@@ -6242,7 +6258,7 @@ app.post('/api/ebay/disconnect', authenticateToken, async (req, res) => {
 });
 
 // Post listing to eBay
-app.post('/api/ebay/post-listing', authenticateToken, async (req, res) => {
+app.post('/api/ebay/post-listing', writeLimiter, authenticateToken, async (req, res) => {
   const { listingId, variation } = req.body;
 
   try {
