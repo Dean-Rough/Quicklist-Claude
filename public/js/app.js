@@ -747,11 +747,19 @@ const app = {
       const images = this.state.wizard.uploadedImages;
       const selectedItems = this.state.wizard.detectedItems.filter((_, idx) => selected.has(idx));
 
-      // Convert images for each selected group
+      // Calculate total image count for compression scaling
+      const totalImageCount = selectedItems.reduce((sum, item) => sum + item.photoIndices.length, 0);
+      const maxWidth = totalImageCount > 10 ? 768 : 1024;
+      const quality = totalImageCount > 10 ? 0.5 : 0.7;
+
+      // Convert images for each selected group (with compression)
       const groupImages = await Promise.all(
         selectedItems.map(async item => {
           const imgs = await Promise.all(
-            item.photoIndices.map(idx => this.fileToBase64(images[idx].file))
+            item.photoIndices.map(async idx => {
+              const compressed = await this.compressImage(images[idx].file, maxWidth, quality);
+              return this.fileToBase64(compressed);
+            })
           );
           return { images: imgs };
         })
